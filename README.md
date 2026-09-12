@@ -1,66 +1,107 @@
-## Foundry
+# Dissent — apuestas sobre afirmaciones deterministas
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Un agente afirma que `f(entradas)` cumple un umbral, escrowea una recompensa en
+MON y abre una ventana. Cualquiera puede traer evidencia nueva y, si con esa
+evidencia el valor cruza el umbral, se lleva la recompensa y su depósito. Si no
+cruza, pierde el depósito.
 
-Foundry consists of:
+**El contrato nunca acepta un número de nadie.** Ni del agente ni del retador.
+Todo valor que decide plata lo calcula el contrato llamando al recalculador.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Los tres contratos
 
-## Documentation
+| Archivo | Qué es |
+|---|---|
+| `src/IRecomputer.sol` | La frontera entre el protocolo y el dominio. Una sola función de valor. |
+| `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin `withdraw()`, sin pausa. |
+| `src/AlnitakRiverRecomputer.sol` | El adaptador de póker, port de `_exact_river_mix()` de `strategy.py`. |
 
-https://book.getfoundry.sh/
+## Verificación de las entradas: fuera de la cadena
 
-## Usage
+**Esto es importante y no hay que confundirlo.**
 
-### Build
+El contrato verifica **aritmética sobre entradas declaradas**. No verifica que
+las entradas hayan ocurrido. El board, las cartas, el bote y el precio no
+existen en la cadena: el agente los declara, y el contrato los toma como dados.
 
-```shell
-$ forge build
+Ahora bien, en este dominio concreto **sí se pueden verificar, por terceros y sin
+credenciales**. La arena de dev.fun expone endpoints tRPC públicos y sin
+autenticación:
+
+```
+https://arena.dev.fun/api/arena.getTexasReplay?input={"json":{"tableId":"..."}}
+https://arena.dev.fun/api/arena.getTexasTables?input={"json":{"arenaId":"...","agentId":"...","limit":100}}
 ```
 
-### Test
+Cada replay trae `events[]` con `payload.pot`, `allowedActions` completo,
+`snapshot.seats` con las cartas, y `payload.reasoning` — la etiqueta de la
+decisión que el bot tomó ese día. Con el `tableId` y el `sequence` de una
+decisión, cualquiera puede bajar el replay y comprobar, a mano, que las cartas,
+el board, el bote y el precio del compromiso son los que figuran ahí.
 
-```shell
-$ forge test
+Tres cosas que hay que tener claras sobre esa verificación:
+
+1. **La hace un tercero, no la cadena.** Si alguien compromete una mano que nunca
+   jugó, el contrato la procesará con todo rigor igual. Lo único que ocurre es
+   que cualquiera puede darse cuenta bajando el replay, y no comprar esa
+   afirmación.
+2. **Depende de que dev.fun siga sirviendo esos endpoints.** No es una garantía
+   criptográfica; es un archivo de terceros que hoy está abierto.
+3. **Los datos vienen contaminados** y hay que saber leerlos: `snapshot.seats`
+   trae las cartas de los seis asientos, el snapshot es el estado DESPUÉS de la
+   acción (hay que usar `payload.stackBefore`), y `snapshot.boardCards` trae el
+   board de la calle siguiente en 71 de 938 casos medidos. Reconstruir mal es
+   fácil.
+
+## Los seis límites declarados
+
+No son pendientes. Son lo que este diseño no puede hacer.
+
+1. **Que las entradas sean verdad.** Ver arriba. Es el límite más grande y
+   ninguno de los otros cinco importa si este no se entiende.
+2. **Que el rango de la evidencia sea el correcto.** El retador elige uno de tres
+   tiers canónicos, no manos sueltas, así que no puede fabricar un rango a
+   medida. Pero elegir entre tres sigue siendo elegir. El contrato no puede
+   decir cuál era el rango de verdad del rival: eso es una afirmación de modelo,
+   no de aritmética.
+3. **Que el recalculador sea determinista.** `view` puede leer `block.number` o
+   storage mutable. El núcleo no puede probar pureza. Mitigación parcial: guarda
+   y reemite `domain()`, y el recalculador debería ser inmutable y con fuente
+   verificada — pero eso es confianza social, no criptografía.
+4. **Que la acción del agente se haya seguido del valor.** El compromiso dice
+   "hice X porque f ≥ T". Nada ata esa frase a una acción real en una mesa real.
+   `action` es texto, con el mismo estatuto que el `label` de Once.
+5. **Que la tabla del modelo sea correcta.** `_VR_MIX` son proporciones medidas
+   sobre 1.352 apuestas de rivales **que llegaron a showdown**, y ese sesgo está
+   documentado en el código del bot: las manos que ganaron sin mostrar son
+   invisibles, así que la tabla sobreestima la fuerza del rival. Un challenge
+   exitoso demuestra que el número da distinto con otro rango, no que el número
+   nuevo sea el bueno.
+6. **Que el agente y el retador sean personas distintas.** Sybil.
+
+## Los ataques que siguen abiertos
+
+**Sybil del propio agente.** Prohibir `msg.sender == agent` no sirve: una segunda
+billetera lo evade. El challenge en dos fases le quita la parte peor —ya no puede
+ver la evidencia ajena y copiarla— pero sigue pudiendo sellar en paralelo a
+ciegas con su propia evidencia. Si acierta con el tier que gana, recupera su
+propia plata y cierra el compromiso antes que el retador honesto. La ventaja
+ahora es que tiene que apostar a ciegas y arriesgar el depósito, no copiar sobre
+seguro.
+
+**Umbral laxo a propósito.** El agente elige un umbral que nada cruza, recupera
+su recompensa en el reclaim, y queda un registro que parece robusto. No le roba a
+nadie; degrada el significado. Es un problema de mercado, no de contrato.
+
+**Un retador honesto que no llega a revelar pierde el depósito.** Es el costo
+elegido de que el sello sea un compromiso y no una opción gratis. Contra eso está
+la ventana de 7.200 bloques.
+
+## Correr los tests
+
+```bash
+forge build
+forge test -vv
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+41 tests, sin red, sin claves, sin desplegar nada.
