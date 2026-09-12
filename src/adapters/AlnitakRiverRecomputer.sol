@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IRecomputer} from "./IRecomputer.sol";
+import {IRecomputer} from "../IRecomputer.sol";
 import {PokerEval} from "./PokerEval.sol";
 
 /// @title AlnitakRiverRecomputer — el adaptador de poker

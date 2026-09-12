@@ -14,7 +14,15 @@ Todo valor que decide plata lo calcula el contrato llamando al recalculador.
 |---|---|
 | `src/IRecomputer.sol` | La frontera entre el protocolo y el dominio. Una sola función de valor. |
 | `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin `withdraw()`, sin pausa. |
-| `src/AlnitakRiverRecomputer.sol` | El adaptador de póker, port de `_exact_river_mix()` de `strategy.py`. |
+| `src/adapters/AlnitakRiverRecomputer.sol` | El adaptador de póker, port de `_exact_river_mix()` de `strategy.py`. |
+| `src/adapters/PokerEval.sol` | Evaluador de manos de 7 cartas, usado solo por el adaptador. |
+
+`src/` tiene exactamente dos archivos: el protocolo y la frontera. Todo lo que
+sepa de un dominio vive en `src/adapters/`. Eso no es prolijidad, es una
+afirmación comprobable: borrá `src/adapters/` y `test/AlnitakRiverRecomputer.t.sol`
+y corré `forge test`. Compila y pasan los 27 tests del núcleo. (Hay que sacar
+también el test, no solo el adaptador: `forge` compila el árbol entero antes de
+filtrar, así que `--match-path` no alcanza.)
 
 ## Verificación de las entradas: fuera de la cadena
 
@@ -104,4 +112,4 @@ forge build
 forge test -vv
 ```
 
-41 tests, sin red, sin claves, sin desplegar nada.
+43 tests, sin red, sin claves, sin desplegar nada.

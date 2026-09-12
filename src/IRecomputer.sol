@@ -2,9 +2,11 @@
 pragma solidity ^0.8.24;
 
 /// @title IRecomputer — la frontera entre el protocolo y el dominio
-/// @notice DissentCore no sabe de poker, ni de trading, ni de nada. Sabe pedirle
-///         un numero a esto y compararlo contra un umbral. Todo lo que sea
-///         especifico de un dominio vive del otro lado de esta interfaz.
+/// @notice DissentCore no sabe que significa el numero que compara. Sabe pedirlo,
+///         contrastarlo contra un umbral y mover plata segun el resultado. Que
+///         ese numero sea una probabilidad, un margen, una diferencia de precio
+///         o un resultado esperado es asunto exclusivo del implementador: todo
+///         lo especifico de un dominio vive del otro lado de esta interfaz.
 ///
 /// UNA SOLA FUNCION DE VALOR, NO DOS
 /// El valor base es `recompute(inputs, "")`. No hay una funcion aparte para el
@@ -15,9 +17,11 @@ pragma solidity ^0.8.24;
 ///      distinto, y entonces comparar una contra la otra dejaria de significar
 ///      algo. Con una sola, que las dos ramas usen la misma aritmetica es
 ///      imposible de romper.
-///   2. La evidencia vacia ya tiene un significado natural, y en el adaptador de
-///      river mapea exactamente a lo que hace hoy _exact_river_mix cuando recibe
-///      `fuente = combos`: la enumeracion completa.
+///   2. La evidencia vacia ya tiene un significado natural y unico: el planteo
+///      completo, sin restringir. Es el universo entero de casos que las
+///      entradas describen, antes de que nadie proponga mirar un subconjunto.
+///      Traer evidencia es siempre acotar ese universo; no traer nada es no
+///      acotarlo. Por eso el base sale de la misma funcion y no de otra.
 ///   3. El valor base tiene que ser el canonico. Si pudiera calcularse por un
 ///      atajo distinto, el agente elegiria el atajo que le conviene.
 ///
@@ -53,8 +57,13 @@ interface IRecomputer {
         view
         returns (bool ok, bytes32 reason);
 
-    /// @notice La escala del valor. Informativa: el nucleo compara valor contra
-    ///         umbral, los dos en la misma escala por construccion.
+    /// @notice La escala del valor: cuanto vale 1. Un adaptador en WAD devuelve
+    ///         1e18, uno en puntos basicos 1e4, uno en enteros crudos 1.
+    /// @dev El nucleo NO la usa para calcular -- compara valor contra umbral y
+    ///      los dos vienen en la misma unidad por construccion -- pero si la
+    ///      exige distinta de cero en el commit y la emite en el evento. Sin
+    ///      ella el historico son digitos sin unidad. Devolver 0 aborta el
+    ///      commit: un adaptador que no sabe decir en que habla no es usable.
     function scale() external pure returns (uint256);
 
     /// @notice Identidad del modelo y su version. El nucleo la guarda en el

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AlnitakRiverRecomputer} from "../src/AlnitakRiverRecomputer.sol";
+import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 
 /// @notice El adaptador contra el Python de verdad, y el flujo entero de punta a

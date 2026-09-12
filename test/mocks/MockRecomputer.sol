@@ -26,6 +26,26 @@ contract MockRecomputer is IRecomputer {
     }
 }
 
+/// @notice Declara escala cero. El nucleo tiene que rechazarlo en el commit: un
+///         recalculador que no dice en que unidad habla no sirve para auditar.
+contract ZeroScaleRecomputer is IRecomputer {
+    function scale() external pure returns (uint256) {
+        return 0;
+    }
+
+    function domain() external pure returns (bytes32) {
+        return "zeroscale.v1";
+    }
+
+    function validateEvidence(bytes calldata, bytes calldata) external pure returns (bool, bytes32) {
+        return (true, bytes32(0));
+    }
+
+    function recompute(bytes calldata inputs, bytes calldata) external pure returns (int256) {
+        return abi.decode(inputs, (int256));
+    }
+}
+
 /// @notice Rechaza toda evidencia. Para probar el camino de EvidenceRejected.
 contract RejectingRecomputer is IRecomputer {
     function scale() external pure returns (uint256) {

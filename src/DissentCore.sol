@@ -104,10 +104,14 @@ contract DissentCore {
     bool private locked;
 
     // ── eventos ───────────────────────────────────────────────────────────────
-    // Cada evento lleva el valor Y el umbral. Es la leccion de pf3:brake, que
-    // guarda la equity pero no el precio, y de pf3:riverfold, que guarda el
-    // precio pero no la equity: si no quedan los dos, el historico no se puede
-    // auditar sin volver a correr el codigo de esa epoca.
+    // Cada evento lleva el valor Y el umbral, juntos, ademas de la escala en la
+    // que estan expresados. Un log que guarda solo uno de los dos obliga a
+    // reconstruir el otro, y reconstruirlo significa volver a correr el codigo de
+    // esa epoca: la version exacta, con sus constantes exactas. En cuanto una de
+    // las dos cosas cambia -- y cambian -- el historico deja de ser auditable y
+    // pasa a ser una coleccion de numeros sin contexto. Guardar los dos cuesta
+    // una palabra por evento y conserva la capacidad de responder, meses
+    // despues, por que una decision cayo de un lado y no del otro.
     event Committed(
         bytes32 indexed id,
         address indexed agent,
@@ -117,6 +121,7 @@ contract DissentCore {
         int256 threshold,
         Comparator comparator,
         int256 baseValue,
+        uint256 scale,
         uint128 reward,
         uint128 deposit,
         uint64 windowEnds,
@@ -148,6 +153,9 @@ contract DissentCore {
     error ZeroReward();
     error ZeroDeposit();
     error ZeroWindow();
+    /// @dev Un recalculador que no sabe decir en que escala estan sus numeros no
+    ///      es usable: sin eso, `threshold` y `baseValue` son digitos sueltos.
+    error ZeroScale();
     error BadValue(uint256 sent, uint256 required);
     error CommitmentExists(bytes32 id);
     error UnknownCommitment(bytes32 id);
@@ -254,6 +262,13 @@ contract DissentCore {
         }
 
         bytes32 dom = IRecomputer(recomputer).domain();
+        // La escala no decide nada -- el nucleo compara valor contra umbral y los
+        // dos vienen en la misma unidad por construccion -- pero SIN ELLA el log
+        // no se puede leer. Un `baseValue` de 200128647214854111 no significa
+        // nada si no consta que son 1e18. Por eso se lee, se exige distinta de
+        // cero y se emite: el evento tiene que bastarse solo.
+        uint256 sc = IRecomputer(recomputer).scale();
+        if (sc == 0) revert ZeroScale();
 
         commitments[id] = Commitment({
             agent: msg.sender,
@@ -282,6 +297,7 @@ contract DissentCore {
             threshold,
             comparator,
             baseValue,
+            sc,
             reward,
             deposit,
             windowEnds,

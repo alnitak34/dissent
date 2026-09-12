@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {
     MockRecomputer,
     RejectingRecomputer,
     RevertingRecomputer,
     ReentrantRecomputer,
+    ZeroScaleRecomputer,
     RejectingAgent
 } from "./mocks/MockRecomputer.sol";
 
@@ -104,6 +105,36 @@ contract DissentCoreTest is Test {
         core.commit{value: REWARD}(
             address(bad), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
         );
+    }
+
+    function test_rechaza_un_recomputer_sin_escala() public {
+        ZeroScaleRecomputer zs = new ZeroScaleRecomputer();
+        vm.prank(agent);
+        vm.expectRevert(DissentCore.ZeroScale.selector);
+        core.commit{value: REWARD}(
+            address(zs), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
+        );
+    }
+
+    function test_el_evento_lleva_la_escala() public {
+        vm.recordLogs();
+        bytes32 id = _commit();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bool visto;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] != keccak256(
+                "Committed(bytes32,address,address,bytes32,bytes32,int256,uint8,int256,uint256,uint128,uint128,uint64,uint32,bytes32,string)"
+            )) continue;
+            assertEq(logs[i].topics[1], id);
+            (,,,, int256 baseValue, uint256 sc,,,,,) = abi.decode(
+                logs[i].data,
+                (bytes32, bytes32, int256, uint8, int256, uint256, uint128, uint128, uint64, uint32, bytes32)
+            );
+            assertEq(baseValue, BASE);
+            assertEq(sc, rc.scale(), "el evento tiene que bastarse solo");
+            visto = true;
+        }
+        assertTrue(visto, "no se encontro el evento Committed");
     }
 
     function test_la_accion_no_entra_en_la_identidad() public {
