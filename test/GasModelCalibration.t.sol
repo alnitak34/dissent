@@ -131,7 +131,7 @@ contract GasModelCalibrationTest is Test {
     }
 
     function test_cal_staticcall_overhead() public {
-        
+
         bytes memory data = abi.encodeWithSelector(IRecomputer.recompute.selector, abi.encode(int256(1)), abi.encode(int256(0)));
         // primer acceso: frio
         uint256 g0 = gasleft();
@@ -146,7 +146,7 @@ contract GasModelCalibrationTest is Test {
     }
 
     function test_cal_revert() public {
-        
+
         bytes memory data = abi.encodeWithSelector(IRecomputer.recompute.selector, abi.encode(int256(1)), abi.encode(int256(0)));
         uint256 g0 = gasleft();
         (bool ok,) = address(mReverter).staticcall(data);

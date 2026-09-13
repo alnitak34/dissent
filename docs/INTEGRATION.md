@@ -109,9 +109,13 @@ menor). Cubre el presupuesto de gas de referencia, **no** garantiza rentabilidad
    `[sealBlock + REVEAL_DELAY_BLOCKS, sealBlock + REVEAL_DELAY_BLOCKS +
    REVEAL_WINDOW_BLOCKS]`: antes del primero revierte `TooEarlyToReveal`, después
    del último revierte `RevealWindowClosed`.
-5. Sin challenge exitoso al vencer la ventana, cualquiera llama **`reclaim(id)`** y
-   la recompensa vuelve al agente. Un sello no revelado se barre con
-   **`sweepExpiredSeal(id, challenger)`** (el depósito va al agente).
+5. Sin challenge exitoso, cualquiera llama **`reclaim(id)`** y la recompensa vuelve
+   al agente. `reclaim` solo procede: (a) después de `windowEnds`; y (b) si hubo
+   algún sello, cuando `block.number` sea **mayor que**
+   `latestSealBlock + REVEAL_DELAY_BLOCKS + REVEAL_WINDOW_BLOCKS` (plazo
+   conservador desde el sello más reciente; el contrato no lleva cuenta de sellos
+   vivos). Un sello no revelado se barre con **`sweepExpiredSeal(id, challenger)`**
+   (el depósito va al agente).
 
 ## Eventos que debería indexar una UI
 

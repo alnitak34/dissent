@@ -45,13 +45,15 @@ dominio concreto vive ahí.
 | **ChallengeRejected** | `validateEvidence` devolvió `false` canónico; sello liquidado; sigue `Open` | **vuelve al retador** | — | evidencia malformada: **inconcluso**, el agente no cosecha |
 | **Faulted** | el adaptador revirtió, hizo OOG, o devolvió ABI no canónico **teniendo el gas prometido** | vuelve al retador (dentro del payout) | al retador | **fallo técnico del adaptador**, NO una refutación de la afirmación |
 | **ChallengeVoided** | otro retador ya resolvió | vuelve al retador | — | sin llamar al adaptador |
-| **Reclaimed** | venció `windowEnds`, venció también el periodo de revelación de todo sello vivo, y no hubo challenge exitoso | — | vuelve al agente | **NO significa "verificado"**: puede no haber habido challenges, o muchos `ChallengeRejected` |
+| **Reclaimed** | venció `windowEnds`, venció además el periodo conservador calculado desde el sello más reciente, y no hubo challenge exitoso | — | vuelve al agente | **NO significa "verificado"**: puede no haber habido challenges, o muchos `ChallengeRejected` |
 
 `Reclaimed` significa que se cumplieron **las tres** condiciones: (1) venció
-`windowEnds` (ya no se puede sellar); (2) venció además el periodo de revelación
-de cualquier sello que siguiera vivo (`latestSealBlock + REVEAL_DELAY_BLOCKS +
-REVEAL_WINDOW_BLOCKS`); y (3) ningún challenge cruzó el umbral. **No** es
-`Verified`: solo dice que nadie reveló un challenge exitoso antes del cierre.
+`windowEnds` (ya no se puede sellar); (2) venció además el **periodo conservador
+calculado desde el sello más reciente** — `latestSealBlock + REVEAL_DELAY_BLOCKS +
+REVEAL_WINDOW_BLOCKS` — si existió algún sello. El contrato **no** comprueba si
+quedan sellos "vivos": espera ese plazo desde el último sello aunque ya haya sido
+liquidado. Y (3) ningún challenge cruzó el umbral. **No** es `Verified`: solo dice
+que nadie reveló un challenge exitoso antes del cierre.
 
 ## Frontera de confianza
 

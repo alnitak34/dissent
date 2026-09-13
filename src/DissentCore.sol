@@ -763,7 +763,13 @@ contract DissentCore {
 
     // ── reclaim ───────────────────────────────────────────────────────────────
 
-    /// @notice Vencida la ventana y sin sellos vivos, el agente recupera su MON.
+    /// @notice El agente recupera su MON una vez vencida la ventana y el periodo
+    ///         conservador de revelacion. NO se comprueba si quedan sellos "vivos":
+    ///         si existio algun sello, se espera hasta
+    ///         latestSealBlock + REVEAL_DELAY_BLOCKS + REVEAL_WINDOW_BLOCKS,
+    ///         calculado desde el sello MAS RECIENTE, aunque ese sello ya haya sido
+    ///         liquidado. Es conservador a proposito: no lleva cuenta de sellos
+    ///         pendientes, solo del ultimo.
     ///         Cualquiera puede llamarla: el destino es la direccion guardada, no
     ///         msg.sender, asi que el agente no depende de estar vivo para que el
     ///         sistema avance.
