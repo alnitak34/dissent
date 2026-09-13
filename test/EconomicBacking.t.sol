@@ -148,15 +148,26 @@ contract EconomicBackingTest is Test {
         assertEq(core.getCommitment(id).effectiveGasPrice, 100 gwei, "el precio se fijo al commit");
     }
 
-    // ── caso Alnitak: ~1.9143602 MON con V=100k, R=18M, inputs=352, maxEv=32 ────
-    function test_alnitak_min_reward_referencia() public {
+    // ── caso Alnitak: POLITICA RECOMENDADA V=100k, R=20M, inputs=352, maxEv=32 ──
+    // Es el snapshot offline que reporta bridge/armar_commit.py (ALNITAK_MIN_REWARD_REF_WEI).
+    function test_alnitak_politica_recomendada_R20M() public {
         vm.fee(0); // precio = 100 gwei
+        uint256 minR = core.minGasBackedReward(100_000, 20_000_000, 352, 32);
+        console.log("Alnitak recomendado minGasBackedReward (wei): %s", minR);
+        // txRequired = 20.975.348 ; + 200.000 challengeCommit = 21.175.348 ; *100gwei
+        assertEq(core.txRequired(100_000, 20_000_000, 352, 32), 20_975_348, "txRequired R=20M");
+        assertEq(minR, 21_175_348 * uint256(100 gwei), "total respaldado * 100 gwei");
+        assertEq(minR, 2_117_534_800_000_000_000, "exactamente 2.1175348 MON");
+    }
+
+    // ── config MINIMA historica (R=18M): poco margen sobre el peor recompute
+    //    medido (~17.92M); conservada como medicion, NO es la recomendacion. ─────
+    function test_alnitak_config_minima_historica_R18M() public {
+        vm.fee(0);
         uint256 minR = core.minGasBackedReward(100_000, 18_000_000, 352, 32);
-        console.log("Alnitak minGasBackedReward (wei): %s", minR);
-        // 18.943.602 gas de tx + 200.000 challengeCommit = 19.143.602 ; *100gwei
-        assertEq(minR, 19_143_602 * uint256(100 gwei), "coincide con el calculo de diseno");
-        // ~1.9143602 MON
-        assertApproxEqAbs(minR, 1_914_360_200_000_000_000, 1e12, "~1.9143602 MON");
+        // 18.943.602 gas de tx + 200.000 = 19.143.602 ; *100gwei = 1.9143602 MON
+        assertEq(minR, 19_143_602 * uint256(100 gwei), "1.9143602 MON");
+        assertEq(minR, 1_914_360_200_000_000_000, "exactamente 1.9143602 MON");
     }
 
     // ── el minimo NO incluye el deposito ──────────────────────────────────────

@@ -46,7 +46,8 @@ contract ZeroScaleRecomputer is IRecomputer {
     }
 }
 
-/// @notice Rechaza toda evidencia. Para probar el camino de EvidenceRejected.
+/// @notice Rechaza toda evidencia con (false, reason) canonico. Para probar el
+///         camino de ChallengeRejected (el sello se liquida y el deposito vuelve).
 contract RejectingRecomputer is IRecomputer {
     function scale() external pure returns (uint256) {
         return 1e18;

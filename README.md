@@ -1,152 +1,208 @@
 # Dissent — apuestas sobre afirmaciones deterministas
 
-Un agente afirma que `f(entradas)` cumple un umbral, escrowea una recompensa en
-MON y abre una ventana. Cualquiera puede traer evidencia nueva y, si con esa
-evidencia el valor cruza el umbral, se lleva la recompensa y su depósito. Si no
-cruza, pierde el depósito.
+Dissent es un protocolo en Monad para afirmaciones numéricas **falsables**.
 
-**El contrato nunca acepta un número de nadie.** Ni del agente ni del retador.
-Todo valor que decide plata lo calcula el contrato llamando al recalculador.
+- Un agente publica **entradas**, un **umbral** y una **acción declarada**, y
+  escrowea una **recompensa** en MON.
+- El contrato **no acepta del agente ni del retador el número que decide el
+  dinero**. Ese valor lo obtiene llamando a un **recomputer** (un contrato que
+  implementa `IRecomputer`) identificado por el compromiso.
+- Cualquiera puede **sellar** evidencia y luego **revelarla**. El contrato corre
+  el mismo recomputer con esa evidencia y compara contra el umbral.
+- Si con la evidencia el valor **cruza** el umbral, el retador cobra recompensa +
+  su depósito. Si no cruza, el depósito va al agente.
 
-## Los tres contratos
+**El resultado económico depende del recomputer elegido por el agente.** El
+protocolo garantiza la mecánica (escrow, sellado en dos fases, pagos); la
+**semántica** —qué significa el número y si es honesto— la define el adaptador.
+Ver [Frontera de confianza](#frontera-de-confianza).
+
+## Estado
+
+Contrato **implementado y probado localmente**. **Auditoría externa pendiente.**
+No hay dirección desplegada todavía. Hay un adaptador de póker de ejemplo
+(`AlnitakRiverRecomputer`) y un puente en Python; una UI de indexación es trabajo
+futuro.
+
+## Estructura de `src/`
 
 | Archivo | Qué es |
 |---|---|
 | `src/IRecomputer.sol` | La frontera entre el protocolo y el dominio. Una sola función de valor. |
-| `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin `withdraw()`, sin pausa. |
-| `src/adapters/AlnitakRiverRecomputer.sol` | El adaptador de póker, port de `_exact_river_mix()` de `strategy.py`. |
+| `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin retiro administrativo del escrow, sin pausa y sin proxy. Los beneficiarios retiran sus propios créditos con `withdrawCredit()`. |
+| `src/adapters/AlnitakRiverRecomputer.sol` | Adaptador de póker de ejemplo, port de `_exact_river_mix()` de `strategy.py`. |
 | `src/adapters/PokerEval.sol` | Evaluador de manos de 7 cartas, usado solo por el adaptador. |
 
-`src/` tiene exactamente dos archivos: el protocolo y la frontera. Todo lo que
-sepa de un dominio vive en `src/adapters/`. Eso no es prolijidad, es una
-afirmación comprobable: borrá `src/adapters/`, `test/AlnitakRiverRecomputer.t.sol`
-y `test/ManoReal.t.sol`, y corré `forge test`. Compila y pasan los 27 tests del
-núcleo. (Hay que sacar también los tests, no solo el adaptador: `forge` compila
-el árbol entero antes de filtrar, así que `--match-path` no alcanza.)
+`src/` fuera de `adapters/` es solo el protocolo y la frontera: nada de un
+dominio concreto vive ahí.
+
+## Tabla de resultados de un challenge
+
+| Estado / evento | Cuándo | Depósito | Recompensa | Significado |
+|---|---|---|---|---|
+| **Challenged** | evidencia válida y `recompute` **cruza** el umbral | vuelve al retador (dentro del payout) | al retador | la afirmación fue refutada con esa evidencia |
+| **ChallengeFailed** | evidencia válida y `recompute` **no cruza**; sigue `Open` | al agente | — | la afirmación se sostuvo frente a esa evidencia |
+| **ChallengeRejected** | `validateEvidence` devolvió `false` canónico; sello liquidado; sigue `Open` | **vuelve al retador** | — | evidencia malformada: **inconcluso**, el agente no cosecha |
+| **Faulted** | el adaptador revirtió, hizo OOG, o devolvió ABI no canónico **teniendo el gas prometido** | vuelve al retador (dentro del payout) | al retador | **fallo técnico del adaptador**, NO una refutación de la afirmación |
+| **ChallengeVoided** | otro retador ya resolvió | vuelve al retador | — | sin llamar al adaptador |
+| **Reclaimed** | venció `windowEnds`, venció también el periodo de revelación de todo sello vivo, y no hubo challenge exitoso | — | vuelve al agente | **NO significa "verificado"**: puede no haber habido challenges, o muchos `ChallengeRejected` |
+
+`Reclaimed` significa que se cumplieron **las tres** condiciones: (1) venció
+`windowEnds` (ya no se puede sellar); (2) venció además el periodo de revelación
+de cualquier sello que siguiera vivo (`latestSealBlock + REVEAL_DELAY_BLOCKS +
+REVEAL_WINDOW_BLOCKS`); y (3) ningún challenge cruzó el umbral. **No** es
+`Verified`: solo dice que nadie reveló un challenge exitoso antes del cierre.
+
+## Frontera de confianza
+
+> **El protocolo garantiza la mecánica; el adaptador define la semántica.**
+
+- El agente **elige** el recomputer. Un adaptador puede devolver siempre `false`,
+  o valores favorables al agente, sin que el núcleo lo note.
+- `view` **no** es `pure`: el recomputer puede leer `block.number`,
+  `block.timestamp`, `block.basefee` o storage mutable, y comportarse distinto
+  según el contexto (por eso el sellado en dos fases y el modelo de gas).
+- `domain()` es una **etiqueta**, no una prueba de honestidad.
+- Un **proxy** o un adaptador con storage mutable puede **cambiar de
+  comportamiento** después de que se creen compromisos contra él.
+- Los resultados **valen tanto como el adaptador**. Dissent **no es un oráculo de
+  verdad**.
+- **Para producción**, el consumidor debe exigir adaptadores **auditados,
+  inmutables, con fuente verificada y versión reconocible** (`domain()`), y tratar
+  un adaptador desconocido como no confiable.
+
+Contadores como "cuántos `ChallengeRejected` o `AdapterFaulted` acumuló un
+compromiso" se **derivan indexando eventos**; el núcleo **no** los almacena.
+
+## Gas y economía
+
+- **Monad cobra el gas _limit_ declarado, no el gas usado.** Fijar mal el límite
+  cuesta MON real.
+- **Límite por transacción: 30.000.000 de gas.** La transacción completa del
+  reveal (intrínseco + entrada + piso EIP-150 + liquidación) tiene que caber.
+- `REFERENCE_GAS_PRICE = 100 gwei` (piso de base fee de Monad al momento de este
+  diseño; **no** garantizado para siempre).
+- `effectiveGasPrice = max(REFERENCE_GAS_PRICE, block.basefee)`, **fijado al
+  commit** y guardado en el compromiso (parte de su identidad). No cambia después.
+- `commit` exige `msg.value ≥ minGasBackedReward`, donde
+  `minGasBackedReward = (txRequired + CHALLENGE_COMMIT_GAS) · effectiveGasPrice`.
+  El depósito **no** entra: la recompensa cubre el gas del retador; su depósito le
+  vuelve al ganar.
+
+Política recomendada para el adaptador Alnitak (la que reporta el puente):
+`validateGasLimit = 100_000`, `recomputeGasLimit = 20_000_000`,
+`inputs = 352 bytes`, `maxEvidenceLen = 32`:
+
+```
+txRequired          = 20.975.348
++ CHALLENGE_COMMIT    200.000
+total respaldado    = 21.175.348
+mínimo de referencia = 21.175.348 × 100 gwei = 2,1175348 MON
+```
+
+El test `EconomicBackingTest.test_alnitak_politica_recomendada_R20M` afirma ese
+valor exacto contra el contrato. (Configuración mínima ensayada, **histórica**:
+`recomputeGasLimit = 18_000_000` → 1,9143602 MON; pero 18M deja **poco margen**
+sobre el peor `recompute` medido de Alnitak, ~17,92M, así que **no** es la
+recomendación actual — 20M sí.)
+
+Esto cubre el **presupuesto de gas de referencia del protocolo**, **no** cualquier
+gas limit que el retador elija declarar: si el retador manda una tx con un límite
+mayor, Monad le cobra ese valor mayor y Dissent no garantiza la diferencia. Una
+**subida posterior de `block.basefee`** puede dejar la recompensa
+subcolateralizada. **No es una garantía de rentabilidad.** El valor esperado real
+del retador es una decisión económica suya, no del protocolo:
+
+```
+expectedNet = p · reward − (1 − p) · deposit − gasCost
+```
+
+donde `p` es la probabilidad, según su propia creencia, de que el challenge
+triunfe. `p` **no** entra al contrato.
+
+## Tiempos
+
+Las ventanas de revelación se miden en **bloques**; su duración en tiempo es
+**nominal** y depende del tiempo de bloque de la red.
+
+- Monad documenta actualmente **~300 ms por bloque**.
+- `REVEAL_WINDOW_BLOCKS = 7200` → **~36 minutos nominales**.
+- `REVEAL_DELAY_BLOCKS = 5` → ~1,5 s nominales.
+- Nunca hay que prometer una duración exacta para una ventana expresada en
+  bloques.
+- `MIN_WINDOW` **sí** está en segundos (1 hora): es la ventana mínima para sellar.
+
+Fuentes: <https://docs.monad.xyz/developer-essentials/summary> ·
+<https://docs.monad.xyz/developer-essentials/gas-pricing>
 
 ## Verificación de las entradas: fuera de la cadena
 
-**Esto es importante y no hay que confundirlo.**
+El contrato verifica **aritmética sobre entradas declaradas**. No verifica que las
+entradas hayan ocurrido: el board, las cartas, el bote y el precio los declara el
+agente y el contrato los toma como dados.
 
-El contrato verifica **aritmética sobre entradas declaradas**. No verifica que
-las entradas hayan ocurrido. El board, las cartas, el bote y el precio no
-existen en la cadena: el agente los declara, y el contrato los toma como dados.
-
-Ahora bien, en este dominio concreto **sí se pueden verificar, por terceros y sin
-credenciales**. La arena de dev.fun expone endpoints tRPC públicos y sin
-autenticación:
+En el dominio del adaptador de póker **sí se pueden verificar por terceros y sin
+credenciales**: la arena de dev.fun expone endpoints tRPC públicos.
 
 ```
 https://arena.dev.fun/api/arena.getTexasReplay?input={"json":{"tableId":"..."}}
-https://arena.dev.fun/api/arena.getTexasTables?input={"json":{"arenaId":"...","agentId":"...","limit":100}}
 ```
 
-Cada replay trae `events[]` con `payload.pot`, `allowedActions` completo,
-`snapshot.seats` con las cartas, y `payload.reasoning` — la etiqueta de la
-decisión que el bot tomó ese día. Con el `tableId` y el `sequence` de una
-decisión, cualquiera puede bajar el replay y comprobar, a mano, que las cartas,
-el board, el bote y el precio del compromiso son los que figuran ahí.
+Con `tableId` y `sequence`, cualquiera baja el replay y comprueba a mano que las
+cartas, el board, el bote y el precio del compromiso son los de ahí. Es una
+verificación de **terceros, no de la cadena**, y depende de que dev.fun siga
+sirviendo esos endpoints.
 
-Tres cosas que hay que tener claras sobre esa verificación:
+## Los límites declarados del dominio de póker
 
-1. **La hace un tercero, no la cadena.** Si alguien compromete una mano que nunca
-   jugó, el contrato la procesará con todo rigor igual. Lo único que ocurre es
-   que cualquiera puede darse cuenta bajando el replay, y no comprar esa
-   afirmación.
-2. **Depende de que dev.fun siga sirviendo esos endpoints.** No es una garantía
-   criptográfica; es un archivo de terceros que hoy está abierto.
-3. **Los datos vienen contaminados** y hay que saber leerlos: `snapshot.seats`
-   trae las cartas de los seis asientos, el snapshot es el estado DESPUÉS de la
-   acción (hay que usar `payload.stackBefore`), y `snapshot.boardCards` trae el
-   board de la calle siguiente en 71 de 938 casos medidos. Reconstruir mal es
-   fácil.
-
-## Los seis límites declarados
-
-No son pendientes. Son lo que este diseño no puede hacer.
-
-1. **Que las entradas sean verdad.** Ver arriba. Es el límite más grande y
-   ninguno de los otros cinco importa si este no se entiende.
-2. **Que el rango de la evidencia sea el correcto.** El retador elige uno de tres
-   tiers canónicos, no manos sueltas, así que no puede fabricar un rango a
-   medida. Pero elegir entre tres sigue siendo elegir. El contrato no puede
-   decir cuál era el rango de verdad del rival: eso es una afirmación de modelo,
-   no de aritmética.
-3. **Que el recalculador sea determinista.** `view` puede leer `block.number` o
-   storage mutable. El núcleo no puede probar pureza. Mitigación parcial: guarda
-   y reemite `domain()`, y el recalculador debería ser inmutable y con fuente
-   verificada — pero eso es confianza social, no criptografía.
-4. **Que la acción del agente se haya seguido del valor.** El compromiso dice
-   "hice X porque f ≥ T". Nada ata esa frase a una acción real en una mesa real.
-   `action` es texto, con el mismo estatuto que el `label` de Once.
-5. **Que la tabla del modelo sea correcta.** `_VR_MIX` son proporciones medidas
-   sobre 1.352 apuestas de rivales **que llegaron a showdown**, y ese sesgo está
-   documentado en el código del bot: las manos que ganaron sin mostrar son
-   invisibles, así que la tabla sobreestima la fuerza del rival. Un challenge
-   exitoso demuestra que el número da distinto con otro rango, no que el número
-   nuevo sea el bueno.
-6. **Que el agente y el retador sean personas distintas.** Sybil.
-
-## Los ataques que siguen abiertos
-
-**Sybil del propio agente.** Prohibir `msg.sender == agent` no sirve: una segunda
-billetera lo evade. El challenge en dos fases le quita la parte peor —ya no puede
-ver la evidencia ajena y copiarla— pero sigue pudiendo sellar en paralelo a
-ciegas con su propia evidencia. Si acierta con el tier que gana, recupera su
-propia plata y cierra el compromiso antes que el retador honesto. La ventaja
-ahora es que tiene que apostar a ciegas y arriesgar el depósito, no copiar sobre
-seguro.
-
-**Umbral laxo a propósito.** El agente elige un umbral que nada cruza, recupera
-su recompensa en el reclaim, y queda un registro que parece robusto. No le roba a
-nadie; degrada el significado. Es un problema de mercado, no de contrato.
-
-**Un retador honesto que no llega a revelar pierde el depósito.** Es el costo
-elegido de que el sello sea un compromiso y no una opción gratis. Contra eso está
-la ventana de 7.200 bloques.
+No son pendientes; son lo que este diseño no puede hacer. En resumen: (1) que las
+entradas sean verdad; (2) que el tier de la evidencia sea el correcto (el retador
+elige uno de tres, no manos sueltas); (3) que el recomputer sea determinista
+(`view` puede leer estado); (4) que la acción declarada se haya seguido del valor;
+(5) que la tabla `_VR_MIX` del modelo sea correcta (medida sobre showdowns, con
+sesgo documentado); (6) Sybil entre agente y retador. Un challenge exitoso muestra
+que el número da distinto con otro tier, no que el número nuevo sea el bueno.
 
 ## El puente: de una mano real a los bytes
 
 `bridge/` convierte una decisión concreta de una mesa real en los bytes exactos
-que espera `DissentCore.commit`, y permite comprobar después que esos bytes son
-esa mano. **Solo biblioteca estándar de Python** — ni web3, ni eth-abi, ni
-pycryptodome. `keccak256` y la codificación ABI están implementados a mano y
-comprobados contra `cast keccak` y `cast abi-encode`; `python bridge/mano.py`
-corre ese autochequeo.
+que espera `DissentCore.commit`, y muestra los argumentos de `commit()` en orden.
+**Solo biblioteca estándar de Python.** `keccak256` y la codificación ABI están a
+mano y comprobados contra `cast`; `python bridge/mano.py` corre ese autochequeo.
 
 ```bash
-# armar los bytes de una mano
+# armar los bytes y los argumentos de commit de una mano (replay local)
 python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29
 
 # comprobar que unos bytes son esa mano, bajando el replay del endpoint público
 python bridge/verificar.py 0x0000...0e2d cmtr0ktvzxa5q15he4ekev8ub
 ```
 
-`verificar.py` no necesita este repo, ni el corpus, ni ninguna credencial: baja
-el replay del endpoint abierto de arena.dev.fun y re-deriva cada campo. Sin
-`--seq` recorre todas las decisiones de river de la mesa y dice cuál encaja.
-Devuelve 0 si coincide, 1 si no, y en ese caso lista campo por campo qué dicen
-los bytes y qué dice el replay.
+`armar_commit.py` imprime `inputs`, `inputsLength`, `inputsHash`, la evidencia que
+espera el adaptador (`abi.encode(uint256 tier)`, 32 bytes), y los límites de gas
+recomendados para Alnitak (`recomputeGasLimit = 20_000_000`,
+`validateGasLimit = 100_000`, `maxEvidenceLen = 32`). La **recompensa mínima** que
+muestra es un **cálculo offline orientativo a 100 gwei**: la autoridad es
+`minGasBackedReward(...)` leído del contrato justo antes del commit, y si
+`block.basefee` subió, manda el resultado onchain. `reward` es `msg.value`, no un
+argumento. `verificar.py` no cambia: sigue verificando solo los inputs.
 
-La mano de ejemplo (`Qd Ad` en `2s 2c Tc Qc 9d`, heads-up, 45 a pagar sobre 79)
-está en `test/ManoReal.t.sol` como constante hexadecimal literal, copiada de la
-salida del puente: si el codificador de Python cambia, ese test se cae.
+Integración para otros equipos: **[`docs/INTEGRATION.md`](docs/INTEGRATION.md)**.
 
-**Dos cosas de los bytes NO salen del replay**, y los dos scripts lo dicen cada
-vez que corren:
-
-- `mixBp`. El replay fija la *clase* de presión (`bet/big`, `multi/small`, …);
-  los tres números de esa fila son la tabla del modelo, el límite 5 de acá
-  arriba. Rechazar la tabla es rechazar el compromiso entero.
-- El umbral. Es una elección del agente. `armar_commit.py` lo deriva del precio
-  por la regla `umbral = precio`, y `verificar.py --umbral` comprueba esa regla,
-  pero la regla es una decisión, no un dato de la mano.
-
-## Correr los tests
+## Correr todo
 
 ```bash
 forge build
-forge test -vv
+forge test                 # la suite actual (el número de tests puede cambiar)
+forge lint
+forge build --sizes
+
+# calibración de gas (opt-in): reproduce las constantes del modelo de gas
+forge test --match-contract GasModelCalibrationTest -vv
+
+# tests offline del puente (sin red ni credenciales)
+python -m unittest discover bridge -p "test_*.py"
+python bridge/mano.py
 ```
 
-53 tests, sin red, sin claves, sin desplegar nada.
+Todo corre sin red, sin claves y sin desplegar nada.

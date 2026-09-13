@@ -31,6 +31,22 @@ WAD = 10 ** 18
 BP_TO_WAD = 10 ** 14
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
+# Politica de gas RECOMENDADA para el adaptador Alnitak. NO es autoridad: son
+# valores sugeridos que el agente pasa a commit(). El recompute peor caso medido
+# de Alnitak ronda 17.92M; 20M deja margen. La evidencia del adaptador es
+# abi.encode(uint256 tier), 32 bytes exactos, asi que maxEvidenceLen = 32.
+ALNITAK_RECOMPUTE_GAS_LIMIT = 20_000_000
+ALNITAK_VALIDATE_GAS_LIMIT = 100_000
+ALNITAK_MAX_EVIDENCE_LEN = 32
+# Recompensa minima de REFERENCIA a 100 gwei para esa politica, calculada OFFLINE
+# y SOLO ORIENTATIVA (no reimplementamos la formula del contrato aca). La
+# autoridad es minGasBackedReward(...) leido del contrato justo antes del commit;
+# si block.basefee subio, el resultado onchain manda. ~2.1175348 MON con R=20M.
+# Origen verificable de este snapshot: el test on-chain
+# EconomicBackingTest.test_alnitak_politica_recomendada_R20M, que afirma este
+# mismo valor exacto contra minGasBackedReward del contrato.
+ALNITAK_MIN_REWARD_REF_WEI = 2_117_534_800_000_000_000
+
 
 def cargar(args):
     """Devuelve (replay, de_donde). Una sola fuente, explicita."""
@@ -109,12 +125,34 @@ def main():
     print("  inputs          : 0x%s" % raw.hex())
     print("  keccak256       : 0x%s" % h.hex())
     print("")
-    print("ARGUMENTOS DE commit()")
-    print("  threshold       : %d          (= %d bp en WAD; es el precio)"
-          % (umbral, d["priceBp"]))
-    print("  comparator      : 0 (AtLeast)")
-    print("  action          : %r" % ("river call %s vs %s @ %s#%s" % (
-        "".join(d["holeTxt"]), " ".join(d["boardTxt"]), d["tableId"], d["sequence"])))
+    action_str = "river call %s vs %s @ %s#%s" % (
+        "".join(d["holeTxt"]), " ".join(d["boardTxt"]), d["tableId"], d["sequence"])
+    print("ARGUMENTOS DE commit()  (orden exacto de DissentCore.commit)")
+    print("  1  recomputer       : <address del AlnitakRiverRecomputer desplegado>")
+    print("  2  inputs           : 0x%s" % raw.hex())
+    print("                        (inputsLength = %d bytes)" % len(raw))
+    print("  3  threshold        : %d   (= %d bp en WAD; es el precio)" % (umbral, d["priceBp"]))
+    print("  4  comparator       : 0 (AtLeast)")
+    print("  5  action           : %r" % action_str)
+    print("  6  deposit          : <wei; lo fija el agente, p.ej. 0.1 ether>")
+    print("  7  window           : <segundos; >= MIN_WINDOW (1 hora)>")
+    print("  8  recomputeGasLimit : %d   (recomendado Alnitak)" % ALNITAK_RECOMPUTE_GAS_LIMIT)
+    print("  9  validateGasLimit  : %d      (recomendado)" % ALNITAK_VALIDATE_GAS_LIMIT)
+    print("  10 maxEvidenceLen    : %d           (evidencia Alnitak = 32 bytes)" % ALNITAK_MAX_EVIDENCE_LEN)
+    print("  11 salt              : <bytes32 a eleccion del agente>")
+    print("")
+    print("  reward: es msg.value (el MON enviado con la llamada), NO un argumento.")
+    print("")
+    print("EVIDENCIA QUE ESPERA EL ADAPTADOR (la que trae el retador)")
+    print("  abi.encode(uint256 tier), tier en {0,1,2}  ->  32 bytes exactos")
+    print("")
+    print("RECOMPENSA MINIMA DE REFERENCIA  (calculo OFFLINE, orientativo)")
+    print("  a 100 gwei, con la politica recomendada: ~%.7f MON (%d wei)"
+          % (ALNITAK_MIN_REWARD_REF_WEI / WAD, ALNITAK_MIN_REWARD_REF_WEI))
+    print("  NO ES AUTORIDAD. Antes del commit, leer del contrato:")
+    print("    minGasBackedReward(validateGasLimit, recomputeGasLimit, inputs.length, maxEvidenceLen)")
+    print("  y enviar msg.value >= ese valor. Si block.basefee subio, manda el resultado ONCHAIN.")
+    print("  (origen del snapshot: test EconomicBackingTest.test_alnitak_politica_recomendada_R20M)")
     print("")
     print("EN EL REPLAY, PERO FUERA DE LOS BYTES  (informativo, el contrato no lo ve)")
     print("  accion real     : %r" % d["accionReal"])
@@ -130,7 +168,18 @@ def main():
         d2 = dict(d)
         d2["inputsHex"] = "0x" + raw.hex()
         d2["inputsHash"] = "0x" + h.hex()
+        d2["inputsLength"] = len(raw)
         d2["threshold"] = umbral
+        d2["action"] = action_str
+        d2["recomputeGasLimit"] = ALNITAK_RECOMPUTE_GAS_LIMIT
+        d2["validateGasLimit"] = ALNITAK_VALIDATE_GAS_LIMIT
+        d2["maxEvidenceLen"] = ALNITAK_MAX_EVIDENCE_LEN
+        d2["evidenceFormat"] = "abi.encode(uint256 tier), 32 bytes"
+        d2["minRewardRefWei"] = ALNITAK_MIN_REWARD_REF_WEI
+        d2["minRewardRefNote"] = (
+            "orientativo offline a 100 gwei; la autoridad es minGasBackedReward(...) "
+            "onchain justo antes del commit. reward es msg.value, no un argumento."
+        )
         d2["urlPublica"] = mano.url_replay(d["tableId"])
         with open(args.salida_json, "w", encoding="utf-8", newline="\n") as f:
             json.dump(d2, f, indent=1, sort_keys=True)

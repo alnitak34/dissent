@@ -39,14 +39,15 @@ contract DissentCore {
     // la evidencia de la transaccion de revelacion y armar su propio par
     // sellar+revelar delante. Con 5 bloques eso es imposible, y ademas queda
     // margen contra reorgs cortos y contra un productor que retenga un bloque.
-    // A un bloque de ~400ms son ~2 segundos: irrelevante frente a una ventana de
-    // disputa que se mide en horas.
+    // A ~300ms por bloque (tiempo de bloque nominal de Monad) son ~1,5 segundos:
+    // irrelevante frente a una ventana de disputa que se mide en minutos/horas.
     uint64 public constant REVEAL_DELAY_BLOCKS = 5;
 
     // REVEAL_WINDOW_BLOCKS: cuanto dura la posibilidad de revelar. Larga para
     // que un retador con una caida de RPC o un mempool congestionado llegue
     // igual; acotada para que el reclaim del agente no quede de rehen. 7200
-    // bloques a ~400ms son ~48 minutos.
+    // bloques a ~300ms son ~36 minutos NOMINALES (el tiempo real depende del
+    // tiempo de bloque de la red; la ventana esta expresada en bloques).
     uint64 public constant REVEAL_WINDOW_BLOCKS = 7200;
 
     // MIN_WINDOW: la ventana de desafio mas corta que acepta commit(), en
@@ -69,9 +70,9 @@ contract DissentCore {
     //
     // Por que una hora: el retador que tiene que llegar a sellar sufre las mismas
     // fallas que el que tiene que llegar a revelar (RPC caido, mempool
-    // congestionado), y para revelar el protocolo le da 7200 bloques, ~48
-    // minutos a ~400ms. Darle menos margen para sellar que para revelar seria
-    // incoherente; una hora es ese numero redondeado hacia arriba.
+    // congestionado), y para revelar el protocolo le da 7200 bloques, ~36
+    // minutos nominales a ~300ms. Darle menos margen para sellar que para revelar
+    // seria incoherente; una hora es ese numero redondeado hacia arriba.
     uint64 public constant MIN_WINDOW = 1 hours;
 
     // ── modelo de gas del challenge (constantes medidas; ver diseño) ──────────
