@@ -135,8 +135,12 @@ contract AlnitakRiverRecomputer is IRecomputer {
             uint256 r = uint256(board[i]) >> 2;
             uint256 s = uint256(board[i]) & 3;
             rc[r] += 1;
-            rankMask |= (1 << r);
-            suitMask[s] |= (1 << r);
+            // `1 << r` es el bit r de la mascara: el literal va a la izquierda a
+            // proposito. incorrect-shift solo mira si el operando izquierdo es un
+            // literal y el derecho no; aca r vale 0..14 porque rc[r], un
+            // uint256[15], revierte en la linea de arriba si no.
+            rankMask |= (1 << r); // forge-lint: disable-line(incorrect-shift)
+            suitMask[s] |= (1 << r); // forge-lint: disable-line(incorrect-shift)
             suitCount[s] += 1;
         }
         uint256 flushSuit = 4;

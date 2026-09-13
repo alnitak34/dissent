@@ -98,6 +98,54 @@ contract DissentCoreTest is Test {
         );
     }
 
+    function test_commit_rechaza_una_ventana_menor_al_minimo() public {
+        uint64 minimo = core.MIN_WINDOW();
+        uint64[3] memory cortas = [uint64(0), 1, minimo - 1];
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(agent);
+            vm.expectRevert(abi.encodeWithSelector(DissentCore.WindowTooShort.selector, cortas[i], minimo));
+            core.commit{value: REWARD}(
+                address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, cortas[i], bytes32(0)
+            );
+        }
+    }
+
+    /// @dev El borde: con la ventana minima, quien sella en el ultimo segundo
+    ///      igual revela, el reclaim espera a ese sello, y en el segundo
+    ///      windowEnds ya no se puede sellar.
+    function test_la_ventana_minima_alcanza_para_sellar_y_revelar() public {
+        uint64 minimo = core.MIN_WINDOW();
+        uint64 delay = core.REVEAL_DELAY_BLOCKS();
+        uint64 revelar = core.REVEAL_WINDOW_BLOCKS();
+        vm.prank(agent);
+        bytes32 id = core.commit{value: REWARD}(
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, minimo, bytes32(0)
+        );
+        uint64 fin = core.getCommitment(id).windowEnds;
+        assertEq(fin, uint64(block.timestamp) + minimo);
+
+        vm.warp(fin - 1);
+        bytes memory ev = abi.encode(int256(50));
+        vm.prank(alice);
+        core.challengeCommit{value: DEPOSIT}(id, _sealOf(ev, "s", alice));
+        // vm.getBlockNumber y no block.number: con via_ir el optimizador puede
+        // releer block.number despues del vm.roll de abajo.
+        uint64 selloEn = uint64(vm.getBlockNumber());
+
+        vm.warp(fin);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(DissentCore.WindowClosed.selector, fin));
+        core.challengeCommit{value: DEPOSIT}(id, _sealOf(ev, "b", bob));
+
+        vm.roll(selloEn + delay);
+        vm.expectRevert(abi.encodeWithSelector(DissentCore.SealsStillLive.selector, selloEn + delay + revelar));
+        core.reclaim(id);
+
+        vm.prank(alice);
+        core.challengeReveal(id, _inputs(BASE), ev, "s");
+        assertEq(core.credits(alice), uint256(REWARD) + DEPOSIT);
+    }
+
     function test_commit_rechaza_recomputer_que_revierte() public {
         RevertingRecomputer bad = new RevertingRecomputer();
         vm.prank(agent);

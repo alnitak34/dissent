@@ -69,7 +69,10 @@ library PokerEval {
         uint256 n;
         for (uint256 r = 14; r >= 2 && n < k; r--) {
             if (r == skipA || r == skipB) continue;
-            if (mask & (1 << r) != 0) {
+            // `1 << r` pregunta por el bit r: el literal va a la izquierda a
+            // proposito. incorrect-shift solo mira si el operando izquierdo es un
+            // literal y el derecho no; aca r lo acota el bucle a 14..2.
+            if (mask & (1 << r) != 0) { // forge-lint: disable-line(incorrect-shift)
                 out[n] = r;
                 n++;
             }
@@ -87,8 +90,12 @@ library PokerEval {
             uint256 r = uint256(cards[i]) >> 2;
             uint256 s = uint256(cards[i]) & 3;
             rc[r] += 1;
-            rankMask |= (1 << r);
-            suitMask[s] |= (1 << r);
+            // `1 << r` es el bit r de la mascara: el literal va a la izquierda a
+            // proposito. incorrect-shift solo mira si el operando izquierdo es un
+            // literal y el derecho no; aca r vale 0..14 porque rc[r], un
+            // uint256[15], revierte en la linea de arriba si no.
+            rankMask |= (1 << r); // forge-lint: disable-line(incorrect-shift)
+            suitMask[s] |= (1 << r); // forge-lint: disable-line(incorrect-shift)
             suitCount[s] += 1;
         }
 

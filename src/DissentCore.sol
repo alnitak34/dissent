@@ -49,6 +49,31 @@ contract DissentCore {
     // bloques a ~400ms son ~48 minutos.
     uint64 public constant REVEAL_WINDOW_BLOCKS = 7200;
 
+    // MIN_WINDOW: la ventana de desafio mas corta que acepta commit(), en
+    // SEGUNDOS porque windowEnds es un timestamp.
+    //
+    // ES UNA POLITICA DE PROTOCOLO. No es una garantia criptografica: nada
+    // asegura que en una hora alguien vaya a mirar, ni que un retador llegue a
+    // sellar. Tampoco es una cifra demostrada empiricamente: no sale de medir
+    // cuanto tardan retadores reales en ver un compromiso y sellar. Es un piso
+    // elegido por razonamiento, y se puede discutir y cambiar.
+    //
+    // Lo que SI resuelve es un agujero concreto: sin piso, un agente podia pasar
+    // window = 1. Nadie alcanza a sellar, el reclaim sale enseguida y queda un
+    // registro que parece robusto y nunca fue disputable.
+    //
+    // Que cubre: VER el compromiso y SELLAR. Revelar no depende de la ventana:
+    // challengeReveal se mide en bloques desde el sello, y un sello vivo bloquea
+    // el reclaim aunque windowEnds ya haya pasado. Por eso el piso no suma
+    // REVEAL_DELAY_BLOCKS ni REVEAL_WINDOW_BLOCKS.
+    //
+    // Por que una hora: el retador que tiene que llegar a sellar sufre las mismas
+    // fallas que el que tiene que llegar a revelar (RPC caido, mempool
+    // congestionado), y para revelar el protocolo le da 7200 bloques, ~48
+    // minutos a ~400ms. Darle menos margen para sellar que para revelar seria
+    // incoherente; una hora es ese numero redondeado hacia arriba.
+    uint64 public constant MIN_WINDOW = 1 hours;
+
     enum Comparator {
         AtLeast, // el agente afirma value >= threshold
         AtMost // el agente afirma value <= threshold
@@ -152,7 +177,7 @@ contract DissentCore {
     // ── errores ───────────────────────────────────────────────────────────────
     error ZeroReward();
     error ZeroDeposit();
-    error ZeroWindow();
+    error WindowTooShort(uint64 window, uint64 minWindow);
     /// @dev Un recalculador que no sabe decir en que escala estan sus numeros no
     ///      es usable: sin eso, `threshold` y `baseValue` son digitos sueltos.
     error ZeroScale();
@@ -241,7 +266,7 @@ contract DissentCore {
         if (msg.value == 0) revert ZeroReward();
         if (msg.value > type(uint128).max) revert BadValue(msg.value, type(uint128).max);
         if (deposit == 0) revert ZeroDeposit();
-        if (window == 0) revert ZeroWindow();
+        if (window < MIN_WINDOW) revert WindowTooShort(window, MIN_WINDOW);
 
         uint128 reward = uint128(msg.value);
         uint64 windowEnds = uint64(block.timestamp) + window;
@@ -315,6 +340,10 @@ contract DissentCore {
         Commitment storage c = commitments[id];
         if (c.status == Status.None) revert UnknownCommitment(id);
         if (c.status != Status.Open) revert NotOpen(c.status);
+        // block.timestamp a proposito: la ventana dura al menos MIN_WINDOW, una
+        // hora, y unos segundos de corrimiento del reloj del proponente no
+        // cambian quien llega a sellar.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp >= c.windowEnds) revert WindowClosed(c.windowEnds);
         if (msg.value != c.deposit) revert BadValue(msg.value, c.deposit);
 
@@ -434,6 +463,10 @@ contract DissentCore {
         Commitment storage c = commitments[id];
         if (c.status == Status.None) revert UnknownCommitment(id);
         if (c.status != Status.Open) revert NotOpen(c.status);
+        // block.timestamp a proposito: adelantar unos segundos el reclaim no le
+        // quita a nadie una ventana de al menos una hora, y un sello hecho a
+        // tiempo lo sigue bloqueando por bloques.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp < c.windowEnds) revert WindowStillOpen(c.windowEnds);
 
         uint64 until = c.latestSealBlock + REVEAL_DELAY_BLOCKS + REVEAL_WINDOW_BLOCKS;
