@@ -358,8 +358,11 @@ contract AdapterFaultTest is Test {
         uint32 maxEv = 131_072;
         uint32 r = 25_500_000;
         assertLe(core.txRequired(VGL, r, 32, maxEv), 30_000_000, "cabe");
+        // reward >= respaldo de gas para este R grande (~3 MON al precio piso).
+        uint256 reward = core.minGasBackedReward(VGL, r, 32, maxEv);
+        vm.deal(agent, reward + 1 ether);
         vm.prank(agent, agent);
-        bytes32 id = core.commit{value: REWARD}(
+        bytes32 id = core.commit{value: reward}(
             address(new FaultRecomputer(FaultRecomputer.Mode.Honest)),
             abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, r, VGL, maxEv, bytes32(0)
         );

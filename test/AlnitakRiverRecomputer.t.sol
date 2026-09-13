@@ -206,7 +206,7 @@ contract AlnitakRiverRecomputerTest is Test {
         assertLt(conLarge, umbral);
 
         vm.prank(agent);
-        bytes32 id = core.commit{value: 1 ether}(
+        bytes32 id = core.commit{value: 3 ether}(
             address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         DissentCore.Commitment memory c = core.getCommitment(id);
@@ -223,7 +223,7 @@ contract AlnitakRiverRecomputerTest is Test {
         core.challengeReveal(id, inp, ev, "sal");
         console.log("challengeReveal exitoso, de punta a punta: %s gas", g0 - gasleft());
 
-        assertEq(core.credits(alice), 1.1 ether);
+        assertEq(core.credits(alice), 3.1 ether);
         assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Challenged));
     }
 
@@ -239,7 +239,7 @@ contract AlnitakRiverRecomputerTest is Test {
         assertGt(base, umbral);
 
         vm.prank(agent);
-        bytes32 id = core.commit{value: 1 ether}(
+        bytes32 id = core.commit{value: 3 ether}(
             address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
@@ -260,7 +260,7 @@ contract AlnitakRiverRecomputerTest is Test {
         bytes memory inp = _in(holeA, boardA, mixA, 2156);
         uint256 g0 = gasleft();
         vm.prank(agent);
-        core.commit{value: 1 ether}(
+        core.commit{value: 3 ether}(
             address(rc), inp, 1, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32("g")
         );
         console.log("commit de punta a punta con el adaptador real: %s gas", g0 - gasleft());

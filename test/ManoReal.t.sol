@@ -135,7 +135,7 @@ contract ManoRealTest is Test {
 
     function test_commit_de_la_mano_real() public {
         vm.prank(agent);
-        bytes32 id = core.commit{value: 1 ether}(
+        bytes32 id = core.commit{value: 3 ether}(
             address(rc),
             INPUTS,
             UMBRAL,
@@ -160,7 +160,7 @@ contract ManoRealTest is Test {
     ///      pagar: el challenge triunfa.
     function test_overbet_tumba_el_compromiso() public {
         vm.prank(agent);
-        bytes32 id = core.commit{value: 1 ether}(
+        bytes32 id = core.commit{value: 3 ether}(
             address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
@@ -170,7 +170,7 @@ contract ManoRealTest is Test {
         vm.prank(alice);
         core.challengeReveal(id, INPUTS, ev, "sal");
 
-        assertEq(core.credits(alice), 1.1 ether, "se lleva la recompensa y su deposito");
+        assertEq(core.credits(alice), 3.1 ether, "se lleva la recompensa y su deposito");
         assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Challenged));
     }
 
@@ -178,7 +178,7 @@ contract ManoRealTest is Test {
     ///      0.3629. El contrato no le da la plata a cualquiera que se presente.
     function test_medium_no_tumba_el_compromiso() public {
         vm.prank(agent);
-        bytes32 id = core.commit{value: 1 ether}(
+        bytes32 id = core.commit{value: 3 ether}(
             address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(0));

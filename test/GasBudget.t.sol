@@ -110,7 +110,7 @@ contract GasBudgetTest is Test {
             "commit",
             donde,
             agent,
-            1 ether,
+            3 ether,
             abi.encodeCall(
                 DissentCore.commit,
                 (address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, salt)

@@ -89,6 +89,15 @@ contract DissentCore {
     // ~17.5k hasta SealMismatch + el SSTORE de settled; redondeado con margen. No
     // esta disponible en gasleft() cuando se evalua el piso.
     uint256 private constant ENTRY_OVERHEAD = 80_000;
+    // Precio de gas de REFERENCIA para el respaldo economico. 100 MON-gwei es el
+    // piso de base fee de Monad al momento de este diseño; NO es una constante
+    // garantizada para siempre (si el piso de Monad sube, un redespliegue con otro
+    // valor). El precio efectivo del compromiso se fija al commit como
+    // max(REFERENCE_GAS_PRICE, block.basefee) y no cambia despues.
+    uint256 public constant REFERENCE_GAS_PRICE = 100 gwei;
+    // Gas de un challengeCommit completo (medido ~150k incl. intrinseco) + margen.
+    // Entra en el respaldo porque el retador tambien paga el sello.
+    uint256 public constant CHALLENGE_COMMIT_GAS = 200_000;
     // Longitud maxima de evidence aceptada por el protocolo. Mantiene los
     // coeficientes lineales validos (medidos lineales hasta 512 KiB) y acota el
     // peor caso de prework. Cada compromiso declara su propio maxEvidenceLen <= este.
@@ -148,6 +157,10 @@ contract DissentCore {
         uint32 recomputeGasLimit; // techo declarado del recompute; parte de la identidad
         uint32 validateGasLimit; // techo declarado del validateEvidence; parte de la identidad
         uint32 maxEvidenceLen; // largo maximo de evidence aceptado; parte de la identidad
+        // Precio de gas fijado al commit = max(REFERENCE_GAS_PRICE, block.basefee).
+        // uint256 y sin cast: un precio de gas no tiene una cota superior segura
+        // que asumir, asi que evitamos cualquier truncamiento. Parte de la identidad.
+        uint256 effectiveGasPrice;
         Comparator comparator;
         Status status;
     }
@@ -226,8 +239,16 @@ contract DissentCore {
     ///         esta malformada para estos inputs. NO es refutacion ni fallo tecnico.
     event ChallengeRejected(bytes32 indexed id, address indexed challenger, bytes32 reason);
     /// @notice La politica de gas del compromiso, tambien parte de su identidad.
+    ///         Con estos campos se reconstruye todo: los tres limites, el precio
+    ///         efectivo, el gas total respaldado y la recompensa minima respaldada.
     event CommitGasPolicy(
-        bytes32 indexed id, uint32 recomputeGasLimit, uint32 validateGasLimit, uint32 maxEvidenceLen
+        bytes32 indexed id,
+        uint32 recomputeGasLimit,
+        uint32 validateGasLimit,
+        uint32 maxEvidenceLen,
+        uint256 effectiveGasPrice,
+        uint256 totalGasBacking,
+        uint256 minGasBackedReward
     );
     event SealExpired(bytes32 indexed id, address indexed challenger, uint128 deposit);
     event Reclaimed(bytes32 indexed id, address indexed agent, uint256 amount);
@@ -254,6 +275,7 @@ contract DissentCore {
     error InsufficientChallengeGas();
     error EvidenceTooLong(uint256 len, uint256 max);
     error GasLimitsTooLarge(uint256 floor, uint256 limit);
+    error RewardBelowGasBacking(uint256 sent, uint256 required);
     error NoSeal();
     error SealAlreadyExists();
     error TooEarlyToReveal(uint64 notBefore);
@@ -298,6 +320,7 @@ contract DissentCore {
         uint32 recomputeGasLimit,
         uint32 validateGasLimit,
         uint32 maxEvidenceLen,
+        uint256 effectiveGasPrice,
         bytes32 salt
     ) public view returns (bytes32) {
         return keccak256(
@@ -315,6 +338,7 @@ contract DissentCore {
                 recomputeGasLimit,
                 validateGasLimit,
                 maxEvidenceLen,
+                effectiveGasPrice,
                 salt
             )
         );
@@ -380,6 +404,44 @@ contract DissentCore {
             + functionGasFloor(validateGasLimit, recomputeGasLimit, inLen, evLen);
     }
 
+    /// @notice El precio de gas que se fijaria AHORA: max(REFERENCE_GAS_PRICE,
+    ///         block.basefee). Para que frontend/bridge estimen antes del commit.
+    ///         El valor onchain al commit es la autoridad.
+    /// @dev block.basefee a proposito: define el piso de respaldo, no una ventana
+    ///      de tiempo; un corrimiento del reloj no lo afecta.
+    // forge-lint: disable-next-line(block-timestamp)
+    function effectiveReferenceGasPrice() public view returns (uint256) {
+        uint256 bf = block.basefee;
+        return bf > REFERENCE_GAS_PRICE ? bf : REFERENCE_GAS_PRICE;
+    }
+
+    /// @notice MIN_GAS_BACKED_REWARD: recompensa minima que respalda el gas de una
+    ///         refutacion exitosa (reveal + el challengeCommit previo) al precio
+    ///         fijado en el commit. NO incluye el deposito: la recompensa cubre el
+    ///         gas del retador; su propio deposito simplemente le vuelve cuando gana.
+    ///
+    ///         Cubre el PRESUPUESTO DE GAS DE REFERENCIA que calcula el protocolo
+    ///         (txRequired + CHALLENGE_COMMIT_GAS), NO un gas limit que el retador
+    ///         elija declarar. Si el retador manda una tx con un gas limit mayor,
+    ///         Monad le cobra ESE valor mayor y Dissent no garantiza la diferencia.
+    ///
+    ///         NO ES UNA GARANTIA DE RENTABILIDAD. No incorpora la probabilidad p de
+    ///         que el retador tenga razon, ni protege contra una suba posterior de
+    ///         block.basefee. El valor esperado real del retador es:
+    ///             expectedNet = p*reward - (1-p)*deposit - gasCost
+    ///         Este piso solo asegura que, al precio de referencia y si el challenge
+    ///         triunfa, la recompensa cubre el gas gastado.
+    /// @dev Multiplicacion uint256 sin cast: si no cabe, Solidity 0.8 revierte
+    ///      (Panic 0x11); nunca satura en silencio.
+    function minGasBackedReward(uint256 validateGasLimit, uint256 recomputeGasLimit, uint256 inLen, uint256 evLen)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 totalGasBacking = txRequired(validateGasLimit, recomputeGasLimit, inLen, evLen) + CHALLENGE_COMMIT_GAS;
+        return totalGasBacking * effectiveReferenceGasPrice();
+    }
+
     /// @notice El sello de un challenge. Ata la evidencia al retador: sin
     ///         msg.sender adentro, un observador podria copiar el hash y
     ///         revelarlo el primero.
@@ -416,6 +478,17 @@ contract DissentCore {
         uint256 txWorst = txRequired(validateGasLimit, recomputeGasLimit, inputs.length, maxEvidenceLen);
         if (txWorst > MONAD_TX_GAS_LIMIT) revert GasLimitsTooLarge(txWorst, MONAD_TX_GAS_LIMIT);
 
+        // ECONOMICO: la recompensa tiene que respaldar el gas de una refutacion
+        // exitosa (reveal + challengeCommit) al precio fijado en el commit. El
+        // deposito NO entra: la recompensa cubre el gas del retador; su deposito le
+        // vuelve al ganar. Ver minGasBackedReward: es un piso de gas, NO una
+        // garantia de rentabilidad. Multiplicacion uint256 sin cast: si no cabe,
+        // revierte (Panic 0x11), no satura.
+        uint256 effectiveGasPrice = effectiveReferenceGasPrice();
+        uint256 totalGasBacking = txWorst + CHALLENGE_COMMIT_GAS;
+        uint256 minReward = totalGasBacking * effectiveGasPrice;
+        if (msg.value < minReward) revert RewardBelowGasBacking(msg.value, minReward);
+
         uint128 reward = uint128(msg.value);
         uint64 windowEnds = uint64(block.timestamp) + window;
         bytes32 inputsHash = keccak256(inputs);
@@ -432,9 +505,16 @@ contract DissentCore {
             recomputeGasLimit,
             validateGasLimit,
             maxEvidenceLen,
+            effectiveGasPrice,
             salt
         );
         if (commitments[id].status != Status.None) revert CommitmentExists(id);
+        // Politica de gas (identidad + respaldo). Emitido temprano para no apilar
+        // con el emit Committed de mas abajo; si el commit revierte luego, el log
+        // se descarta con la transaccion.
+        emit CommitGasPolicy(
+            id, recomputeGasLimit, validateGasLimit, maxEvidenceLen, effectiveGasPrice, totalGasBacking, minReward
+        );
 
         // El valor base lo calcula el contrato, midiendo lo que cuesta, con el
         // MISMO techo que usara el reveal. Si recomputeGasLimit no alcanza para el
@@ -480,6 +560,7 @@ contract DissentCore {
             recomputeGasLimit: recomputeGasLimit,
             validateGasLimit: validateGasLimit,
             maxEvidenceLen: maxEvidenceLen,
+            effectiveGasPrice: effectiveGasPrice,
             comparator: comparator,
             status: Status.Open
         });
@@ -502,9 +583,6 @@ contract DissentCore {
             commitments[id].actionHash,
             action
         );
-        // Los limites de gas y el maximo de evidence tambien forman la identidad:
-        // se emiten para que el log se baste solo.
-        emit CommitGasPolicy(id, recomputeGasLimit, validateGasLimit, maxEvidenceLen);
     }
 
     // ── challenge, fase 1: sellar ─────────────────────────────────────────────
