@@ -2,6 +2,10 @@ out/
 cache/
 /lib/
 .env
+.env.*
+!.env.example
+*.keystore
+keystore.json
 broadcast/
 
 # artefactos de python del puente
