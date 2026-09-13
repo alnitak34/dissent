@@ -19,10 +19,10 @@ Todo valor que decide plata lo calcula el contrato llamando al recalculador.
 
 `src/` tiene exactamente dos archivos: el protocolo y la frontera. Todo lo que
 sepa de un dominio vive en `src/adapters/`. Eso no es prolijidad, es una
-afirmación comprobable: borrá `src/adapters/` y `test/AlnitakRiverRecomputer.t.sol`
-y corré `forge test`. Compila y pasan los 27 tests del núcleo. (Hay que sacar
-también el test, no solo el adaptador: `forge` compila el árbol entero antes de
-filtrar, así que `--match-path` no alcanza.)
+afirmación comprobable: borrá `src/adapters/`, `test/AlnitakRiverRecomputer.t.sol`
+y `test/ManoReal.t.sol`, y corré `forge test`. Compila y pasan los 27 tests del
+núcleo. (Hay que sacar también los tests, no solo el adaptador: `forge` compila
+el árbol entero antes de filtrar, así que `--match-path` no alcanza.)
 
 ## Verificación de las entradas: fuera de la cadena
 
@@ -105,6 +105,43 @@ nadie; degrada el significado. Es un problema de mercado, no de contrato.
 elegido de que el sello sea un compromiso y no una opción gratis. Contra eso está
 la ventana de 7.200 bloques.
 
+## El puente: de una mano real a los bytes
+
+`bridge/` convierte una decisión concreta de una mesa real en los bytes exactos
+que espera `DissentCore.commit`, y permite comprobar después que esos bytes son
+esa mano. **Solo biblioteca estándar de Python** — ni web3, ni eth-abi, ni
+pycryptodome. `keccak256` y la codificación ABI están implementados a mano y
+comprobados contra `cast keccak` y `cast abi-encode`; `python bridge/mano.py`
+corre ese autochequeo.
+
+```bash
+# armar los bytes de una mano
+python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29
+
+# comprobar que unos bytes son esa mano, bajando el replay del endpoint público
+python bridge/verificar.py 0x0000...0e2d cmtr0ktvzxa5q15he4ekev8ub
+```
+
+`verificar.py` no necesita este repo, ni el corpus, ni ninguna credencial: baja
+el replay del endpoint abierto de arena.dev.fun y re-deriva cada campo. Sin
+`--seq` recorre todas las decisiones de river de la mesa y dice cuál encaja.
+Devuelve 0 si coincide, 1 si no, y en ese caso lista campo por campo qué dicen
+los bytes y qué dice el replay.
+
+La mano de ejemplo (`Qd Ad` en `2s 2c Tc Qc 9d`, heads-up, 45 a pagar sobre 79)
+está en `test/ManoReal.t.sol` como constante hexadecimal literal, copiada de la
+salida del puente: si el codificador de Python cambia, ese test se cae.
+
+**Dos cosas de los bytes NO salen del replay**, y los dos scripts lo dicen cada
+vez que corren:
+
+- `mixBp`. El replay fija la *clase* de presión (`bet/big`, `multi/small`, …);
+  los tres números de esa fila son la tabla del modelo, el límite 5 de acá
+  arriba. Rechazar la tabla es rechazar el compromiso entero.
+- El umbral. Es una elección del agente. `armar_commit.py` lo deriva del precio
+  por la regla `umbral = precio`, y `verificar.py --umbral` comprueba esa regla,
+  pero la regla es una decisión, no un dato de la mano.
+
 ## Correr los tests
 
 ```bash
@@ -112,4 +149,4 @@ forge build
 forge test -vv
 ```
 
-43 tests, sin red, sin claves, sin desplegar nada.
+53 tests, sin red, sin claves, sin desplegar nada.
