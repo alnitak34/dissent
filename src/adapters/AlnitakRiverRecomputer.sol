@@ -113,6 +113,12 @@ contract AlnitakRiverRecomputer is IRecomputer {
         bool filtrar = evidence.length == 32;
         uint256 tier = filtrar ? abi.decode(evidence, (uint256)) : 0;
         if (filtrar && tier >= TIER_COUNT) revert("UNKNOWN_TIER");
+        // uint8(tier) no trunca en ninguno de los dos caminos:
+        // - evidence.length != 32 -> filtrar = false -> tier = 0, el literal.
+        // - evidence.length == 32 -> filtrar = true -> la linea de arriba revierte
+        //   si tier >= TIER_COUNT (3), asi que aca tier vale 0, 1 o 2.
+        // Sin ese guard, uint8(256) seria 0 y 256 se leeria como MEDIUM.
+        // forge-lint: disable-next-line(unsafe-typecast)
         return int256(_exact(p, filtrar, uint8(tier)));
     }
 
@@ -182,6 +188,13 @@ contract AlnitakRiverRecomputer is IRecomputer {
         uint256 n;
         for (uint256 r = 2; r <= 14; r++) {
             for (uint256 s = 0; s < 4; s++) {
+                // Cotas de los bucles: `r = 2; r <= 14` da 2 <= r <= 14 y
+                // `s = 0; s < 4` da 0 <= s <= 3. Entonces 2*4+0 = 8 <= r*4+s <=
+                // 14*4+3 = 59, que entra en uint8. Sin assert en el bucle: la cota
+                // ya la fijan los limites, y un chequeo por vuelta es gas gratis
+                // perdido. Ademas, ensanchar cualquier limite desborda mazo[45]
+                // (panic) mucho antes de que r*4+s llegue a 256.
+                // forge-lint: disable-next-line(unsafe-typecast)
                 uint8 c = uint8(r * 4 + s);
                 if (c == hole[0] || c == hole[1]) continue;
                 if (c == board[0] || c == board[1] || c == board[2] || c == board[3] || c == board[4]) continue;

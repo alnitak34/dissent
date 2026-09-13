@@ -95,6 +95,20 @@ contract AlnitakRiverRecomputerTest is Test {
         assertEq(reason, bytes32("UNKNOWN_TIER"));
     }
 
+    /// @dev Directo sobre recompute, no sobre validateEvidence: el guard que
+    ///      protege a uint8(tier) vive en recompute.
+    function test_recompute_rechaza_tier_3() public {
+        vm.expectRevert(bytes("UNKNOWN_TIER"));
+        rc.recompute(_in(holeA, boardA, mixA, 2156), abi.encode(uint256(3)));
+    }
+
+    /// @dev 256 es el caso que importa: uint8(256) == 0, asi que sin el guard se
+    ///      calcularia como MEDIUM en vez de revertir.
+    function test_recompute_rechaza_tier_256() public {
+        vm.expectRevert(bytes("UNKNOWN_TIER"));
+        rc.recompute(_in(holeA, boardA, mixA, 2156), abi.encode(uint256(256)));
+    }
+
     function test_evidencia_con_largo_raro_se_rechaza() public view {
         (bool ok, bytes32 reason) = rc.validateEvidence("", hex"deadbeef");
         assertFalse(ok);

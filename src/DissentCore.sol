@@ -307,6 +307,13 @@ contract DissentCore {
             deposit: deposit,
             windowEnds: windowEnds,
             latestSealBlock: 0,
+            // uint32(usado) solo corre en la rama falsa de
+            //   usado > type(uint32).max ? type(uint32).max : uint32(usado)
+            // o sea cuando usado <= type(uint32).max (4.294.967.295): no trunca.
+            // Ademas usado es gas medido dentro de UNA transaccion, y Monad limita
+            // cada transaccion a 30.000.000 de gas, muy por debajo de uint32.max.
+            // La saturacion queda como defensa, no como caso esperado.
+            // forge-lint: disable-next-line(unsafe-typecast)
             baseGas: usado > type(uint32).max ? type(uint32).max : uint32(usado),
             comparator: comparator,
             status: Status.Open
