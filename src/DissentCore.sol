@@ -74,6 +74,45 @@ contract DissentCore {
     // incoherente; una hora es ese numero redondeado hacia arriba.
     uint64 public constant MIN_WINDOW = 1 hours;
 
+    // ── modelo de gas del challenge (constantes medidas; ver diseño) ──────────
+    // Limite de gas POR TRANSACCION de Monad (no es el limite de bloque, que es
+    // otro). La transaccion completa del reveal tiene que caber aca.
+    uint256 public constant MONAD_TX_GAS_LIMIT = 30_000_000;
+    // Intrinseco de transaccion (21000) y costo por byte de calldata (16, peor
+    // caso, todo no-cero). Para acotar el intrinseco del reveal en el chequeo de
+    // commit: ese gas se gasta ANTES de que challengeReveal vea gasleft().
+    uint256 private constant TX_INTRINSIC_BASE = 21_000;
+    uint256 private constant CALLDATA_BYTE_GAS = 16;
+    // Overhead EN-CONTRATO desde la entrada de challengeReveal hasta el chequeo
+    // del piso (SLOADs del commitment/seal, chequeos de ventana, EvidenceTooLong,
+    // computeSeal, SealMismatch, el SSTORE de settled y la rama void). Medido
+    // ~17.5k hasta SealMismatch + el SSTORE de settled; redondeado con margen. No
+    // esta disponible en gasleft() cuando se evalua el piso.
+    uint256 private constant ENTRY_OVERHEAD = 80_000;
+    // Longitud maxima de evidence aceptada por el protocolo. Mantiene los
+    // coeficientes lineales validos (medidos lineales hasta 512 KiB) y acota el
+    // peor caso de prework. Cada compromiso declara su propio maxEvidenceLen <= este.
+    uint256 public constant MAX_EVIDENCE_LEN = 131072; // 128 KiB
+    // Overhead fijo de un STATICCALL al adaptador. Medido en el perfil Monad:
+    // ~10.4k en caliente, ~18.6k en FRIO (la 1ra llamada, validate, accede a la
+    // direccion en frio). 22_000 = 18.559 medido + ~14% de margen (mismo criterio
+    // con que se redondeo 10,5k->12k). C_CALL cubre EXCLUSIVAMENTE el overhead de
+    // la llamada; el margen ceil(limit/63) de _deliver cubre EXCLUSIVAMENTE la
+    // regla EIP-150. Son reservas independientes.
+    uint256 private constant C_CALL = 22_000;
+    // Liquidacion posterior (credito reward+deposito + evento), medida ~143k + margen.
+    uint256 private constant SETTLE_RESERVE = 250_000;
+    // Prework EN-CONTRATO (SLOADs, aritmetica), medido; NO incluye el intrinseco
+    // de la transaccion (ese gas ya se gasto cuando se evalua gasleft()).
+    uint256 private constant PREWORK_RESERVE = 150_000;
+    // Coeficientes de gas por byte, como enteros con denominador 100 y ceilDiv,
+    // para no truncar hacia abajo. Medidos: keccak(inputs)=0.19, computeSeal=2.62,
+    // abi.encode de args por llamada=2.43 (aplica x2: validate y recompute).
+    uint256 private constant K_INPUTS_NUM = 19;
+    uint256 private constant K_SEAL_NUM = 262;
+    uint256 private constant K_ENCODE_NUM = 243;
+    uint256 private constant K_DEN = 100;
+
     enum Comparator {
         AtLeast, // el agente afirma value >= threshold
         AtMost // el agente afirma value <= threshold
@@ -83,7 +122,14 @@ contract DissentCore {
         None,
         Open,
         Challenged,
-        Reclaimed
+        Reclaimed,
+        Faulted // el adaptador incumplio su interfaz con el gas prometido
+    }
+
+    /// @notice En que fase fallo el adaptador, para el evento AdapterFaulted.
+    enum Phase {
+        VALIDATION,
+        RECOMPUTE
     }
 
     struct Commitment {
@@ -99,6 +145,9 @@ contract DissentCore {
         uint64 windowEnds; // timestamp: hasta cuando se puede SELLAR
         uint64 latestSealBlock; // el sello mas reciente, revelado o no
         uint32 baseGas; // gas MEDIDO del recompute base
+        uint32 recomputeGasLimit; // techo declarado del recompute; parte de la identidad
+        uint32 validateGasLimit; // techo declarado del validateEvidence; parte de la identidad
+        uint32 maxEvidenceLen; // largo maximo de evidence aceptado; parte de la identidad
         Comparator comparator;
         Status status;
     }
@@ -169,6 +218,17 @@ contract DissentCore {
         bytes32 indexed id, address indexed challenger, int256 newValue, int256 threshold, bytes32 evidenceHash
     );
     event ChallengeVoided(bytes32 indexed id, address indexed challenger, bytes32 reason);
+    /// @notice El adaptador incumplio su interfaz (revert / OOG / returndata no
+    ///         canonico) teniendo el gas prometido. Es un FALLO TECNICO del
+    ///         adaptador que eligio el agente, NO una refutacion de la afirmacion.
+    event AdapterFaulted(bytes32 indexed id, address indexed challenger, Phase phase, uint256 payout);
+    /// @notice validateEvidence completo y devolvio (false, reason): la evidencia
+    ///         esta malformada para estos inputs. NO es refutacion ni fallo tecnico.
+    event ChallengeRejected(bytes32 indexed id, address indexed challenger, bytes32 reason);
+    /// @notice La politica de gas del compromiso, tambien parte de su identidad.
+    event CommitGasPolicy(
+        bytes32 indexed id, uint32 recomputeGasLimit, uint32 validateGasLimit, uint32 maxEvidenceLen
+    );
     event SealExpired(bytes32 indexed id, address indexed challenger, uint128 deposit);
     event Reclaimed(bytes32 indexed id, address indexed agent, uint256 amount);
     event Credited(address indexed who, uint256 amount);
@@ -190,8 +250,10 @@ contract DissentCore {
     error SealsStillLive(uint64 until);
     error InputsMismatch(bytes32 expected, bytes32 got);
     error BaseDoesNotSatisfyThreshold(int256 baseValue, int256 threshold);
-    error EvidenceRejected(bytes32 reason);
     error RecomputerReverted();
+    error InsufficientChallengeGas();
+    error EvidenceTooLong(uint256 len, uint256 max);
+    error GasLimitsTooLarge(uint256 floor, uint256 limit);
     error NoSeal();
     error SealAlreadyExists();
     error TooEarlyToReveal(uint64 notBefore);
@@ -233,13 +295,89 @@ contract DissentCore {
         uint128 reward,
         uint128 deposit,
         uint64 windowEnds,
+        uint32 recomputeGasLimit,
+        uint32 validateGasLimit,
+        uint32 maxEvidenceLen,
         bytes32 salt
     ) public view returns (bytes32) {
         return keccak256(
             abi.encode(
-                block.chainid, address(this), agent, recomputer, inputsHash, threshold, comparator, reward, deposit, windowEnds, salt
+                block.chainid,
+                address(this),
+                agent,
+                recomputer,
+                inputsHash,
+                threshold,
+                comparator,
+                reward,
+                deposit,
+                windowEnds,
+                recomputeGasLimit,
+                validateGasLimit,
+                maxEvidenceLen,
+                salt
             )
         );
+    }
+
+    // ── modelo de gas: helpers ─────────────────────────────────────────────────
+
+    function _ceilDiv(uint256 a, uint256 b) private pure returns (uint256) {
+        return (a + b - 1) / b;
+    }
+
+    /// @dev Gas que hay que tener disponible para ENTREGAR `lim` al adaptador bajo
+    ///      EIP-150 (que retiene 1/64) mas el overhead fijo de la llamada.
+    function _deliver(uint256 lim) private pure returns (uint256) {
+        return lim + _ceilDiv(lim, 63) + C_CALL;
+    }
+
+    /// @dev abi.encode de los args de UNA llamada al adaptador (selector+inputs+
+    ///      evidence): coste dependiente de longitud, ceilDiv (no trunca abajo).
+    function _encodeGas(uint256 inLen, uint256 evLen) private pure returns (uint256) {
+        return _ceilDiv(K_ENCODE_NUM * (inLen + evLen), K_DEN);
+    }
+
+    /// @dev Costo dependiente de longitud reservado en el piso (trabajo FUTURO al
+    ///      punto del piso): keccak(inputs), computeSeal (contado tambien aca como
+    ///      sobre-reserva conservadora), y las DOS codificaciones de args.
+    function _lengthGas(uint256 inLen, uint256 evLen) private pure returns (uint256) {
+        return _ceilDiv(K_INPUTS_NUM * inLen, K_DEN) + _ceilDiv(K_SEAL_NUM * evLen, K_DEN) + 2 * _encodeGas(inLen, evLen);
+    }
+
+    /// @notice Gas EN-CONTRATO que challengeReveal necesita disponible en el punto
+    ///         del piso. NO incluye el intrinseco de la transaccion ni el overhead
+    ///         de entrada (ya gastados al evaluar gasleft()).
+    function functionGasFloor(uint256 validateGasLimit, uint256 recomputeGasLimit, uint256 inLen, uint256 evLen)
+        public
+        pure
+        returns (uint256)
+    {
+        return PREWORK_RESERVE + _lengthGas(inLen, evLen) + _deliver(validateGasLimit) + _deliver(recomputeGasLimit)
+            + SETTLE_RESERVE;
+    }
+
+    function _round32(uint256 x) private pure returns (uint256) {
+        return ((x + 31) / 32) * 32;
+    }
+
+    /// @dev Intrinseco del reveal: 21000 + 16/byte del tamaño ABI de
+    ///      challengeReveal(bytes32, bytes inputs, bytes evidence, bytes32).
+    function _revealIntrinsic(uint256 inLen, uint256 evLen) private pure returns (uint256) {
+        uint256 abiBytes = 4 + 128 + 32 + _round32(inLen) + 32 + _round32(evLen);
+        return TX_INTRINSIC_BASE + CALLDATA_BYTE_GAS * abiBytes;
+    }
+
+    /// @notice Gas TOTAL de la transaccion de reveal: intrinseco + overhead de
+    ///         entrada + piso en-contrato. Es lo que tiene que caber en 30M y lo
+    ///         que el respaldo economico (otro commit) usa como base.
+    function txRequired(uint256 validateGasLimit, uint256 recomputeGasLimit, uint256 inLen, uint256 evLen)
+        public
+        pure
+        returns (uint256)
+    {
+        return _revealIntrinsic(inLen, evLen) + ENTRY_OVERHEAD
+            + functionGasFloor(validateGasLimit, recomputeGasLimit, inLen, evLen);
     }
 
     /// @notice El sello de un challenge. Ata la evidencia al retador: sin
@@ -261,27 +399,51 @@ contract DissentCore {
         string calldata action,
         uint128 deposit,
         uint64 window,
+        uint32 recomputeGasLimit,
+        uint32 validateGasLimit,
+        uint32 maxEvidenceLen,
         bytes32 salt
     ) external payable nonReentrant returns (bytes32 id) {
         if (msg.value == 0) revert ZeroReward();
         if (msg.value > type(uint128).max) revert BadValue(msg.value, type(uint128).max);
         if (deposit == 0) revert ZeroDeposit();
         if (window < MIN_WINDOW) revert WindowTooShort(window, MIN_WINDOW);
+        if (maxEvidenceLen > MAX_EVIDENCE_LEN) revert EvidenceTooLong(maxEvidenceLen, MAX_EVIDENCE_LEN);
+
+        // FUNCIONAL: la TRANSACCION COMPLETA del peor caso (evidence en
+        // maxEvidenceLen) tiene que caber en 30M: intrinseco + entrada + piso, no
+        // solo el piso. El economico va en un commit aparte.
+        uint256 txWorst = txRequired(validateGasLimit, recomputeGasLimit, inputs.length, maxEvidenceLen);
+        if (txWorst > MONAD_TX_GAS_LIMIT) revert GasLimitsTooLarge(txWorst, MONAD_TX_GAS_LIMIT);
 
         uint128 reward = uint128(msg.value);
         uint64 windowEnds = uint64(block.timestamp) + window;
         bytes32 inputsHash = keccak256(inputs);
 
         id = computeCommitmentId(
-            msg.sender, recomputer, inputsHash, threshold, comparator, reward, deposit, windowEnds, salt
+            msg.sender,
+            recomputer,
+            inputsHash,
+            threshold,
+            comparator,
+            reward,
+            deposit,
+            windowEnds,
+            recomputeGasLimit,
+            validateGasLimit,
+            maxEvidenceLen,
+            salt
         );
         if (commitments[id].status != Status.None) revert CommitmentExists(id);
 
-        // El valor base lo calcula el contrato, midiendo lo que cuesta.
+        // El valor base lo calcula el contrato, midiendo lo que cuesta, con el
+        // MISMO techo que usara el reveal. Si recomputeGasLimit no alcanza para el
+        // base, el wrapper falla y el commit revierte: el agente no puede declarar
+        // un limite por debajo de lo que su propio adaptador necesita.
         uint256 g0 = gasleft();
-        (bool ok, int256 baseValue) = _recompute(recomputer, inputs, "", gasleft() - (gasleft() / 64) - 10_000);
+        (bool bFault, int256 baseValue) = _safeRecompute(recomputer, inputs, "", recomputeGasLimit);
         uint256 usado = g0 - gasleft();
-        if (!ok) revert RecomputerReverted();
+        if (bFault) revert RecomputerReverted();
         if (!_satisfies(baseValue, threshold, comparator)) {
             revert BaseDoesNotSatisfyThreshold(baseValue, threshold);
         }
@@ -315,6 +477,9 @@ contract DissentCore {
             // La saturacion queda como defensa, no como caso esperado.
             // forge-lint: disable-next-line(unsafe-typecast)
             baseGas: usado > type(uint32).max ? type(uint32).max : uint32(usado),
+            recomputeGasLimit: recomputeGasLimit,
+            validateGasLimit: validateGasLimit,
+            maxEvidenceLen: maxEvidenceLen,
             comparator: comparator,
             status: Status.Open
         });
@@ -337,6 +502,9 @@ contract DissentCore {
             commitments[id].actionHash,
             action
         );
+        // Los limites de gas y el maximo de evidence tambien forman la identidad:
+        // se emiten para que el log se baste solo.
+        emit CommitGasPolicy(id, recomputeGasLimit, validateGasLimit, maxEvidenceLen);
     }
 
     // ── challenge, fase 1: sellar ─────────────────────────────────────────────
@@ -387,12 +555,18 @@ contract DissentCore {
         uint64 notAfter = notBefore + REVEAL_WINDOW_BLOCKS;
         if (block.number < notBefore) revert TooEarlyToReveal(notBefore);
         if (block.number > notAfter) revert RevealWindowClosed(notAfter);
+
+        // Chequeos que dependen SOLO de datos del retador (largo de evidencia y
+        // sello). Van antes de settled. Ver la nota de settled mas abajo.
+        if (evidence.length > c.maxEvidenceLen) revert EvidenceTooLong(evidence.length, c.maxEvidenceLen);
         if (computeSeal(evidence, salt, msg.sender) != s.sealedHash) revert SealMismatch();
 
         uint128 dep = s.deposit;
         s.settled = true;
 
-        // Si otro gano primero, este retador no hizo nada mal: se le devuelve.
+        // VOID: si otro ya resolvio, este retador queda anulado. Se le devuelve el
+        // deposito ACA, sin pedirle inputs validos, sin cobrarle el piso de V+R y
+        // sin llamar al adaptador. Por eso el void va antes del piso y del keccak.
         if (c.status != Status.Open) {
             escrowed -= dep;
             _credit(msg.sender, dep);
@@ -400,17 +574,54 @@ contract DissentCore {
             return;
         }
 
+        // SEMANTICA DE settled: cualquier revert a partir de aca deshace settled y
+        // solo puede proceder de una falta ATRIBUIBLE AL RETADOR (gas insuficiente,
+        // inputs que no coinciden); su fianza queda expuesta al sweep, como debe.
+        // Una vez CLASIFICADO AdapterFault o ChallengeRejected NO se revierte
+        // deliberadamente: por eso el sello queda liquidado y el agente no puede
+        // cosechar el deposito por un fallo del adaptador.
+        //
+        // Piso total: reserva para keccak(inputs), las dos codificaciones, entregar
+        // V y R bajo EIP-150, y liquidar.
+        if (gasleft() < functionGasFloor(c.validateGasLimit, c.recomputeGasLimit, inputs.length, evidence.length)) {
+            revert InsufficientChallengeGas();
+        }
         if (keccak256(inputs) != c.inputsHash) revert InputsMismatch(c.inputsHash, keccak256(inputs));
 
-        (bool okEv, bytes32 reason) = IRecomputer(c.recomputer).validateEvidence(inputs, evidence);
-        if (!okEv) revert EvidenceRejected(reason);
+        // Chequeo inmediato antes del STATICCALL a validate: encode de validate,
+        // entrega de V, encode FUTURO de recompute, entrega de R, y liquidacion.
+        // Pre-decision (aun no hubo fault ni rejected): revertir aca es gas del retador.
+        if (
+            gasleft()
+                < 2 * _encodeGas(inputs.length, evidence.length) + _deliver(c.validateGasLimit)
+                    + _deliver(c.recomputeGasLimit) + SETTLE_RESERVE
+        ) revert InsufficientChallengeGas();
+        (bool vFault, bool okEv, bytes32 reason) =
+            _safeValidateEvidence(c.recomputer, inputs, evidence, c.validateGasLimit);
+        if (vFault) {
+            // fallo tecnico del adaptador en validacion: paga al retador. NO revert.
+            _payFault(id, c, msg.sender, dep, Phase.VALIDATION);
+            return;
+        }
+        if (!okEv) {
+            // rechazo canonico: liquida el sello, DEVUELVE el deposito al retador,
+            // el compromiso sigue Open, el agente no recibe nada. NO revert.
+            escrowed -= dep;
+            _credit(msg.sender, dep);
+            emit ChallengeRejected(id, msg.sender, reason);
+            return;
+        }
 
-        // Techo de gas MEDIDO, no declarado. Como el recompute base ya corrio con
-        // exito en el commit y toda evidencia valida es a lo sumo tan cara como
-        // el, si el commit entro, todo challenge valido entra.
-        uint256 cap = uint256(c.baseGas) * 2 + 200_000;
-        (bool ok, int256 newValue) = _recompute(c.recomputer, inputs, evidence, cap);
-        if (!ok) revert RecomputerReverted();
+        // Chequeo inmediato antes del STATICCALL a recompute: su encode, entrega de
+        // R, y liquidacion.
+        if (gasleft() < _encodeGas(inputs.length, evidence.length) + _deliver(c.recomputeGasLimit) + SETTLE_RESERVE) {
+            revert InsufficientChallengeGas();
+        }
+        (bool rFault, int256 newValue) = _safeRecompute(c.recomputer, inputs, evidence, c.recomputeGasLimit);
+        if (rFault) {
+            _payFault(id, c, msg.sender, dep, Phase.RECOMPUTE);
+            return;
+        }
 
         bytes32 evHash = keccak256(evidence);
 
@@ -427,6 +638,17 @@ contract DissentCore {
             _credit(c.agent, dep);
             emit ChallengeFailed(id, msg.sender, newValue, c.threshold, evHash);
         }
+    }
+
+    /// @dev Fallo tecnico del adaptador con el gas prometido: el retador cobra
+    ///      reward + deposito y el compromiso queda Faulted. El sello ya esta
+    ///      settled, asi que sweepExpiredSeal no puede pagarle al agente.
+    function _payFault(bytes32 id, Commitment storage c, address who, uint128 dep, Phase phase) private {
+        c.status = Status.Faulted;
+        uint256 payout = uint256(c.reward) + uint256(dep);
+        escrowed -= payout;
+        _credit(who, payout);
+        emit AdapterFaulted(id, who, phase, payout);
     }
 
     /// @notice Un sello que vencio sin revelarse. El deposito se PIERDE y va al
@@ -508,19 +730,51 @@ contract DissentCore {
         return comparator == Comparator.AtLeast ? value >= threshold : value <= threshold;
     }
 
-    /// @dev STATICCALL con techo de gas. Devuelve ok=false en vez de burbujear el
-    ///      revert, para que el nucleo decida que hacer en vez de morir con el
-    ///      adaptador.
-    function _recompute(address recomputer, bytes memory inputs, bytes memory evidence, uint256 gasCap)
+    /// @dev STATICCALL a recompute con techo `gasCap`. Copia SOLO 32 bytes de
+    ///      returndata y exige que sean exactamente 32 (int256 canonico): un
+    ///      returndata enorme no puede expandir la memoria del nucleo ni agotar su
+    ///      gas. `faulted` = el adaptador no cumplio (revert, OOG, o size != 32).
+    function _safeRecompute(address recomputer, bytes memory inputs, bytes memory evidence, uint256 gasCap)
         private
         view
-        returns (bool ok, int256 value)
+        returns (bool faulted, int256 value)
     {
         bytes memory data = abi.encodeWithSelector(IRecomputer.recompute.selector, inputs, evidence);
-        (bool success, bytes memory ret) = recomputer.staticcall{gas: gasCap}(data);
-        if (!success || ret.length < 32) return (false, 0);
-        value = abi.decode(ret, (int256));
-        ok = true;
+        assembly ("memory-safe") {
+            let success := staticcall(gasCap, recomputer, add(data, 0x20), mload(data), 0, 0)
+            let good := and(success, eq(returndatasize(), 0x20))
+            if good {
+                returndatacopy(0, 0, 0x20)
+                value := mload(0)
+            }
+            faulted := iszero(good)
+        }
+    }
+
+    /// @dev STATICCALL a validateEvidence con techo `gasCap`. Copia SOLO 64 bytes
+    ///      y exige returndata de exactamente 64 con un bool canonico (0 o 1).
+    ///      `faulted` = el adaptador no cumplio; si no, (ok, reason) es su respuesta.
+    function _safeValidateEvidence(address recomputer, bytes memory inputs, bytes memory evidence, uint256 gasCap)
+        private
+        view
+        returns (bool faulted, bool ok, bytes32 reason)
+    {
+        bytes memory data = abi.encodeWithSelector(IRecomputer.validateEvidence.selector, inputs, evidence);
+        assembly ("memory-safe") {
+            let success := staticcall(gasCap, recomputer, add(data, 0x20), mload(data), 0, 0)
+            let good := and(success, eq(returndatasize(), 0x40))
+            if good {
+                returndatacopy(0, 0, 0x40)
+                let b := mload(0)
+                switch gt(b, 1)
+                case 1 { good := 0 } // bool no canonico
+                default {
+                    ok := b
+                    reason := mload(0x20)
+                }
+            }
+            faulted := iszero(good)
+        }
     }
 
     /// @dev Sin receive() ni fallback(): a este contrato no se le manda MON suelto.

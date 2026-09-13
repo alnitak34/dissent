@@ -143,6 +143,9 @@ contract ManoRealTest is Test {
             "river call QdAd vs 2s 2c Tc Qc 9d @ cmtr0ktvzxa5q15he4ekev8ub#29",
             0.1 ether,
             1 days,
+            20_000_000,
+            100_000,
+            32,
             bytes32(0)
         );
         DissentCore.Commitment memory c = core.getCommitment(id);
@@ -158,7 +161,7 @@ contract ManoRealTest is Test {
     function test_overbet_tumba_el_compromiso() public {
         vm.prank(agent);
         bytes32 id = core.commit{value: 1 ether}(
-            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, bytes32(0)
+            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
         vm.prank(alice);
@@ -176,7 +179,7 @@ contract ManoRealTest is Test {
     function test_medium_no_tumba_el_compromiso() public {
         vm.prank(agent);
         bytes32 id = core.commit{value: 1 ether}(
-            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, bytes32(0)
+            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(0));
         vm.prank(bob);

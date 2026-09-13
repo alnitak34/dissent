@@ -113,7 +113,7 @@ contract GasBudgetTest is Test {
             1 ether,
             abi.encodeCall(
                 DissentCore.commit,
-                (address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, salt)
+                (address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, salt)
             )
         );
         bytes32 id = abi.decode(r, (bytes32));

@@ -207,7 +207,7 @@ contract AlnitakRiverRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 1 ether}(
-            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, bytes32(0)
+            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         DissentCore.Commitment memory c = core.getCommitment(id);
         assertEq(c.baseValue, base, "el nucleo calculo el base el mismo");
@@ -240,7 +240,7 @@ contract AlnitakRiverRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 1 ether}(
-            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, bytes32(0)
+            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
         vm.prank(alice);
@@ -261,7 +261,7 @@ contract AlnitakRiverRecomputerTest is Test {
         uint256 g0 = gasleft();
         vm.prank(agent);
         core.commit{value: 1 ether}(
-            address(rc), inp, 1, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, bytes32("g")
+            address(rc), inp, 1, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32("g")
         );
         console.log("commit de punta a punta con el adaptador real: %s gas", g0 - gasleft());
     }

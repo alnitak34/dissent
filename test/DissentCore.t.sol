@@ -23,6 +23,10 @@ contract DissentCoreTest is Test {
     uint128 constant REWARD = 1 ether;
     uint128 constant DEPOSIT = 0.1 ether;
     uint64 constant WINDOW = 1 days;
+    // Politica de gas para el mock: recompute ~11k, validate ~11k; limites holgados.
+    uint32 constant RGL = 1_000_000; // recomputeGasLimit
+    uint32 constant VGL = 200_000; // validateGasLimit
+    uint32 constant MEL = 64; // maxEvidenceLen (la evidencia del mock es 32 B)
     int256 constant BASE = 200;
     int256 constant THRESHOLD = 100;
 
@@ -48,7 +52,7 @@ contract DissentCoreTest is Test {
     function _commit() internal returns (bytes32 id) {
         vm.prank(agent);
         id = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, bytes32(0)
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -85,7 +89,7 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.BaseDoesNotSatisfyThreshold.selector, int256(50), THRESHOLD));
         core.commit{value: REWARD}(
-            address(rc), _inputs(50), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, bytes32(0)
+            address(rc), _inputs(50), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -94,7 +98,7 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.CommitmentExists.selector, id));
         core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, bytes32(0)
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -105,7 +109,7 @@ contract DissentCoreTest is Test {
             vm.prank(agent);
             vm.expectRevert(abi.encodeWithSelector(DissentCore.WindowTooShort.selector, cortas[i], minimo));
             core.commit{value: REWARD}(
-                address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, cortas[i], bytes32(0)
+                address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, cortas[i], RGL, VGL, MEL, bytes32(0)
             );
         }
     }
@@ -119,7 +123,7 @@ contract DissentCoreTest is Test {
         uint64 revelar = core.REVEAL_WINDOW_BLOCKS();
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, minimo, bytes32(0)
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, minimo, RGL, VGL, MEL, bytes32(0)
         );
         uint64 fin = core.getCommitment(id).windowEnds;
         assertEq(fin, uint64(block.timestamp) + minimo);
@@ -151,7 +155,7 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(DissentCore.RecomputerReverted.selector);
         core.commit{value: REWARD}(
-            address(bad), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
+            address(bad), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -160,7 +164,7 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(DissentCore.ZeroScale.selector);
         core.commit{value: REWARD}(
-            address(zs), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
+            address(zs), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -188,13 +192,13 @@ contract DissentCoreTest is Test {
     function test_la_accion_no_entra_en_la_identidad() public {
         vm.prank(agent);
         bytes32 id1 = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, bytes32(0)
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
         // mismo todo, otra accion: mismo id -> tiene que revertir por duplicado
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.CommitmentExists.selector, id1));
         core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "fold", DEPOSIT, WINDOW, bytes32(0)
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "fold", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
     }
 
@@ -280,19 +284,31 @@ contract DissentCoreTest is Test {
         assertEq(core.credits(alice), 0);
     }
 
-    function test_evidencia_rechazada_no_se_queda_con_el_deposito() public {
+    /// @dev Politica nueva: validateEvidence que devuelve (false, reason) de forma
+    ///      canonica NO revierte ni le da el deposito al agente. Liquida el sello,
+    ///      DEVUELVE el deposito al retador, y el compromiso sigue Open.
+    function test_evidencia_rechazada_devuelve_el_deposito_y_no_paga_al_agente() public {
         RejectingRecomputer rr = new RejectingRecomputer();
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
+            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
         bytes memory ev = abi.encode(int256(50));
         vm.prank(alice);
         core.challengeCommit{value: DEPOSIT}(id, _sealOf(ev, "s", alice));
         vm.roll(block.number + core.REVEAL_DELAY_BLOCKS());
+        vm.expectEmit(true, true, false, true, address(core));
+        emit DissentCore.ChallengeRejected(id, alice, bytes32("ALWAYS_NO"));
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(DissentCore.EvidenceRejected.selector, bytes32("ALWAYS_NO")));
         core.challengeReveal(id, _inputs(BASE), ev, "s");
+
+        assertEq(core.credits(alice), DEPOSIT, "se le devuelve el deposito");
+        assertEq(core.credits(agent), 0, "el agente no cosecha nada");
+        assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Open), "sigue Open");
+        // el sello quedo settled: sweep no puede pagarle al agente
+        vm.roll(block.number + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS() + 1);
+        vm.expectRevert(DissentCore.NoSeal.selector);
+        core.sweepExpiredSeal(id, alice);
     }
 
     function test_inputs_que_no_coinciden_revierten() public {
@@ -369,7 +385,7 @@ contract DissentCoreTest is Test {
         ReentrantRecomputer rr = new ReentrantRecomputer(address(core));
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, bytes32(0)
+            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
         );
         assertTrue(id != bytes32(0), "el commit paso: el STATICCALL impidio la escritura");
     }
@@ -386,6 +402,9 @@ contract DissentCoreTest is Test {
             "x",
             DEPOSIT,
             WINDOW,
+            RGL,
+            VGL,
+            MEL,
             bytes32(0)
         );
         bytes memory ret = ra.commitOn{value: REWARD}(address(core), data);
@@ -412,7 +431,7 @@ contract DissentCoreTest is Test {
         bytes32 id1 = _commit();
         vm.prank(agent);
         bytes32 id2 = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, bytes32("x")
+            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32("x")
         );
         _reveal(id1, alice, 50, "a");
         _reveal(id2, bob, 150, "b");
