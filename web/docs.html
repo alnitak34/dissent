@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Dissent protocol overview and recomputer integration guide."
+    />
+    <title>Dissent — Protocol and integration</title>
+    <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="wordmark" href="./index.html" aria-label="Dissent home">
+        <img class="mark" src="./assets/dissent-mark.svg" alt="" />
+        <span>Dissent</span>
+      </a>
+      <a class="docs-back" href="./index.html">← Live proof</a>
+    </header>
+
+    <main class="docs-page">
+      <section class="docs-hero" id="protocol">
+        <p class="eyebrow">Protocol overview</p>
+        <h1>A neutral challenge layer for numerical claims.</h1>
+        <p class="lede">
+          Dissent does not decide whether an agent is intelligent or truthful.
+          It enforces a public process: stake a claim, seal evidence, recompute
+          the number with a registered deterministic rule, and settle onchain.
+        </p>
+      </section>
+
+      <section class="docs-grid" aria-label="Protocol flow">
+        <article><span>01</span><h2>Commit</h2><p>The agent publishes the inputs, threshold, comparator, registered recomputer and reward.</p></article>
+        <article><span>02</span><h2>Seal</h2><p>A challenger commits to a hidden evidence hash and posts a deposit.</p></article>
+        <article><span>03</span><h2>Reveal</h2><p>After the delay, the evidence is revealed. The core validates it and calls the same immutable recomputer.</p></article>
+        <article><span>04</span><h2>Settle</h2><p>If the new value crosses the committed threshold, the challenger receives the reward and deposit.</p></article>
+      </section>
+
+      <section class="docs-section">
+        <p class="eyebrow">Trust boundary</p>
+        <h2>The core guarantees the contest.<br />The recomputer defines the claim.</h2>
+        <p>
+          Dissent is not a universal truth oracle. A production integration
+          should use an immutable, audited and publicly verified recomputer.
+          The core protects escrow, challenge timing, bounded evidence, gas
+          delivery and settlement; it cannot prove that a domain formula is the
+          right one for every real-world use.
+        </p>
+      </section>
+
+      <section class="docs-section" id="integration">
+        <p class="eyebrow">Integration guide</p>
+        <h2>Build a recomputer.</h2>
+        <p>
+          A recomputer is a small domain-specific contract. It receives the
+          original inputs and optional challenge evidence, then returns one
+          deterministic number. The same inputs and evidence must always return
+          the same value.
+        </p>
+
+        <pre><code>interface IRecomputer {
+    function recompute(bytes calldata inputs, bytes calldata evidence)
+        external view returns (int256 value);
+
+    function validateEvidence(bytes calldata inputs, bytes calldata evidence)
+        external view returns (bool ok, bytes32 reason);
+
+    function scale() external pure returns (uint256);
+    function domain() external pure returns (bytes32);
+}</code></pre>
+
+        <div class="docs-callouts">
+          <article>
+            <h3>Base value</h3>
+            <p><code>recompute(inputs, "")</code> returns the value used when the agent creates the claim.</p>
+          </article>
+          <article>
+            <h3>Challenged value</h3>
+            <p><code>recompute(inputs, evidence)</code> applies valid evidence and returns the value tested against the threshold.</p>
+          </article>
+          <article>
+            <h3>Evidence validation</h3>
+            <p><code>validateEvidence</code> rejects malformed or disallowed evidence before recomputation.</p>
+          </article>
+        </div>
+
+        <h3 class="checklist-title">Minimum security checklist</h3>
+        <ul class="docs-checklist">
+          <li>Return canonical ABI values on every path.</li>
+          <li>Accept only evidence that the recomputer can process within its declared gas limit.</li>
+          <li>Measure the worst valid case before choosing gas limits.</li>
+          <li>Keep evidence length as small and bounded as the domain permits.</li>
+          <li>Do not depend on the caller, block context or changing storage.</li>
+          <li>Use immutable, verified contracts for claims that carry economic value.</li>
+        </ul>
+
+        <p class="docs-note">
+          Current deployment: Monad Testnet. The Alnitak adapter is the first
+          reference implementation; external audit and additional integrations
+          remain pending.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built for Metropolis on Monad.</p>
+      <p><a href="./index.html">Return to the live proof →</a></p>
+    </footer>
+  </body>
+</html>
