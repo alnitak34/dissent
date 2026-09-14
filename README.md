@@ -19,10 +19,15 @@ Ver [Frontera de confianza](#frontera-de-confianza).
 
 ## Estado
 
-Contrato **implementado y probado localmente**. **Auditoría externa pendiente.**
-No hay dirección desplegada todavía. Hay un adaptador de póker de ejemplo
-(`AlnitakRiverRecomputer`) y un puente en Python; una UI de indexación es trabajo
-futuro.
+Contrato **implementado, probado localmente y desplegado con código verificado en
+Monad testnet**. **Auditoría externa pendiente.**
+
+- `DissentCore`: [`0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
+- `AlnitakRiverRecomputer`: [`0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38)
+- Recibos, bloques, costes y comandos de verificación: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
+Hay un adaptador de póker de ejemplo (`AlnitakRiverRecomputer`) y un puente en
+Python; una UI de indexación es trabajo futuro.
 
 ## Estructura de `src/`
 
