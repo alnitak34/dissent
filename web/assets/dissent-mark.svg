@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Dissent</title>
+  <desc id="desc">A D-shaped mark where a violet recomputation curve crosses a red threshold.</desc>
+
+  <!-- The split outer D: claim above, challenged state below. -->
+  <path
+    d="M112 72H274C370 72 432 138 432 224"
+    fill="none"
+    stroke="#D9FF43"
+    stroke-width="64"
+    stroke-linecap="square"
+  />
+  <path
+    d="M112 288V440H274C370 440 432 374 432 288"
+    fill="none"
+    stroke="#8D72FF"
+    stroke-width="64"
+    stroke-linecap="square"
+  />
+
+  <!-- Deterministic recomputation: visibly crosses the fixed threshold. -->
+  <path
+    d="M154 160C218 160 236 210 254 256C274 308 302 352 370 352"
+    fill="none"
+    stroke="#8D72FF"
+    stroke-width="26"
+    stroke-linecap="round"
+  />
+
+  <!-- The fixed threshold and the exact settlement point. -->
+  <path d="M72 256H456" fill="none" stroke="#FF6B56" stroke-width="10" />
+  <circle cx="254" cy="256" r="15" fill="#FF6B56" />
+</svg>
