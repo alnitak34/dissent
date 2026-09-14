@@ -44,6 +44,15 @@ confirmarse con eventos, estado y saldos onchain; no se da por cierta por el tes
   transmitir.
 - `DemoWithdraw`: el challenger retira el crédito después del éxito.
 
+También contiene tres operaciones de recuperación para un recorrido vencido:
+
+- `DemoSweepExpired`: liquida el sello no revelado y acredita su depósito al agente.
+- `DemoReclaim`: acredita al agente la recompensa de un commitment no refutado.
+- `DemoWithdrawAgent`: retira a la wallet agente los créditos acumulados.
+
+Las operaciones de recuperación existen para registrar y cerrar un recorrido
+fallido; no convierten `Reclaimed` en una verificación de la afirmación.
+
 Los comandos exactos se ejecutan uno por uno y se registran con sus recibos. No se
 encadenan: ninguna operación posterior se prepara hasta verificar onchain la
 anterior.

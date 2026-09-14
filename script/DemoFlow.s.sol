@@ -155,3 +155,67 @@ contract DemoWithdraw is DemoBase {
         vm.stopBroadcast();
     }
 }
+
+/// @notice Liquida el sello vencido de la primera demo fallida. El deposito se
+///         acredita al agente, como exige la semantica del protocolo.
+contract DemoSweepExpired is DemoBase {
+    function run() external {
+        _requireNetworkAndCode();
+        DissentCore core = DissentCore(CORE);
+        bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
+
+        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        require(commitment.agent == AGENT, "agent inesperado");
+        (, uint64 sealBlock,, bool settled) = core.seals(id, CHALLENGER);
+        require(sealBlock != 0 && !settled, "sello ausente o ya liquidado");
+        require(
+            block.number > sealBlock + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS(),
+            "sello todavia no vencio"
+        );
+
+        vm.startBroadcast();
+        _requireBroadcastSender(AGENT);
+        core.sweepExpiredSeal(id, CHALLENGER);
+        vm.stopBroadcast();
+    }
+}
+
+/// @notice Recupera la recompensa cuando ya vencieron tanto la ventana para
+///         sellar como la barrera conservadora del sello mas reciente.
+contract DemoReclaim is DemoBase {
+    function run() external {
+        _requireNetworkAndCode();
+        DissentCore core = DissentCore(CORE);
+        bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
+
+        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        require(commitment.agent == AGENT, "agent inesperado");
+        require(commitment.status == DissentCore.Status.Open, "commitment no esta Open");
+        require(block.timestamp >= commitment.windowEnds, "ventana para sellar abierta");
+        if (commitment.latestSealBlock != 0) {
+            require(
+                block.number > commitment.latestSealBlock + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS(),
+                "barrera conservadora del sello activa"
+            );
+        }
+
+        vm.startBroadcast();
+        _requireBroadcastSender(AGENT);
+        core.reclaim(id);
+        vm.stopBroadcast();
+    }
+}
+
+/// @notice Retira a la wallet agente los creditos acumulados por sweep/reclaim.
+contract DemoWithdrawAgent is DemoBase {
+    function run() external {
+        _requireNetworkAndCode();
+        DissentCore core = DissentCore(CORE);
+        require(core.credits(AGENT) != 0, "agent sin credito");
+
+        vm.startBroadcast();
+        _requireBroadcastSender(AGENT);
+        core.withdrawCredit();
+        vm.stopBroadcast();
+    }
+}
