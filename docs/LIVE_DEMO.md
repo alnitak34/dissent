@@ -3,6 +3,11 @@
 Este recorrido usa los contratos registrados en [`DEPLOYMENT.md`](DEPLOYMENT.md)
 y la mano pública `cmtr0ktvzxa5q15he4ekev8ub`, secuencia 29.
 
+La mano fue jugada por Alnitak en dev.fun Arena. Dissent es un proyecto
+independiente y no está respaldado ni afiliado a dev.fun. El uso y la posible
+redistribución del replay completo se revisan por separado; esta atribución no se
+presenta como autorización de dev.fun.
+
 ## Cuentas y valores fijados
 
 | Rol | Dirección |
