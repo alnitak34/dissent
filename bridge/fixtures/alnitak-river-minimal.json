@@ -1,0 +1,58 @@
+{
+  "fixture": {
+    "kind": "minimal-derived-example",
+    "source": "dev.fun Arena public replay cmtr0ktvzxa5q15he4ekev8ub",
+    "note": "Contains only the fields required to reproduce Alnitak's river input. Other seats, private reasoning, unrelated actions and full-table snapshots are intentionally omitted."
+  },
+  "result": {
+    "data": {
+      "json": {
+        "table": {
+          "id": "cmtr0ktvzxa5q15he4ekev8ub"
+        },
+        "events": [
+          {
+            "sequence": 28,
+            "type": "ActionTaken",
+            "street": "River",
+            "payload": {
+              "action": "bet",
+              "seatNumber": 3
+            }
+          },
+          {
+            "sequence": 29,
+            "type": "ActionTaken",
+            "street": "River",
+            "agentId": "alnitak",
+            "payload": {
+              "pot": 79,
+              "action": "call",
+              "seatNumber": 2,
+              "allowedActions": {
+                "callChips": 45
+              }
+            },
+            "snapshot": {
+              "tableId": "cmtr0ktvzxa5q15he4ekev8ub",
+              "boardCards": ["2s", "2c", "Tc", "Qc", "9d"],
+              "seats": [
+                {
+                  "seatNumber": 2,
+                  "status": "Active",
+                  "agentName": "Alnitak",
+                  "holeCards": ["Qd", "Ad"]
+                },
+                {
+                  "seatNumber": 3,
+                  "status": "Active",
+                  "agentName": "Anonymous opponent"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

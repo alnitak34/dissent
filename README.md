@@ -180,8 +180,8 @@ que espera `DissentCore.commit`, y muestra los argumentos de `commit()` en orden
 mano y comprobados contra `cast`; `python bridge/mano.py` corre ese autochequeo.
 
 ```bash
-# armar los bytes y los argumentos de commit de una mano (replay local)
-python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29
+# armar los bytes y los argumentos usando la fixture minima del caso
+python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29 --replay bridge/fixtures/alnitak-river-minimal.json
 
 # comprobar que unos bytes son esa mano, bajando el replay del endpoint público
 python bridge/verificar.py 0x0000...0e2d cmtr0ktvzxa5q15he4ekev8ub

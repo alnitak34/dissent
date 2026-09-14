@@ -3,7 +3,8 @@
 
     python -m unittest discover bridge -p "test_*.py"
 
-Usan el replay local bridge/replays/<tableId>.json que ya viene en el repo.
+Usan una fixture minima derivada del caso real. No incluyen el replay completo,
+los otros agentes ni eventos que el puente no necesita.
 """
 import io
 import json
@@ -20,13 +21,14 @@ import mano  # noqa: E402
 
 TABLE = "cmtr0ktvzxa5q15he4ekev8ub"
 SEQ = 29
+FIXTURE = os.path.join(AQUI, "fixtures", "alnitak-river-minimal.json")
 # El mismo hash literal que test/ManoReal.t.sol (INPUTS_HASH). El hash pin̈ea los
 # bytes de forma unica: si inputsHex cambiara, el hash cambiaria.
 INPUTS_HASH = "0xa174393d39f1e1ec234522a9c80f28e565e8b9908e567c452065e156f56a73ac"
 
 
 def _replay():
-    with open(os.path.join(AQUI, "replays", TABLE + ".json"), encoding="utf-8") as f:
+    with open(FIXTURE, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -49,7 +51,7 @@ class TestBytesYHash(unittest.TestCase):
 
 class TestSalidaJSON(unittest.TestCase):
     def _correr_json(self):
-        replay = os.path.join(AQUI, "replays", TABLE + ".json")
+        replay = FIXTURE
         fd, out = tempfile.mkstemp(suffix=".json")
         os.close(fd)
         try:
@@ -82,7 +84,7 @@ class TestSalidaJSON(unittest.TestCase):
 
 class TestSalidaTexto(unittest.TestCase):
     def _stdout(self):
-        replay = os.path.join(AQUI, "replays", TABLE + ".json")
+        replay = FIXTURE
         r = subprocess.run(
             [sys.executable, os.path.join(AQUI, "armar_commit.py"), TABLE, str(SEQ), "--replay", replay],
             check=True, capture_output=True, text=True, encoding="utf-8",
