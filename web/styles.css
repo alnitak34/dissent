@@ -73,6 +73,18 @@ h2 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -.045em; line-height: 1.
 .refresh:hover { border-color: var(--acid); }
 .refresh[disabled] { opacity: .55; cursor: wait; }
 
+.case-summary {
+  margin-top: 38px;
+  padding: 22px 24px;
+  border-left: 3px solid var(--acid);
+  background: #171813;
+}
+.case-summary > p { max-width: 920px; margin-bottom: 0; color: #d2d1c9; font-size: 16px; }
+.case-summary > .label { margin-bottom: 9px; color: var(--acid); font-size: 10px; }
+.case-summary strong { color: var(--ink); }
+.case-summary code { color: var(--acid); font-size: .9em; }
+.case-summary .case-limit { margin-top: 12px; color: var(--muted); font-size: 12px; }
+
 .claim-grid { display: grid; grid-template-columns: 1fr 110px 1fr; align-items: stretch; margin: 54px 0 28px; }
 .claim-card { padding: 28px; background: #171813; border-top: 3px solid var(--violet); }
 .claim-card.challenged { border-color: var(--red); }
@@ -112,6 +124,8 @@ h2 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -.045em; line-height: 1.
 .technical dl div { display: grid; grid-template-columns: 130px 1fr; min-width: 0; }
 .technical dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .technical dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); font-family: ui-monospace, monospace; font-size: 12px; }
+.technical.explainer { margin-top: 18px; }
+.technical.explainer p { max-width: 760px; margin: 16px 0 0; color: #c2c1ba; font-size: 14px; }
 
 .why { display: grid; grid-template-columns: 1.05fr .95fr; gap: 80px; padding: 140px 0 100px; }
 .why h2 { margin-bottom: 0; }

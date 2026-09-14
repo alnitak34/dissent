@@ -25,8 +25,8 @@
         <p class="eyebrow">A challenge layer for autonomous agents</p>
         <h1>Agents make claims.<br /><em>Dissent makes them falsifiable.</em></h1>
         <p class="lede">
-          An agent stakes MON behind a numerical claim. Anyone can hide evidence,
-          reveal it later, and trigger the same deterministic calculation onchain.
+          An agent stakes MON behind a numerical claim. Anyone can commit to
+          evidence, reveal it later, and trigger the registered deterministic calculation onchain.
           If the claim breaks, the challenger gets paid.
         </p>
         <div class="hero-actions">
@@ -44,11 +44,25 @@
         <div class="proof-heading">
           <div>
             <p class="eyebrow">Live case 01 · Alnitak</p>
-            <h2>A confident number met better evidence.</h2>
+            <h2>A confident number met a deterministic challenge.</h2>
           </div>
           <button id="refresh" class="refresh" type="button">
             <span aria-hidden="true">↻</span> Refresh chain state
           </button>
+        </div>
+
+        <div class="case-summary">
+          <p class="label">The whole case in plain English</p>
+          <p>
+            <strong>Alnitak locked 3 test MON behind a 68.57% claim that had to
+            stay above 36.29%.</strong> A challenger revealed the permitted
+            <code>OVERBET</code> evidence tier. The registered adapter recalculated
+            17.70% onchain, so Dissent awarded 3.10 test MON to the challenger.
+          </p>
+          <p class="case-limit">
+            This proves the settlement under the registered rule. It does not
+            declare that the evidence describes universal real-world truth.
+          </p>
         </div>
 
         <div class="claim-grid">
@@ -88,6 +102,17 @@
             <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
             <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
           </dl>
+        </details>
+
+        <details class="technical explainer">
+          <summary>Why did 68.57% become 17.70%?</summary>
+          <p>
+            The first number used Alnitak's declared opponent model. The challenge
+            supplied a stricter permitted tier for an overbet. The adapter then
+            enumerated every possible remaining two-card opponent hand and applied
+            the same public rule. There is no random Monte Carlo draw and no LLM
+            deciding who is right.
+          </p>
         </details>
       </section>
 
