@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Dissent makes numerical claims from autonomous agents falsifiable with deterministic, onchain challenges."
+    />
+    <title>Dissent — Make agents prove their numbers</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="wordmark" href="#top" aria-label="Dissent home">
+        <span class="mark">D</span>
+        <span>Dissent</span>
+      </a>
+      <div class="network"><span></span> Monad Testnet</div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="eyebrow">A challenge layer for autonomous agents</p>
+        <h1>Agents make claims.<br /><em>Dissent makes them falsifiable.</em></h1>
+        <p class="lede">
+          An agent stakes MON behind a numerical claim. Anyone can hide evidence,
+          reveal it later, and trigger the same deterministic calculation onchain.
+          If the claim breaks, the challenger gets paid.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#proof">Inspect the live proof</a>
+          <a
+            class="button secondary"
+            href="https://github.com/alnitak34/dissent"
+            target="_blank"
+            rel="noreferrer"
+          >Read the protocol</a>
+        </div>
+      </section>
+
+      <section class="proof-shell" id="proof">
+        <div class="proof-heading">
+          <div>
+            <p class="eyebrow">Live case 01 · Alnitak</p>
+            <h2>A confident number met better evidence.</h2>
+          </div>
+          <button id="refresh" class="refresh" type="button">
+            <span aria-hidden="true">↻</span> Refresh chain state
+          </button>
+        </div>
+
+        <div class="claim-grid">
+          <article class="claim-card">
+            <p class="label">Agent's claim</p>
+            <p class="metric">68.57%</p>
+            <p class="comparison">estimated equity <strong>≥ 36.29%</strong> threshold</p>
+            <div class="stake"><span>Stake</span><strong>3.00 MON</strong></div>
+          </article>
+
+          <div class="versus" aria-hidden="true"><span>challenged by</span><b>≠</b></div>
+
+          <article class="claim-card challenged">
+            <p class="label">Recomputed with evidence</p>
+            <p class="metric">17.70%</p>
+            <p class="comparison">deterministic value <strong>&lt; 36.29%</strong> threshold</p>
+            <div class="stake"><span>Payout</span><strong>3.10 MON</strong></div>
+          </article>
+        </div>
+
+        <div class="verdict" id="verdict" data-state="loading" aria-live="polite">
+          <span class="verdict-icon" aria-hidden="true">···</span>
+          <div>
+            <p class="label">Reading Monad Testnet</p>
+            <h3>Checking the proof directly from the chain</h3>
+            <p id="verdict-detail">Four receipts and the final contract state are being checked.</p>
+          </div>
+        </div>
+
+        <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
+
+        <details class="technical">
+          <summary>Show commitment and contract details</summary>
+          <dl>
+            <div><dt>Commitment</dt><dd id="commitment-id"></dd></div>
+            <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
+            <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
+            <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
+          </dl>
+        </details>
+      </section>
+
+      <section class="why">
+        <div>
+          <p class="eyebrow">Why this exists</p>
+          <h2>A result is not evidence that the decision was sound.</h2>
+        </div>
+        <div class="why-copy">
+          <p>
+            Autonomous agents increasingly produce numbers that trigger actions:
+            risk scores, prices, probabilities, expected returns and safety limits.
+            Logs can explain what happened, but they do not create an economic
+            consequence when the number is wrong.
+          </p>
+          <p>
+            Dissent is the neutral mechanism between a claim and its consequence.
+            It handles escrow, sealed challenges and settlement. Domain-specific
+            recomputers define what the number means.
+          </p>
+        </div>
+      </section>
+
+      <section class="steps">
+        <article><span>01</span><h3>Commit</h3><p>The agent publishes inputs, a threshold and a reward.</p></article>
+        <article><span>02</span><h3>Seal</h3><p>A challenger hides evidence before revealing it.</p></article>
+        <article><span>03</span><h3>Recompute</h3><p>A deterministic adapter recalculates the value onchain.</p></article>
+        <article><span>04</span><h3>Settle</h3><p>The contract pays according to whether the threshold broke.</p></article>
+      </section>
+
+      <section class="boundary">
+        <p class="eyebrow">Trust boundary</p>
+        <h2>The protocol guarantees the mechanism.<br />The adapter defines the meaning.</h2>
+        <p>
+          Dissent is not an oracle of truth. Production users should require
+          immutable, audited and publicly verified recomputers. This boundary is
+          explicit in the protocol instead of hidden behind an AI evaluator.
+        </p>
+        <a href="https://github.com/alnitak34/dissent/blob/master/docs/INTEGRATION.md" target="_blank" rel="noreferrer">
+          Build a recomputer →
+        </a>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built for Metropolis on Monad.</p>
+      <p>No admin · no proxy · pull-based payouts</p>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

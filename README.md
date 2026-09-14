@@ -26,8 +26,10 @@ Monad testnet**. **Auditoría externa pendiente.**
 - `AlnitakRiverRecomputer`: [`0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38)
 - Recibos, bloques, costes y comandos de verificación: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 
-Hay un adaptador de póker de ejemplo (`AlnitakRiverRecomputer`) y un puente en
-Python; una UI de indexación es trabajo futuro.
+Hay un adaptador de póker de ejemplo (`AlnitakRiverRecomputer`), un puente en
+Python y una interfaz web de solo lectura que comprueba la primera ejecución
+completa contra el RPC público. La indexación general de commitments y la
+escritura desde una wallet siguen siendo trabajo futuro.
 
 ## Estructura de `src/`
 
@@ -195,6 +197,20 @@ muestra es un **cálculo offline orientativo a 100 gwei**: la autoridad es
 argumento. `verificar.py` no cambia: sigue verificando solo los inputs.
 
 Integración para otros equipos: **[`docs/INTEGRATION.md`](docs/INTEGRATION.md)**.
+
+## Interfaz de la demo
+
+`web/` presenta la ejecución real documentada en [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md)
+y consulta Monad testnet al cargar. No usa backend, wallet ni dependencias de
+JavaScript. Verifica los cuatro recibos, el estado `Challenged`, el crédito ya
+retirado y el escrow final en cero.
+
+```powershell
+node web/serve.mjs
+```
+
+Abrir `http://127.0.0.1:4173`. Instrucciones y alcance exacto:
+[`web/README.md`](web/README.md).
 
 ## Correr todo
 
