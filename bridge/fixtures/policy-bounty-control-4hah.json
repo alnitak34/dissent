@@ -1,0 +1,29 @@
+{
+  "case": "historical-control",
+  "source": {
+    "tableId": "cmtp8lf87jihi15he5bxzwvmc",
+    "sequence": 28,
+    "agentId": "cmppy6jth00358kuvvg9espp3"
+  },
+  "state": {
+    "street": "River",
+    "hole": ["4h", "Ah"],
+    "board": ["Ac", "3h", "6d", "Th", "8c"],
+    "potFacingDecision": 486,
+    "call": 162,
+    "actionTrace": [
+      {"street": "Flop", "actor": "opponent", "action": "bet"},
+      {"street": "Turn", "actor": "opponent", "action": "bet"},
+      {"street": "River", "actor": "opponent", "action": "bet"}
+    ],
+    "action": "call"
+  },
+  "policy": {
+    "marginBp": 1500
+  },
+  "historical": {
+    "reportedOldEquityPercent": 73,
+    "reportedConditionedEquityPercent": 75,
+    "chipDelta": -319
+  }
+}

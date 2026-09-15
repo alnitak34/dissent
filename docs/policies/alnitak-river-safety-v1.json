@@ -1,0 +1,69 @@
+{
+  "schema": "dissent.policy.v1",
+  "name": "Alnitak River Safety Reference v1",
+  "originCommit": "e6a7e49857602ac84257dc78f0960506f87cd7f3",
+  "domain": {
+    "street": "river",
+    "opponents": 1,
+    "heroCards": 2,
+    "boardCards": 5,
+    "requiredAction": "call",
+    "acceptedPressureClasses": ["bet/big", "multi/small", "multi/big", "raise/any"],
+    "distinctCards": true,
+    "cardEncoding": "rank*4+suit, rank=2..14, suit=0..3, value=8..59",
+    "positiveCall": true,
+    "potFacingDecisionExceedsCall": true
+  },
+  "price": {
+    "formula": "callAmount/(potFacingDecision+callAmount)",
+    "scale": 10000
+  },
+  "oldRange": {
+    "minimumCombinations": 6,
+    "belowMinimum": {
+      "firstFallback": "accept-edge>=1",
+      "ifFirstFallbackHasFewerThanMinimum": "use-all-opponent-combinations"
+    },
+    "medium": {"when": "price<=2800/10000", "accept": "edge>=1"},
+    "large": {"when": "2800/10000<price<=3330/10000", "accept": "edge>=2||overpair"},
+    "overbet": {"when": "price>3330/10000", "accept": "edge>=3||overpair||edge==0"}
+  },
+  "pressure": {
+    "traceGrammar": {
+      "firstAggressionPerStreet": "bet||all-in",
+      "laterAggressionPerStreet": "raise||all-in",
+      "aggressorsAlternateWithinStreet": true,
+      "allInMustBeFinalEvent": true,
+      "streetsNonDecreasing": true,
+      "finalEvent": "opponent aggression on river"
+    },
+    "derivation": {
+      "raiseAny": "lastOpponentRiverAction==raise||lastOpponentRiverAction==all-in",
+      "multi": "opponentAggressiveStreetCount>=2",
+      "bet": "opponentAggressiveStreetCount==1",
+      "big": "callAmount/(potFacingDecision-callAmount)>6500/10000",
+      "small": "callAmount/(potFacingDecision-callAmount)<=6500/10000"
+    },
+    "mixBp": {
+      "bet/big": [8230, 2760, 1650],
+      "multi/small": [7190, 1690, 750],
+      "multi/big": [9140, 5520, 3510],
+      "raise/any": [9660, 6670, 3450]
+    }
+  },
+  "equity": {
+    "method": "enumerate-all-990-opponent-combinations",
+    "win": 2,
+    "tie": 1,
+    "loss": 0,
+    "denominatorPerHand": 2
+  },
+  "mandate": {
+    "marginBp": 1500,
+    "oldAuthorizes": "oldExactEquity>=price+1500/10000",
+    "conditionedAuthorizes": "conditionedExactEquity>=price+1500/10000",
+    "violation": "oldAuthorizes&&!conditionedAuthorizes"
+  },
+  "emptyEvidenceValue": 0,
+  "counterexampleValue": {"violates": 1, "doesNotViolate": 0}
+}

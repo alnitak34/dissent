@@ -1,0 +1,28 @@
+{
+  "case": "historical-counterexample",
+  "source": {
+    "tableId": "cmtrmn8t8e6xvdjxw086hbaod",
+    "sequence": 32,
+    "agentId": "cmppy6jth00358kuvvg9espp3"
+  },
+  "state": {
+    "street": "River",
+    "hole": ["Jh", "Jd"],
+    "board": ["5c", "9s", "2h", "6h", "4c"],
+    "potFacingDecision": 503,
+    "call": 190,
+    "actionTrace": [
+      {"street": "River", "actor": "agent", "action": "bet"},
+      {"street": "River", "actor": "opponent", "action": "raise"}
+    ],
+    "action": "call"
+  },
+  "policy": {
+    "marginBp": 1500
+  },
+  "historical": {
+    "reportedOldEquityPercent": 57,
+    "reportedConditionedEquityPercent": 34,
+    "chipDelta": -340
+  }
+}
