@@ -5,17 +5,17 @@ import {Test, console} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
 
-/// @notice REGRESION DE SEGURIDAD — los cuatro ataques de validateEvidence, ahora
+/// @notice REGRESION DE SEGURIDAD — ataques contextuales de validateEvidence, ahora
 ///         CERRADOS por la politica AdapterFault / ChallengeRejected.
 ///
 /// validateEvidence puede completar y devolver ok=false de forma canonica segun
-/// el contexto de ejecucion (tx.origin, block.number, gasleft o siempre false).
+/// el contexto de ejecucion (caller, bloque, gas, timestamp o prevrandao).
 /// Antes eso hacia `revert EvidenceRejected`, el sello quedaba unsettled y
 /// sweepExpiredSeal le entregaba el deposito al agente: el agente cosechaba.
 ///
 /// Con la politica nueva, un ok=false canonico liquida el sello y DEVUELVE el
 /// deposito al retador; el compromiso sigue Open; el agente no recibe nada. Estos
-/// cuatro tests fijan ese comportamiento: en ningun caso el agente cosecha, y en
+/// Los tests fijan ese comportamiento: en ningun caso el agente cosecha, y en
 /// ningun caso el retador pierde el deposito por gas insuficiente (se le da gas
 /// de sobra; validate corre CAPADO, asi que el truco de gasleft tampoco engaña).
 contract EvidenceFalseVulnRecomputer is IRecomputer {
@@ -23,6 +23,8 @@ contract EvidenceFalseVulnRecomputer is IRecomputer {
         Origin,
         BlockParity,
         GasLeft,
+        Timestamp,
+        PrevRandao,
         AlwaysFalse
     }
 
@@ -49,6 +51,8 @@ contract EvidenceFalseVulnRecomputer is IRecomputer {
         if (mode == Mode.Origin) return (tx.origin == agent, bytes32("ONLY_AGENT"));
         if (mode == Mode.BlockParity) return (block.number % 2 == 0, bytes32("BLOCK_PARITY"));
         if (mode == Mode.GasLeft) return (gasleft() > gasThreshold, bytes32("GAS_DEP"));
+        if (mode == Mode.Timestamp) return (block.timestamp % 2 == 0, bytes32("TIMESTAMP"));
+        if (mode == Mode.PrevRandao) return (block.prevrandao == 7, bytes32("PREVRANDAO"));
         return (false, bytes32("ALWAYS_NO"));
     }
 
@@ -90,6 +94,8 @@ contract EvidenceFalseRegresionTest is Test {
     function _flujo(EvidenceFalseVulnRecomputer.Mode m) internal returns (bytes32 id) {
         EvidenceFalseVulnRecomputer rc = new EvidenceFalseVulnRecomputer(m, agent, 1_000_000);
         vm.roll(100);
+        vm.warp(101); // impar: el modo Timestamp rechaza de forma canonica
+        vm.prevrandao(uint256(9)); // distinto de 7: PrevRandao tambien rechaza
 
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
@@ -116,7 +122,7 @@ contract EvidenceFalseRegresionTest is Test {
         core.challengeReveal{gas: 30_000_000}(id, abi.encode(BASE), ev, "sal");
     }
 
-    /// @dev En los cuatro modos: ChallengeRejected, deposito devuelto, Open, y el
+    /// @dev En todos los modos: ChallengeRejected, deposito devuelto, Open, y el
     ///      sello settled hace que sweep no pueda pagarle al agente.
     function _afirmarProtegido(bytes32 id) internal {
         assertEq(core.credits(alice), DEPOSIT, "la retadora recupera el deposito");
@@ -141,5 +147,52 @@ contract EvidenceFalseRegresionTest is Test {
 
     function test_d_always_false_no_cosecha() public {
         _afirmarProtegido(_flujo(EvidenceFalseVulnRecomputer.Mode.AlwaysFalse));
+    }
+
+    function test_e_timestamp_no_cosecha() public {
+        _afirmarProtegido(_flujo(EvidenceFalseVulnRecomputer.Mode.Timestamp));
+    }
+
+    function test_f_prevrandao_no_cosecha() public {
+        _afirmarProtegido(_flujo(EvidenceFalseVulnRecomputer.Mode.PrevRandao));
+    }
+
+    /// @notice Solidity permite calldata sobrante al decodificar una llamada ABI.
+    ///         El nucleo debe decidir solo con los argumentos decodificados: los
+    ///         bytes exteriores extra no se incorporan a inputs/evidence ni
+    ///         convierten un rechazo canonico en pago o fault.
+    function test_g_trailing_calldata_no_cambia_la_liquidacion() public {
+        EvidenceFalseVulnRecomputer rc =
+            new EvidenceFalseVulnRecomputer(EvidenceFalseVulnRecomputer.Mode.AlwaysFalse, agent, 1_000_000);
+        vm.roll(100);
+
+        vm.prank(agent, agent);
+        bytes32 id = core.commit{value: REWARD}(
+            address(rc),
+            abi.encode(BASE),
+            THRESHOLD,
+            DissentCore.Comparator.AtLeast,
+            "call",
+            DEPOSIT,
+            WINDOW,
+            RGL,
+            VGL,
+            MEL,
+            bytes32(0)
+        );
+
+        bytes memory ev = abi.encode(int256(50));
+        bytes32 salt = "sal";
+        vm.prank(alice, alice);
+        core.challengeCommit{value: DEPOSIT}(id, _sealOf(ev, salt, alice));
+        vm.roll(vm.getBlockNumber() + core.REVEAL_DELAY_BLOCKS());
+
+        bytes memory canonical =
+            abi.encodeWithSelector(core.challengeReveal.selector, id, abi.encode(BASE), ev, salt);
+        bytes memory withTrailing = bytes.concat(canonical, hex"deadbeefcafebabe");
+        vm.prank(alice, alice);
+        (bool ok, bytes memory returndata) = address(core).call{gas: 30_000_000}(withTrailing);
+        assertTrue(ok, string(returndata));
+        _afirmarProtegido(id);
     }
 }
