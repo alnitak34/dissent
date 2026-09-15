@@ -9,7 +9,10 @@ import {IRecomputer} from "../src/IRecomputer.sol";
 ///         el target EVM del build normal. CI la copia temporalmente a test/ y
 ///         la ejecuta con --evm-version cancun.
 contract TransientReadRecomputer is IRecomputer {
-    bytes32 private constant SLOT = keccak256("dissent.transient.context");
+    // Slot arbitrario y fijo de esta prueba. Debe ser literal porque Solidity
+    // solo admite constantes numericas directas como operandos de tstore/tload
+    // dentro de inline assembly.
+    uint256 private constant SLOT = 0xD155E17;
 
     function arm(int256 value) external {
         assembly {
