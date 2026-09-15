@@ -1,8 +1,11 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
-Estado: **cambio implementado en el working tree; compilación y pruebas
-pendientes porque Windows Application Control bloquea `forge.exe`; no
-desplegado**.
+Estado: **implementado y validado en la rama
+`security-no-payable-adapter-fault`; 136 tests pasaron en Foundry 1.8.1 mediante
+GitHub Actions; no fusionado a `master` y no desplegado**.
+
+Ejecución verificable:
+<https://github.com/alnitak34/dissent/actions/runs/34991597971>
 
 ## Hallazgo
 
@@ -54,11 +57,11 @@ Por tanto, `Faulted` significa **campaña inválida**, no "agente inocente" ni
 adaptador inmutable, fuente verificada, versión reconocible y eventos
 indexables. El MVP no incluye gobernanza ni resolución externa.
 
-## Cobertura existente que debe volver a pasar
+## Cobertura validada
 
 `test/AdapterFault.t.sol` cubre fallos de validate y recompute por revert, OOG,
 return bomb, returndata corto, tamaño incorrecto y bool no canónico. Sus
-aserciones ahora deben demostrar:
+aserciones demuestran:
 
 - `credits(challenger) == deposit`;
 - `credits(agent) == reward`;
@@ -66,16 +69,30 @@ aserciones ahora deben demostrar:
 - estado `Faulted`;
 - el sello no puede barrerse después.
 
+Dos regresiones adicionales hacen que `validate` o `recompute` consuman casi
+todo su cap y verifican que la rama de fault todavía liquida los dos créditos
+con `functionGasFloor + ENTRY_OVERHEAD`. Esto valida de punta a punta la
+suficiencia funcional del presupuesto modelado para esos dos caminos. No es una
+medición aislada del gas exacto de `_settleFault`.
+
+`test/EvidenceFalseRegresion.t.sol` cubre rechazos canónicos dependientes de
+`tx.origin`, `block.number`, `gasleft()`, `block.timestamp` y `PREVRANDAO`, y una
+llamada exterior con calldata ABI sobrante. En esos casos el retador recupera
+su depósito y el agente no cobra. Esto **no** demuestra que un recomputer
+dependiente del contexto sea determinista: un retorno canónico distinto sigue
+perteneciendo a la frontera de confianza del adaptador.
+
 ## Trabajo pendiente antes de desplegar
 
-1. Ejecutar la suite completa y el lint en un entorno donde Foundry esté
-   permitido.
-2. Volver a medir `SETTLE_RESERVE`: la rama de fault ahora hace dos créditos en
-   vez de uno. No se debe asumir que la medición anterior cubre el cambio.
-3. Añadir regresiones para calldata ABI con trailing bytes, `TIMESTAMP`,
-   `PREVRANDAO`, transient storage y fallos por profundidad de llamada cuando el
-   entorno de pruebas permita reproducirlos con fidelidad.
-4. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
+1. Medir de forma aislada el gas exacto de `_settleFault` si se quiere publicar
+   el headroom numérico de `SETTLE_RESERVE`; las regresiones actuales solo
+   validan que la envolvente funcional alcanza.
+2. Añadir regresiones fieles para transient storage y fallos por profundidad de
+   llamada cuando el entorno de pruebas permita reproducirlos.
+3. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
    terminan en reembolso, nunca en bounty.
-5. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
+4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
+5. Fusionar únicamente después de esa revisión o de una decisión explícita de
+   aceptar los riesgos restantes.
+6. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
    contrato existente en testnet conserva la política anterior.
