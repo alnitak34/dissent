@@ -83,6 +83,75 @@ contract FaultRecomputer is IRecomputer {
     }
 }
 
+/// @notice Adaptador con ABI compatible pero funciones deliberadamente no-view.
+///         Dissent las invoca mediante STATICCALL, así que cualquier opcode que
+///         intente modificar estado debe terminar como fallo técnico. `INVALID`
+///         cubre además un exceptional halt que no es revert ni OOG.
+contract StaticViolationRecomputer {
+    enum Mode {
+        RecInvalid,
+        RecSstore,
+        RecLog,
+        ValInvalid,
+        ValSstore,
+        ValLog
+    }
+
+    Mode public mode;
+
+    constructor(Mode m) {
+        mode = m;
+    }
+
+    function scale() external pure returns (uint256) {
+        return 1e18;
+    }
+
+    function domain() external pure returns (bytes32) {
+        return "static-violation.v1";
+    }
+
+    function validateEvidence(bytes calldata, bytes calldata evidence) external returns (bool, bytes32) {
+        if (evidence.length == 0) return (true, bytes32(0));
+        if (mode == Mode.ValInvalid) {
+            assembly {
+                invalid()
+            }
+        }
+        if (mode == Mode.ValSstore) {
+            assembly {
+                sstore(0, 1)
+            }
+        }
+        if (mode == Mode.ValLog) {
+            assembly {
+                log0(0, 0)
+            }
+        }
+        return (true, bytes32(0));
+    }
+
+    function recompute(bytes calldata inputs, bytes calldata evidence) external returns (int256) {
+        if (evidence.length == 0) return abi.decode(inputs, (int256));
+        if (mode == Mode.RecInvalid) {
+            assembly {
+                invalid()
+            }
+        }
+        if (mode == Mode.RecSstore) {
+            assembly {
+                sstore(0, 1)
+            }
+        }
+        if (mode == Mode.RecLog) {
+            assembly {
+                log0(0, 0)
+            }
+        }
+        return abi.decode(inputs, (int256));
+    }
+}
+
 /// @notice recompute honesto pero HAMBRIENTO: exige haber recibido al menos
 ///         `minGas` (confirma onchain cuanto gas le entregaron) y luego quema
 ///         casi todo, dejando apenas para retornar. Si el nucleo le entrega menos
@@ -197,11 +266,15 @@ contract AdapterFaultTest is Test {
         return keccak256(abi.encode(ev, salt, who));
     }
 
-    function _commit(FaultRecomputer rc, uint32 mel) internal returns (bytes32 id) {
+    function _commitAddress(address rc, uint32 mel) internal returns (bytes32 id) {
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, mel, bytes32(0)
+            rc, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, mel, bytes32(0)
         );
+    }
+
+    function _commit(FaultRecomputer rc, uint32 mel) internal returns (bytes32 id) {
+        return _commitAddress(address(rc), mel);
     }
 
     function _seal(bytes32 id, bytes memory ev) internal returns (uint256 selloEn) {
@@ -284,6 +357,55 @@ contract AdapterFaultTest is Test {
 
     function test_validate_bool_no_canonico_es_fault() public {
         _assertFaulted(_commit(new FaultRecomputer(FaultRecomputer.Mode.ValBadBool), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
+    }
+
+    // ── exceptional halts y violaciones de STATICCALL ───────────────────────
+    function test_recompute_invalid_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecInvalid)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_recompute_sstore_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecSstore)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_recompute_log_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecLog)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_invalid_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValInvalid)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_sstore_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValSstore)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_log_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValLog)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
     }
 
     // ── adaptador honesto: NO fault ──────────────────────────────────────────
