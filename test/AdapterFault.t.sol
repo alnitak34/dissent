@@ -180,6 +180,11 @@ contract AdapterFaultTest is Test {
     uint32 constant RGL = 1_000_000;
     uint32 constant VGL = 300_000;
     uint32 constant MEL = 131_072; // MAX_EVIDENCE_LEN del protocolo: evidencia grande para starvation
+    // Debe mantenerse alineado con ENTRY_OVERHEAD de DissentCore. En un test,
+    // `{gas: ...}` limita una llamada interna y no reproduce el intrinseco de
+    // una transaccion real; por eso estos casos usan floor + overhead de entrada,
+    // no txRequired (que incluye calldata + 21k de la transaccion exterior).
+    uint256 constant CORE_ENTRY_OVERHEAD = 80_000;
 
     function setUp() public {
         core = new DissentCore();
@@ -206,12 +211,12 @@ contract AdapterFaultTest is Test {
         vm.roll(selloEn + core.REVEAL_DELAY_BLOCKS());
     }
 
-    function _assertFaulted(bytes32 id, DissentCore.Phase phase, bytes memory ev) internal {
+    function _assertFaultedAtGas(bytes32 id, DissentCore.Phase phase, bytes memory ev, uint256 callGas) internal {
         _seal(id, ev);
         vm.expectEmit(true, true, false, true, address(core));
         emit DissentCore.AdapterFaulted(id, alice, phase, DEPOSIT, REWARD);
         vm.prank(alice, alice);
-        core.challengeReveal{gas: 30_000_000}(id, abi.encode(BASE), ev, "s");
+        core.challengeReveal{gas: callGas}(id, abi.encode(BASE), ev, "s");
         assertEq(core.credits(alice), DEPOSIT, "el retador solo recupera su deposito");
         assertEq(core.credits(agent), REWARD, "la recompensa vuelve al agente");
         assertEq(core.escrowed(), 0, "el fault liquida ambos principales");
@@ -220,6 +225,10 @@ contract AdapterFaultTest is Test {
         vm.roll(block.number + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS() + 1);
         vm.expectRevert(DissentCore.NoSeal.selector);
         core.sweepExpiredSeal(id, alice);
+    }
+
+    function _assertFaulted(bytes32 id, DissentCore.Phase phase, bytes memory ev) internal {
+        _assertFaultedAtGas(id, phase, ev, 30_000_000);
     }
 
     // ── faults de recompute ─────────────────────────────────────────────────
@@ -247,6 +256,26 @@ contract AdapterFaultTest is Test {
 
     function test_validate_quema_gas_es_fault() public {
         _assertFaulted(_commit(new FaultRecomputer(FaultRecomputer.Mode.ValBurn), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
+    }
+
+    // ── liquidacion de fault con el presupuesto funcional minimo modelado ───
+    // Estos dos casos ejercitan la rama mas cara para SETTLE_RESERVE: el
+    // adaptador consume practicamente todo el cap y despues el nucleo debe aun
+    // escribir DOS creditos (deposito al retador y reward al agente).
+    function test_recompute_OOG_liquida_con_floor_mas_entry_overhead() public {
+        bytes memory ev = abi.encode(int256(50));
+        uint256 callGas = core.functionGasFloor(VGL, RGL, 32, ev.length) + CORE_ENTRY_OVERHEAD;
+        _assertFaultedAtGas(
+            _commit(new FaultRecomputer(FaultRecomputer.Mode.RecBurn), 64), DissentCore.Phase.RECOMPUTE, ev, callGas
+        );
+    }
+
+    function test_validate_OOG_liquida_con_floor_mas_entry_overhead() public {
+        bytes memory ev = abi.encode(int256(50));
+        uint256 callGas = core.functionGasFloor(VGL, RGL, 32, ev.length) + CORE_ENTRY_OVERHEAD;
+        _assertFaultedAtGas(
+            _commit(new FaultRecomputer(FaultRecomputer.Mode.ValBurn), 64), DissentCore.Phase.VALIDATION, ev, callGas
+        );
     }
 
     function test_validate_returndata_mal_tamano_es_fault() public {
