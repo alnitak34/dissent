@@ -7,7 +7,7 @@
       name="description"
       content="Dissent makes numerical claims from autonomous agents falsifiable with deterministic, onchain challenges."
     />
-    <title>Dissent — Make agents prove their numbers</title>
+    <title>Dissent — Bug bounties for agent decisions</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -23,63 +23,94 @@
 
     <main id="top">
       <section class="hero">
-        <p class="eyebrow">A challenge layer for autonomous agents</p>
-        <h1>Agents make claims.<br /><em>Dissent makes them falsifiable.</em></h1>
-        <p class="lede">
-          An agent stakes MON behind a numerical claim. Anyone can commit to
-          evidence, reveal it later, and trigger the registered deterministic calculation onchain.
-          If the claim breaks, the challenger gets paid.
-        </p>
-        <div class="hero-actions">
-          <a class="button primary" href="#proof">Inspect the live proof</a>
-          <a
-            class="button secondary"
-            href="./docs.html#protocol"
-          >Read the protocol</a>
+        <div class="hero-copy">
+          <p class="eyebrow">Bug bounties for autonomous decisions</p>
+          <h1>An agent says <span>68.57%.</span><br /><em>Would you let it move money?</em></h1>
+          <p class="lede">
+            The agent commits to a numerical decision, a public rule and a
+            reward. Find an allowed counterexample that breaks its boundary,
+            and Monad pays you automatically.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#proof" data-start-replay>Challenge this claim</a>
+            <a class="button secondary" href="./docs.html#protocol">Read the protocol</a>
+          </div>
         </div>
+
+        <aside class="hero-claim" aria-label="Agent claim preview">
+          <div class="claim-window-top">
+            <span>LIVE CASE 01</span><span>ALNITAK</span>
+          </div>
+          <p class="label">Agent output</p>
+          <div class="hero-number"><strong>68.57%</strong><span>SAFE</span></div>
+          <div class="rule-line">
+            <span>Agreed rule</span><strong>equity ≥ 36.29%</strong>
+          </div>
+          <div class="stake-line">
+            <span>Economic warranty</span><strong>3.00 test MON</strong>
+          </div>
+        </aside>
       </section>
 
       <section class="proof-shell" id="proof">
         <div class="proof-heading">
           <div>
-            <p class="eyebrow">Live case 01 · Alnitak</p>
-            <h2>A confident number met a deterministic challenge.</h2>
+            <p class="eyebrow">Verified case · Replay the dispute</p>
+            <h2>One decision. One valid counterexample. One irreversible payout.</h2>
           </div>
-          <button id="refresh" class="refresh" type="button">
-            <span aria-hidden="true">↻</span> Refresh chain state
+          <button id="reset-replay" class="refresh" type="button">
+            <span aria-hidden="true">↻</span> Reset replay
           </button>
         </div>
 
-        <div class="case-summary">
-          <p class="label">The whole case in plain English</p>
-          <p>
-            <strong>Alnitak locked 3 test MON behind a 68.57% claim that had to
-            stay above 36.29%.</strong> A challenger revealed the permitted
-            <code>OVERBET</code> evidence tier. The registered adapter recalculated
-            17.70% onchain, so Dissent awarded 3.10 test MON to the challenger.
-          </p>
-          <p class="case-limit">
-            This proves the settlement under the registered rule. It does not
-            declare that the evidence describes universal real-world truth.
-          </p>
+        <div class="agreed-rule">
+          <span>AGREED RULE</span>
+          <strong>The claim holds only while deterministic equity stays ≥ 36.29%</strong>
+          <small>Rule and recomputer were fixed before the challenge.</small>
         </div>
 
-        <div class="claim-grid">
+        <div class="claim-grid replay" id="replay" data-stage="claim">
           <article class="claim-card">
             <p class="label">Agent's claim</p>
             <p class="metric">68.57%</p>
-            <p class="comparison">estimated equity <strong>≥ 36.29%</strong> threshold</p>
-            <div class="stake"><span>Stake</span><strong>3.00 MON</strong></div>
+            <p class="comparison">declared equity <strong>≥ 36.29%</strong></p>
+            <div class="claim-result agent-result"><span></span><b id="agent-result">Claim stands</b></div>
           </article>
 
-          <div class="versus" aria-hidden="true"><span>challenged by</span><b>≠</b></div>
+          <div class="versus" aria-hidden="true"><span id="versus-copy">scenario sealed</span><b>≠</b></div>
 
           <article class="claim-card challenged">
-            <p class="label">Recomputed with evidence</p>
-            <p class="metric">17.70%</p>
-            <p class="comparison">deterministic value <strong>&lt; 36.29%</strong> threshold</p>
-            <div class="stake"><span>Payout</span><strong>3.10 MON</strong></div>
+            <p class="label" id="challenger-label">Challenger's scenario</p>
+            <p class="metric stage-value" id="stage-value">SEALED</p>
+            <p class="comparison" id="stage-comparison">Hidden until the reveal window</p>
+            <div class="claim-result challenger-result"><span></span><b id="challenge-result">Waiting</b></div>
           </article>
+        </div>
+
+        <div class="payout-rail" id="payout-rail" data-stage="claim" aria-label="Economic settlement">
+          <div><span>Agent warranty</span><strong id="agent-funds">3.00 MON locked</strong></div>
+          <span class="payout-token" aria-hidden="true">MON</span>
+          <div><span>Challenger</span><strong id="challenger-funds">0.10 MON deposit</strong></div>
+        </div>
+
+        <div class="replay-control">
+          <p id="replay-copy">The counterexample is committed, but nobody can see it yet.</p>
+          <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
+          <small>This replays a completed testnet case. The receipts below are live.</small>
+        </div>
+
+        <div class="case-summary replay-summary" hidden>
+          <p class="label">What just happened</p>
+          <p>
+            <strong>The permitted <code>OVERBET</code> scenario changed the deterministic
+            result from 68.57% to 17.70%.</strong> The agreed 36.29% threshold broke,
+            so Dissent awarded the 3.00 MON warranty plus the challenger's returned
+            0.10 MON deposit.
+          </p>
+          <p class="case-limit">
+            This proves settlement under the registered rule. It does not declare
+            that the adapter represents universal truth.
+          </p>
         </div>
 
         <div class="verdict" id="verdict" data-state="loading" aria-live="polite">
@@ -90,6 +121,10 @@
             <p id="verdict-detail">Four receipts and the final contract state are being checked.</p>
           </div>
         </div>
+
+        <button id="refresh" class="refresh refresh-proof" type="button">
+          <span aria-hidden="true">↻</span> Refresh chain state
+        </button>
 
         <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
 
@@ -106,11 +141,12 @@
         <details class="technical explainer">
           <summary>Why did 68.57% become 17.70%?</summary>
           <p>
-            The first number used Alnitak's declared opponent model. The challenge
-            supplied a stricter permitted tier for an overbet. The adapter then
+            The first number used Alnitak's full opponent model. The challenge
+            selected its pre-registered polarized OVERBET tier. The adapter then
             enumerated every possible remaining two-card opponent hand and applied
             the same public rule. There is no random Monte Carlo draw and no LLM
-            deciding who is right.
+            deciding who is right. This is a counterexample under an allowed model,
+            not proof that the real opponent held that range.
           </p>
         </details>
       </section>
@@ -122,16 +158,44 @@
         </div>
         <div class="why-copy">
           <p>
-            Autonomous agents increasingly produce numbers that trigger actions:
-            risk scores, prices, probabilities, expected returns and safety limits.
-            Logs can explain what happened, but they do not create an economic
-            consequence when the number is wrong.
+            Autonomous agents can produce numbers that trigger actions: risk scores,
+            prices, probabilities, expected returns and safety limits. Their own
+            tests only cover the cases they thought to test. Logs do not reward an
+            outsider for finding the case they missed.
           </p>
           <p>
             Dissent is the neutral mechanism between a claim and its consequence.
             It handles escrow, sealed challenges and settlement. Domain-specific
             recomputers define what the number means.
           </p>
+        </div>
+      </section>
+
+      <section class="economic-gap" aria-labelledby="economic-gap-title">
+        <div class="gap-intro">
+          <p class="eyebrow">The economic gap</p>
+          <h2 id="economic-gap-title">Agents test what they expect.<br />Reward what they missed.</h2>
+          <p>
+            Dissent is useful when finding a breaking case is difficult, checking a
+            submitted case is deterministic, and a bad decision controls meaningful value.
+          </p>
+        </div>
+        <div class="gap-options">
+          <article>
+            <span>THE AGENT</span>
+            <h3>Makes a decision</h3>
+            <p>Publishes the boundary, allowed challenge space and a reward.</p>
+          </article>
+          <article>
+            <span>CHALLENGERS</span>
+            <h3>Search for the break</h3>
+            <p>Compete to find an allowed counterexample the agent did not defend.</p>
+          </article>
+          <article class="selected">
+            <span>DISSENT</span>
+            <h3>Checks and pays</h3>
+            <p>The registered rule adjudicates the counterexample without a panel or AI judge.</p>
+          </article>
         </div>
       </section>
 

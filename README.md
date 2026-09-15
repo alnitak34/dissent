@@ -2,6 +2,11 @@
 
 Dissent es un protocolo en Monad para afirmaciones numéricas **falsables**.
 
+En términos de producto: **un bug bounty para decisiones de agentes**. El
+agente pone una recompensa detrás de un límite numérico; challengers buscan un
+contraejemplo dentro del espacio que define el recomputer, y Monad paga si ese
+caso cruza el límite.
+
 - Un agente publica **entradas**, un **umbral** y una **acción declarada**, y
   escrowea una **recompensa** en MON.
 - El contrato **no acepta del agente ni del retador el número que decide el
@@ -172,6 +177,12 @@ elige uno de tres, no manos sueltas); (3) que el recomputer sea determinista
 sesgo documentado); (6) Sybil entre agente y retador. Un challenge exitoso muestra
 que el número da distinto con otro tier, no que el número nuevo sea el bueno.
 
+El adaptador de Alnitak tiene solo tres tiers. Por eso demuestra de extremo a
+extremo la mecánica de Dissent, pero no demuestra todavía el valor comercial de
+una búsqueda abierta: el propio agente podría agotar esos tres casos. Un caso de
+mercado necesita un espacio de contraejemplos suficientemente grande o
+especializado para que encontrar uno tenga valor.
+
 ## El puente: de una mano real a los bytes
 
 `bridge/` convierte una decisión concreta de una mesa real en los bytes exactos
@@ -197,6 +208,29 @@ muestra es un **cálculo offline orientativo a 100 gwei**: la autoridad es
 argumento. `verificar.py` no cambia: sigue verificando solo los inputs.
 
 Integración para otros equipos: **[`docs/INTEGRATION.md`](docs/INTEGRATION.md)**.
+
+El bounty sobre una versión completa de política usa un puente separado. Este
+produce los `inputs` de 96 bytes y la evidencia de 160 bytes que espera
+`AlnitakPolicyBountyRecomputer`, sin firmas, wallet ni hex escrito a mano:
+
+Este adaptador está probado y guardado en el repositorio, pero todavía no está
+desplegado. Las direcciones y los recibos públicos anteriores corresponden al
+caso original de una mano fija.
+
+```bash
+python bridge/armar_policy_bounty.py bridge/fixtures/policy-bounty-jhjd.json
+python bridge/buscar_policy_bounty.py bridge/fixtures/policy-bounty-control-4hah.json bridge/fixtures/policy-bounty-jhjd.json
+python bridge/exportar_policy_bounty.py <DIRECTORIO_DE_REPLAYS_S17> <DIRECTORIO_DE_REPLAYS_S18>
+```
+
+El tercer comando reconstruye candidatos desde replays crudos y los evalúa sin
+usar el ganador ni el resultado económico. La auditoría retrospectiva local,
+sus cifras y sus límites están en
+[`docs/HISTORICAL_CORPUS_AUDIT.md`](docs/HISTORICAL_CORPUS_AUDIT.md).
+
+El segundo comando no conoce cuál candidato gana: aplica el verificador a cada
+JSON y reporta los contraejemplos. El corpus actual contiene solo dos fixtures;
+por tanto demuestra el recorrido técnico, **no** una búsqueda amplia o difícil.
 
 ## Interfaz de la demo
 

@@ -19,6 +19,7 @@ const selectors = {
 };
 
 let requestId = 0;
+let replayStage = "claim";
 
 async function rpc(method, params) {
   const response = await fetch(RPC_URL, {
@@ -102,9 +103,72 @@ async function readProof() {
   }
 }
 
+function setReplayStage(stage) {
+  replayStage = stage;
+  const replay = document.querySelector("#replay");
+  const rail = document.querySelector("#payout-rail");
+  const action = document.querySelector("#replay-action");
+  const summary = document.querySelector(".replay-summary");
+  replay.dataset.stage = stage;
+  rail.dataset.stage = stage;
+
+  if (stage === "claim") {
+    document.querySelector("#versus-copy").textContent = "scenario sealed";
+    document.querySelector("#challenger-label").textContent = "Challenger's scenario";
+    document.querySelector("#stage-value").textContent = "SEALED";
+    document.querySelector("#stage-comparison").textContent = "Hidden until the reveal window";
+    document.querySelector("#challenge-result").textContent = "Waiting";
+    document.querySelector("#agent-result").textContent = "Claim stands";
+    document.querySelector("#agent-funds").textContent = "3.00 MON locked";
+    document.querySelector("#challenger-funds").textContent = "0.10 MON deposit";
+    document.querySelector("#replay-copy").textContent = "The counterexample is committed, but nobody can see it yet.";
+    action.textContent = "Reveal the scenario";
+    summary.hidden = true;
+  } else if (stage === "evidence") {
+    document.querySelector("#versus-copy").textContent = "scenario revealed";
+    document.querySelector("#challenger-label").textContent = "Permitted scenario";
+    document.querySelector("#stage-value").textContent = "OVERBET";
+    document.querySelector("#stage-comparison").textContent = "Alnitak's registered polarized OVERBET range.";
+    document.querySelector("#challenge-result").textContent = "Ready to recompute";
+    document.querySelector("#agent-result").textContent = "Claim stands";
+    document.querySelector("#replay-copy").textContent = "The scenario is allowed. Now Monad can test the decision boundary.";
+    action.textContent = "Run the registered rule";
+    summary.hidden = true;
+  } else {
+    document.querySelector("#versus-copy").textContent = "recomputed onchain";
+    document.querySelector("#challenger-label").textContent = "Deterministic result";
+    document.querySelector("#stage-value").textContent = "17.70%";
+    document.querySelector("#stage-comparison").innerHTML = "recomputed equity <strong>&lt; 36.29%</strong>";
+    document.querySelector("#challenge-result").textContent = "Claim refuted";
+    document.querySelector("#agent-result").textContent = "Original claim refuted";
+    document.querySelector("#agent-funds").textContent = "0 MON returned";
+    document.querySelector("#challenger-funds").textContent = "3.10 MON awarded";
+    document.querySelector("#replay-copy").textContent = "The threshold broke. The contract, not a judge, decided where the money went.";
+    action.textContent = "Verify the payout on Monad";
+    summary.hidden = false;
+  }
+}
+
+function advanceReplay() {
+  if (replayStage === "claim") {
+    setReplayStage("evidence");
+  } else if (replayStage === "evidence") {
+    setReplayStage("resolved");
+  } else {
+    document.querySelector("#verdict").scrollIntoView({ behavior: "smooth", block: "center" });
+    readProof();
+  }
+}
+
 document.querySelector("#commitment-id").textContent = COMMITMENT;
 document.querySelector("#core-address").textContent = CORE;
 document.querySelector("#recomputer-address").textContent = RECOMPUTER;
 document.querySelector("#refresh").addEventListener("click", readProof);
+document.querySelector("#replay-action").addEventListener("click", advanceReplay);
+document.querySelector("#reset-replay").addEventListener("click", () => setReplayStage("claim"));
+document.querySelectorAll("[data-start-replay]").forEach((link) => {
+  link.addEventListener("click", () => setReplayStage("claim"));
+});
 renderTimeline();
+setReplayStage("claim");
 readProof();
