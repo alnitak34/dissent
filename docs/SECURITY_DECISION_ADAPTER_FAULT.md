@@ -1,12 +1,12 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
 Estado: **implementado y validado en la rama
-`security-no-payable-adapter-fault`; la suite normal tiene 142 tests y la suite
-aislada EIP-1153 tiene 3 tests, todos pasaron en Foundry 1.8.1 mediante GitHub
-Actions; no fusionado a `master` y no desplegado**.
+`security-no-payable-adapter-fault`; la suite normal tiene 142 tests, la suite
+aislada EIP-1153 tiene 3 y la suite de profundidad tiene 2, todos pasaron en
+Foundry 1.8.1 mediante GitHub Actions; no fusionado a `master` y no desplegado**.
 
 Ejecución verificable:
-<https://github.com/alnitak34/dissent/actions/runs/34994176878>
+<https://github.com/alnitak34/dissent/actions/runs/34997603039>
 
 ## Hallazgo
 
@@ -102,20 +102,32 @@ Fuentes normativas: [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153) permite
 `TLOAD` en contexto estático y hace excepcional `TSTORE`; [EIP-214](https://eips.ethereum.org/EIPS/eip-214)
 define las restricciones generales de `STATICCALL`.
 
+`security-tests/CallDepthBoundary.t.sol` limita la llamada exterior a 30M de
+gas e intenta interponer 1024 llamadas antes de `challengeReveal`. En Foundry:
+
+- el control con profundidad 0 completó y pagó una refutación real;
+- el intento profundo alcanzó 399 marcos y la siguiente llamada falló;
+- `challengeReveal` no se ejecutó, el compromiso quedó `Open` y no hubo créditos
+  ni bounty para ninguna parte.
+
+Esto es evidencia reproducible de que el ataque no alcanzó la profundidad
+máxima bajo el límite probado; no es una demostración formal para todos los
+clientes ni una ejecución en Monad Testnet. Solidity documenta una profundidad
+máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
+<https://docs.soliditylang.org/en/latest/security-considerations.html#call-stack-depth>
+
 ## Trabajo pendiente antes de desplegar
 
 1. Medir de forma aislada el gas exacto de `_settleFault` si se quiere publicar
    el headroom numérico de `SETTLE_RESERVE`; las regresiones actuales solo
    validan que la envolvente funcional alcanza.
-2. Validar el caso EIP-1153 también contra Monad Testnet si se decide conservar
-   esta prueba como evidencia específica de red; hoy es una referencia Cancun.
-3. Añadir una medición fiel del límite de profundidad de llamada. Solidity fija
-   una profundidad máxima de 1024 y señala que EIP-150 dificulta llegar a ella,
-   pero todavía no se midió bajo el límite de 30M de Monad.
-4. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
+2. Validar EIP-1153 y profundidad también contra Monad Testnet si se decide
+   presentarlos como evidencia específica de red; hoy son pruebas de Foundry
+   (EIP-1153 usa target Cancun).
+3. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
    terminan en reembolso, nunca en bounty.
-5. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
-6. Fusionar únicamente después de esa revisión o de una decisión explícita de
+4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
+5. Fusionar únicamente después de esa revisión o de una decisión explícita de
    aceptar los riesgos restantes.
-7. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
+6. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
    contrato existente en testnet conserva la política anterior.
