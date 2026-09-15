@@ -78,8 +78,10 @@ que nadie reveló un challenge exitoso antes del cierre.
 - El agente **elige** el recomputer. Un adaptador puede devolver siempre `false`,
   o valores favorables al agente, sin que el núcleo lo note.
 - `view` **no** es `pure`: el recomputer puede leer `block.number`,
-  `block.timestamp`, `block.basefee` o storage mutable, y comportarse distinto
-  según el contexto (por eso el sellado en dos fases y el modelo de gas).
+  `block.timestamp`, `block.basefee`, storage persistente o storage transitorio
+  (`TLOAD`), y comportarse distinto según el contexto. `STATICCALL` impide
+  escribir con `TSTORE`, pero no impide leer un valor transitorio preparado por
+  otra llamada al mismo adaptador durante la misma transacción.
 - `domain()` es una **etiqueta**, no una prueba de honestidad.
 - Un **proxy** o un adaptador con storage mutable puede **cambiar de
   comportamiento** después de que se creen compromisos contra él.
@@ -92,7 +94,9 @@ que nadie reveló un challenge exitoso antes del cierre.
   decidir quién causó un fallo técnico.
 - **Para producción**, el consumidor debe exigir adaptadores **auditados,
   inmutables, con fuente verificada y versión reconocible** (`domain()`), y tratar
-  un adaptador desconocido como no confiable.
+  un adaptador desconocido como no confiable. También debe rechazar adaptadores
+  cuyo resultado dependa del contexto EVM o de estado transitorio externo a los
+  `inputs` y la `evidence` comprometidos.
 
 Contadores como "cuántos `ChallengeRejected` o `AdapterFaulted` acumuló un
 compromiso" se **derivan indexando eventos**; el núcleo **no** los almacena.

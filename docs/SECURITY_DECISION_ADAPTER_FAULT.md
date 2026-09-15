@@ -1,11 +1,12 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
 Estado: **implementado y validado en la rama
-`security-no-payable-adapter-fault`; 136 tests pasaron en Foundry 1.8.1 mediante
-GitHub Actions; no fusionado a `master` y no desplegado**.
+`security-no-payable-adapter-fault`; la suite normal tiene 142 tests y la suite
+aislada EIP-1153 tiene 3 tests, todos pasaron en Foundry 1.8.1 mediante GitHub
+Actions; no fusionado a `master` y no desplegado**.
 
 Ejecución verificable:
-<https://github.com/alnitak34/dissent/actions/runs/34991597971>
+<https://github.com/alnitak34/dissent/actions/runs/34994176878>
 
 ## Hallazgo
 
@@ -60,8 +61,8 @@ indexables. El MVP no incluye gobernanza ni resolución externa.
 ## Cobertura validada
 
 `test/AdapterFault.t.sol` cubre fallos de validate y recompute por revert, OOG,
-return bomb, returndata corto, tamaño incorrecto y bool no canónico. Sus
-aserciones demuestran:
+return bomb, returndata corto, tamaño incorrecto, bool no canónico, `INVALID` y
+violaciones de `STATICCALL` mediante `SSTORE` y `LOG`. Sus aserciones demuestran:
 
 - `credits(challenger) == deposit`;
 - `credits(agent) == reward`;
@@ -82,17 +83,39 @@ su depósito y el agente no cobra. Esto **no** demuestra que un recomputer
 dependiente del contexto sea determinista: un retorno canónico distinto sigue
 perteneciendo a la frontera de confianza del adaptador.
 
+`security-tests/TransientStorageBoundary.t.sol` se ejecuta aparte con target
+Cancun. Verifica las dos caras de EIP-1153:
+
+- un `TSTORE` ejecutado durante el `STATICCALL` termina en `Faulted`, devuelve
+  depósito y recompensa a sus dueños y no paga bounty;
+- un `TLOAD` sí puede leer estado transitorio preparado por el challenger en una
+  llamada anterior de la misma transacción y producir un `int256` canónico que
+  cruza el umbral;
+- sin el `TSTORE` previo, el mismo adaptador y la misma evidencia no refutan.
+
+La segunda prueba demuestra una **limitación**, no una defensa: el núcleo no
+puede distinguir ese número contextual de una refutación semánticamente válida.
+La prueba corre en el REVM de Foundry con reglas Cancun; todavía no es una
+transacción de validación ejecutada en Monad Testnet.
+
+Fuentes normativas: [EIP-1153](https://eips.ethereum.org/EIPS/eip-1153) permite
+`TLOAD` en contexto estático y hace excepcional `TSTORE`; [EIP-214](https://eips.ethereum.org/EIPS/eip-214)
+define las restricciones generales de `STATICCALL`.
+
 ## Trabajo pendiente antes de desplegar
 
 1. Medir de forma aislada el gas exacto de `_settleFault` si se quiere publicar
    el headroom numérico de `SETTLE_RESERVE`; las regresiones actuales solo
    validan que la envolvente funcional alcanza.
-2. Añadir regresiones fieles para transient storage y fallos por profundidad de
-   llamada cuando el entorno de pruebas permita reproducirlos.
-3. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
+2. Validar el caso EIP-1153 también contra Monad Testnet si se decide conservar
+   esta prueba como evidencia específica de red; hoy es una referencia Cancun.
+3. Añadir una medición fiel del límite de profundidad de llamada. Solidity fija
+   una profundidad máxima de 1024 y señala que EIP-150 dificulta llegar a ella,
+   pero todavía no se midió bajo el límite de 30M de Monad.
+4. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
    terminan en reembolso, nunca en bounty.
-4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
-5. Fusionar únicamente después de esa revisión o de una decisión explícita de
+5. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
+6. Fusionar únicamente después de esa revisión o de una decisión explícita de
    aceptar los riesgos restantes.
-6. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
+7. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
    contrato existente en testnet conserva la política anterior.

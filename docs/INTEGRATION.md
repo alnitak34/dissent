@@ -172,6 +172,9 @@ contract EjemploRecomputer is IRecomputer {
 - [ ] `recompute` y `validateEvidence` son **deterministas** y no dependen del
       llamador ni del contexto de bloque (o si lo hacen, entendés y aceptás las
       consecuencias de la frontera de confianza).
+- [ ] No leen storage transitorio (`TLOAD`) ni otro estado que un tercero pueda
+      preparar en la misma transacción. `STATICCALL` bloquea `TSTORE`, pero no
+      convierte una lectura transitoria en una función pura.
 - [ ] `R` y `V` cubren el **peor caso medido** con margen; la evidencia más cara
       cabe en `R`.
 - [ ] `maxEvidenceLen` es el mínimo que tu adaptador realmente necesita.
