@@ -1,0 +1,40 @@
+name: Validate AdapterFault security change
+
+on:
+  push:
+    branches: [security-no-payable-adapter-fault]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundry:
+    name: Foundry validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry 1.8.1
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.1
+
+      - name: Show Foundry version
+        run: forge --version
+
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Run complete test suite
+        run: forge test -vvv
+
+      - name: Run lint
+        run: forge lint
+
+      - name: Check contract sizes
+        run: forge build --sizes

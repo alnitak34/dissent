@@ -209,11 +209,12 @@ contract AdapterFaultTest is Test {
     function _assertFaulted(bytes32 id, DissentCore.Phase phase, bytes memory ev) internal {
         _seal(id, ev);
         vm.expectEmit(true, true, false, true, address(core));
-        emit DissentCore.AdapterFaulted(id, alice, phase, uint256(REWARD) + DEPOSIT);
+        emit DissentCore.AdapterFaulted(id, alice, phase, DEPOSIT, REWARD);
         vm.prank(alice, alice);
         core.challengeReveal{gas: 30_000_000}(id, abi.encode(BASE), ev, "s");
-        assertEq(core.credits(alice), uint256(REWARD) + DEPOSIT, "el retador cobra reward + deposito");
-        assertEq(core.credits(agent), 0, "el agente pierde la recompensa");
+        assertEq(core.credits(alice), DEPOSIT, "el retador solo recupera su deposito");
+        assertEq(core.credits(agent), REWARD, "la recompensa vuelve al agente");
+        assertEq(core.escrowed(), 0, "el fault liquida ambos principales");
         assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Faulted));
         // sello settled: sweep no puede pagarle al agente tras el fault
         vm.roll(block.number + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS() + 1);
@@ -308,8 +309,8 @@ contract AdapterFaultTest is Test {
     // ── starvation: evidencia grande + adaptador que consume casi exactamente R,
     //    y CONFIRMA onchain que recibio >= R. Si el chequeo inmediato no reservara
     //    el encode, recompute recibiria < R, revertiria "UNDER_DELIVERED" y esto
-    //    seria un AdapterFault pagable. Con la reserva correcta: NO hay fault. ─────
-    function test_starvation_no_produce_fault_pagable() public {
+    //    seria un AdapterFault. Con la reserva correcta: NO hay fault. ──────────────
+    function test_starvation_no_produce_fault() public {
         // minGas = R - slack: exige haber recibido casi todo el limite prometido.
         GasHungryRecomputer rc = new GasHungryRecomputer(uint256(RGL) - 20_000);
         vm.prank(agent, agent);

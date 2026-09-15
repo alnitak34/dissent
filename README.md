@@ -24,8 +24,12 @@ Ver [Frontera de confianza](#frontera-de-confianza).
 
 ## Estado
 
-Contrato **implementado, probado localmente y desplegado con código verificado en
-Monad testnet**. **Auditoría externa pendiente.**
+Existe un despliegue **histórico** probado y con código verificado en Monad
+testnet. Ese despliegue conserva la semántica anterior, donde un
+`AdapterFault` pagaba al retador. La fuente actual cambia esa regla: un fallo
+técnico invalida la campaña y devuelve a cada parte su principal. Esta revisión
+de seguridad todavía debe compilarse, probarse y redesplegarse antes de tratarla
+como la versión pública vigente. **Auditoría externa pendiente.**
 
 - `DissentCore`: [`0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
 - `AlnitakRiverRecomputer`: [`0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38)
@@ -55,7 +59,7 @@ dominio concreto vive ahí.
 | **Challenged** | evidencia válida y `recompute` **cruza** el umbral | vuelve al retador (dentro del payout) | al retador | la afirmación fue refutada con esa evidencia |
 | **ChallengeFailed** | evidencia válida y `recompute` **no cruza**; sigue `Open` | al agente | — | la afirmación se sostuvo frente a esa evidencia |
 | **ChallengeRejected** | `validateEvidence` devolvió `false` canónico; sello liquidado; sigue `Open` | **vuelve al retador** | — | evidencia malformada: **inconcluso**, el agente no cosecha |
-| **Faulted** | el adaptador revirtió, hizo OOG, o devolvió ABI no canónico **teniendo el gas prometido** | vuelve al retador (dentro del payout) | al retador | **fallo técnico del adaptador**, NO una refutación de la afirmación |
+| **Faulted** | el adaptador revirtió, hizo OOG, o devolvió ABI no canónico **teniendo el gas prometido** | vuelve al retador | vuelve al agente | **campaña inválida por fallo técnico**; NO es una refutación y NO paga bounty |
 | **ChallengeVoided** | otro retador ya resolvió | vuelve al retador | — | sin llamar al adaptador |
 | **Reclaimed** | venció `windowEnds`, venció además el periodo conservador calculado desde el sello más reciente, y no hubo challenge exitoso | — | vuelve al agente | **NO significa "verificado"**: puede no haber habido challenges, o muchos `ChallengeRejected` |
 
@@ -81,12 +85,21 @@ que nadie reveló un challenge exitoso antes del cierre.
   comportamiento** después de que se creen compromisos contra él.
 - Los resultados **valen tanto como el adaptador**. Dissent **no es un oráculo de
   verdad**.
+- Un agente malicioso todavía puede elegir un adaptador que falle durante el
+  challenge para evitar una refutación pagable. La campaña queda públicamente
+  `Faulted`, el retador recupera su depósito y la recompensa vuelve al agente;
+  el retador sigue soportando el gas. El MVP no tiene árbitro ni gobernanza para
+  decidir quién causó un fallo técnico.
 - **Para producción**, el consumidor debe exigir adaptadores **auditados,
   inmutables, con fuente verificada y versión reconocible** (`domain()`), y tratar
   un adaptador desconocido como no confiable.
 
 Contadores como "cuántos `ChallengeRejected` o `AdapterFaulted` acumuló un
 compromiso" se **derivan indexando eventos**; el núcleo **no** los almacena.
+
+La decisión de no pagar por fallos técnicos, su amenaza de origen y los casos
+todavía pendientes están en
+[`docs/SECURITY_DECISION_ADAPTER_FAULT.md`](docs/SECURITY_DECISION_ADAPTER_FAULT.md).
 
 ## Gas y economía
 

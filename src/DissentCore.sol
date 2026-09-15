@@ -110,7 +110,10 @@ contract DissentCore {
     // la llamada; el margen ceil(limit/63) de _deliver cubre EXCLUSIVAMENTE la
     // regla EIP-150. Son reservas independientes.
     uint256 private constant C_CALL = 22_000;
-    // Liquidacion posterior (credito reward+deposito + evento), medida ~143k + margen.
+    // Liquidacion posterior. En un challenge resuelto acredita un payout; ante
+    // fallo tecnico acredita por separado el deposito al retador y la recompensa
+    // al agente. La suficiencia del margen para esa segunda rama debe volver a
+    // medirse antes del proximo despliegue.
     uint256 private constant SETTLE_RESERVE = 250_000;
     // Prework EN-CONTRATO (SLOADs, aritmetica), medido; NO incluye el intrinseco
     // de la transaccion (ese gas ya se gasto cuando se evalua gasleft()).
@@ -234,8 +237,15 @@ contract DissentCore {
     event ChallengeVoided(bytes32 indexed id, address indexed challenger, bytes32 reason);
     /// @notice El adaptador incumplio su interfaz (revert / OOG / returndata no
     ///         canonico) teniendo el gas prometido. Es un FALLO TECNICO del
-    ///         adaptador que eligio el agente, NO una refutacion de la afirmacion.
-    event AdapterFaulted(bytes32 indexed id, address indexed challenger, Phase phase, uint256 payout);
+    ///         adaptador que eligio el agente, NO una refutacion de la afirmacion
+    ///         y nunca paga un bounty. Cada parte recupera su principal.
+    event AdapterFaulted(
+        bytes32 indexed id,
+        address indexed challenger,
+        Phase phase,
+        uint256 challengerRefund,
+        uint256 agentRefund
+    );
     /// @notice validateEvidence completo y devolvio (false, reason): la evidencia
     ///         esta malformada para estos inputs. NO es refutacion ni fallo tecnico.
     event ChallengeRejected(bytes32 indexed id, address indexed challenger, bytes32 reason);
@@ -678,8 +688,9 @@ contract DissentCore {
         (bool vFault, bool okEv, bytes32 reason) =
             _safeValidateEvidence(c.recomputer, inputs, evidence, c.validateGasLimit);
         if (vFault) {
-            // fallo tecnico del adaptador en validacion: paga al retador. NO revert.
-            _payFault(id, c, msg.sender, dep, Phase.VALIDATION);
+            // Fallo tecnico: invalida la campana y devuelve a cada parte su
+            // principal. NO es una refutacion y NO paga bounty. NO revert.
+            _settleFault(id, c, msg.sender, dep, Phase.VALIDATION);
             return;
         }
         if (!okEv) {
@@ -698,7 +709,7 @@ contract DissentCore {
         }
         (bool rFault, int256 newValue) = _safeRecompute(c.recomputer, inputs, evidence, c.recomputeGasLimit);
         if (rFault) {
-            _payFault(id, c, msg.sender, dep, Phase.RECOMPUTE);
+            _settleFault(id, c, msg.sender, dep, Phase.RECOMPUTE);
             return;
         }
 
@@ -719,15 +730,18 @@ contract DissentCore {
         }
     }
 
-    /// @dev Fallo tecnico del adaptador con el gas prometido: el retador cobra
-    ///      reward + deposito y el compromiso queda Faulted. El sello ya esta
-    ///      settled, asi que sweepExpiredSeal no puede pagarle al agente.
-    function _payFault(bytes32 id, Commitment storage c, address who, uint128 dep, Phase phase) private {
+    /// @dev Fallo tecnico del adaptador con el gas prometido: invalida la
+    ///      campana, devuelve el deposito al retador y la recompensa al agente.
+    ///      Nadie gana un bounty por un fallo de ejecucion arbitrario. El sello
+    ///      ya esta settled, asi que sweepExpiredSeal no puede cobrarlo despues.
+    function _settleFault(bytes32 id, Commitment storage c, address who, uint128 dep, Phase phase) private {
         c.status = Status.Faulted;
-        uint256 payout = uint256(c.reward) + uint256(dep);
-        escrowed -= payout;
-        _credit(who, payout);
-        emit AdapterFaulted(id, who, phase, payout);
+        uint256 challengerRefund = uint256(dep);
+        uint256 agentRefund = uint256(c.reward);
+        escrowed -= challengerRefund + agentRefund;
+        _credit(who, challengerRefund);
+        _credit(c.agent, agentRefund);
+        emit AdapterFaulted(id, who, phase, challengerRefund, agentRefund);
     }
 
     /// @notice Un sello que vencio sin revelarse. El deposito se PIERDE y va al
