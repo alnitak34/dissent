@@ -30,6 +30,12 @@ jobs:
       - name: Run complete test suite
         run: forge test -vvv
 
+      - name: Run EIP-1153 transient-storage boundary tests
+        run: |
+          cp security-tests/TransientStorageBoundary.t.sol test/TransientStorageBoundary.t.sol
+          forge test --evm-version cancun --match-contract TransientStorageBoundaryTest -vvv
+          rm test/TransientStorageBoundary.t.sol
+
       - name: Run lint
         run: forge lint
 
