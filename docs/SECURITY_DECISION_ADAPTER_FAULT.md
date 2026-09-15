@@ -1,12 +1,12 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
 Estado: **implementado y validado en la rama
-`security-no-payable-adapter-fault`; la suite normal tiene 142 tests, la suite
+`security-no-payable-adapter-fault`; la suite normal tiene 144 tests, la suite
 aislada EIP-1153 tiene 3 y la suite de profundidad tiene 2, todos pasaron en
 Foundry 1.8.1 mediante GitHub Actions; no fusionado a `master` y no desplegado**.
 
-Ejecución verificable:
-<https://github.com/alnitak34/dissent/actions/runs/34997603039>
+Ejecución verificable más reciente:
+<https://github.com/alnitak34/dissent/actions/runs/34999684775>
 
 ## Hallazgo
 
@@ -125,9 +125,9 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
    presentarlos como evidencia específica de red; hoy son pruebas de Foundry
    (EIP-1153 usa target Cancun).
 3. Completar las pruebas dirigidas pendientes del inventario
-   `docs/EVM_HALT_COVERAGE.md`: `CALL` con valor, `InvalidJump` y fallo de
-   precompile. El inventario ya separa lo cubierto, lo parcial y lo no alcanzable
-   bajo `STATICCALL`; no afirma que todas las variantes estén verificadas.
+   `docs/EVM_HALT_COVERAGE.md`: `InvalidJump` y fallo de precompile. El
+   inventario ya separa lo cubierto, lo parcial y lo no alcanzable bajo
+   `STATICCALL`; no afirma que todas las variantes estén verificadas.
 4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
 5. Fusionar únicamente después de esa revisión o de una decisión explícita de
    aceptar los riesgos restantes.

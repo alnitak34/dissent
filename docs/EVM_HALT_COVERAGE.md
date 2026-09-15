@@ -1,8 +1,12 @@
 # Cobertura de fallos externos de la EVM
 
 Estado: inventario de seguridad para la rama
-`security-no-payable-adapter-fault`. No es una auditoría ni una prueba formal de
-exhaustividad.
+`security-no-payable-adapter-fault`. El `CALL` con valor fue validado en validate
+y recompute por GitHub Actions con Foundry 1.8.1. No es una auditoría ni una
+prueba formal de exhaustividad.
+
+Ejecución verificable:
+<https://github.com/alnitak34/dissent/actions/runs/34999684775>
 
 ## Alcance y criterio
 
@@ -44,7 +48,7 @@ Fuentes:
 | `StackUnderflow` / `StackOverflow` / `OutOfOffset` | Pendiente dirigido | Son caminos de bytecode malformado o límites internos; no están aislados. Para el núcleo deberían observarse como `success == false`, pero eso es una inferencia hasta ejecutar los casos. |
 | `CreateCollision` / `NonceOverflow` / límites de tamaño o prefijo de `CREATE` | No alcanzables como su categoría propia bajo la llamada estática | EIP-214 propaga el modo estático y prohíbe `CREATE`/`CREATE2`; el intento debe fallar primero como cambio de estado durante llamada estática. `SSTORE`, `LOG` y `TSTORE` ya prueban esa familia, no cada opcode. |
 | `StateChangeDuringStaticCall` | Cubierta | `SSTORE` y `LOG` están probados en validate y recompute; `TSTORE` está probado en la suite aislada Cancun. Todos terminan sin bounty. |
-| `CallNotAllowedInsideStatic` | Prueba añadida; validación CI pendiente | Un `CALL` con valor dentro del adaptador está ejercitado en validate y recompute. Debe terminar en `Faulted` sin bounty. |
+| `CallNotAllowedInsideStatic` | Cubierta | Un `CALL` con valor dentro del adaptador está ejercitado en validate y recompute. Termina en `Faulted`, devuelve ambos principales y no paga bounty. |
 | `OutOfFunds` / `OverflowPayment` | No alcanzables desde el `STATICCALL` directo con valor cero; cubierto el intento anidado de pago | Dissent no transfiere valor al adaptador. El test de `CALL` con valor comprueba que el intento anidado se rechaza en contexto estático antes de producir un pago. |
 | `PrecompileError` / `PrecompileErrorWithContext` | Pendiente dirigido, impacto acotado | Falta un adaptador que propague un fallo real de precompile. Si la llamada exterior devuelve `false`, la política ya no paga bounty; falta demostrarlo con ese origen concreto. |
 | `CallTooDeep` | Medida, no demostrada formalmente | La suite aislada intentó 1024 marcos con 30M, alcanzó 399 y falló antes de entrar a `challengeReveal`; la campaña quedó `Open` y no hubo pagos. |
@@ -71,11 +75,9 @@ correcto. Esa responsabilidad sigue en la frontera de confianza del adaptador.
 
 ## Próximas pruebas, en orden
 
-1. Validar en CI el `CALL` con valor bajo `STATICCALL`, en validate y
-   recompute.
-2. `InvalidJump` con runtime mínimo controlado.
-3. Un fallo de precompile propagado por el adaptador.
-4. Solo si aporta evidencia adicional: bytecode crudo para stack underflow,
+1. `InvalidJump` con runtime mínimo controlado.
+2. Un fallo de precompile propagado por el adaptador.
+3. Solo si aporta evidencia adicional: bytecode crudo para stack underflow,
    stack overflow y out-of-offset.
 
 Estas pruebas no deben cambiar la política: ninguna falla técnica paga bounty.
