@@ -124,8 +124,10 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
 2. Validar EIP-1153 y profundidad también contra Monad Testnet si se decide
    presentarlos como evidencia específica de red; hoy son pruebas de Foundry
    (EIP-1153 usa target Cancun).
-3. Enumerar sistemáticamente las formas de fallo externas y verificar que todas
-   terminan en reembolso, nunca en bounty.
+3. Completar las pruebas dirigidas pendientes del inventario
+   `docs/EVM_HALT_COVERAGE.md`: `CALL` con valor, `InvalidJump` y fallo de
+   precompile. El inventario ya separa lo cubierto, lo parcial y lo no alcanzable
+   bajo `STATICCALL`; no afirma que todas las variantes estén verificadas.
 4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
 5. Fusionar únicamente después de esa revisión o de una decisión explícita de
    aceptar los riesgos restantes.

@@ -92,9 +92,11 @@ contract StaticViolationRecomputer {
         RecInvalid,
         RecSstore,
         RecLog,
+        RecCallValue,
         ValInvalid,
         ValSstore,
-        ValLog
+        ValLog,
+        ValCallValue
     }
 
     Mode public mode;
@@ -128,6 +130,11 @@ contract StaticViolationRecomputer {
                 log0(0, 0)
             }
         }
+        if (mode == Mode.ValCallValue) {
+            // EIP-214: CALL con valor no está permitido bajo STATICCALL.
+            (bool ok,) = address(0xBEEF).call{value: 1}("");
+            require(ok, "CALL_VALUE_FAILED");
+        }
         return (true, bytes32(0));
     }
 
@@ -147,6 +154,11 @@ contract StaticViolationRecomputer {
             assembly {
                 log0(0, 0)
             }
+        }
+        if (mode == Mode.RecCallValue) {
+            // EIP-214: CALL con valor no está permitido bajo STATICCALL.
+            (bool ok,) = address(0xBEEF).call{value: 1}("");
+            require(ok, "CALL_VALUE_FAILED");
         }
         return abi.decode(inputs, (int256));
     }
@@ -384,6 +396,14 @@ contract AdapterFaultTest is Test {
         );
     }
 
+    function test_recompute_call_con_valor_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecCallValue)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
     function test_validate_invalid_es_fault_sin_bounty() public {
         _assertFaulted(
             _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValInvalid)), 64),
@@ -403,6 +423,14 @@ contract AdapterFaultTest is Test {
     function test_validate_log_en_staticcall_es_fault_sin_bounty() public {
         _assertFaulted(
             _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValLog)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_call_con_valor_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValCallValue)), 64),
             DissentCore.Phase.VALIDATION,
             abi.encode(int256(50))
         );
