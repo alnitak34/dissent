@@ -36,6 +36,12 @@ jobs:
           forge test --evm-version cancun --match-contract TransientStorageBoundaryTest -vvv
           rm test/TransientStorageBoundary.t.sol
 
+      - name: Run 30M call-depth boundary tests
+        run: |
+          cp security-tests/CallDepthBoundary.t.sol test/CallDepthBoundary.t.sol
+          forge test --match-contract CallDepthBoundaryTest -vvv
+          rm test/CallDepthBoundary.t.sol
+
       - name: Run lint
         run: forge lint
 
