@@ -1,7 +1,7 @@
 # Prueba de AdapterFault en Monad Testnet
 
-Estado: adaptador de prueba y commit desplegados en Monad Testnet el
-2026-09-16; **sello y reveal todavia no ejecutados onchain**.
+Estado: adaptador de prueba, commit y sello ejecutados en Monad Testnet el
+2026-09-16; **reveal todavia no ejecutado onchain**.
 
 Objetivo limitado: comprobar con recibos reales que un adaptador que funciona al
 crear la campaña pero revierte al revelar produce `Status.Faulted`, devuelve el
@@ -62,6 +62,26 @@ El ID de arriba proviene del evento `Committed` y se verifico leyendo
 `windowEnds`, la recompensa no se pierde automaticamente: el agente debera
 ejecutar `reclaim` cuando lo permita el contrato y pagar gas para recuperarla.
 
+## Sello confirmado
+
+| Campo | Valor |
+|---|---|
+| Transaccion | `0x00ebb783df5016559ae13a12ab9ab93f0b875f4e62152b5a16264c051e766b9c` |
+| Bloque del sello | `63073239` |
+| Recibo | `status = 1` |
+| Gas cobrado | `170.661` a `203,000000001` gwei |
+| Coste real de gas | `0,034644183000170661` test MON |
+| Deposito escrowado | `0,01` test MON |
+| Lectura onchain | `settled = false`; sealedHash `0xa649c4c3484582de3f09fad73831b9f016beb5ddc73d5b2c2ffbdd0adcc46514` |
+| Ventana de reveal | bloques `63073244` a `63080444`, inclusivos |
+
+El dry-run del sello habia estimado `0,030024918000147906` test MON; volvio
+a subestimar el cobro. El salt del retador **no** se registra aqui ni en Git.
+El dry-run del reveal (sin broadcast) paso y estimo `2.135.320` gas y
+`0,43346996000213532` test MON. Es solo una estimacion; aun no existe recibo
+del reveal. Si el reveal no entra a tiempo, el deposito de `0,01` test MON
+puede perderse mediante `sweepExpiredSeal`.
+
 ## Fondos y riesgo ANTES de firmar
 
 - El agente inmoviliza `0,25` test MON de recompensa. El retador inmoviliza
@@ -87,9 +107,8 @@ ejecutar `reclaim` cuando lo permita el contrato y pagar gas para recuperarla.
 2. HECHO: desplegar el probe y verificar recibo, direccion y bytecode. La
    direccion impresa en el dry-run NO fue la autoridad; si coincide con la
    real, es porque se uso el mismo sender y nonce.
-3. HECHO: ejecutar y verificar el commit del agente. PENDIENTE: simular y
-   ejecutar por separado sello del retador y reveal, verificando cada recibo
-   antes del siguiente. Los salts se generan y
+3. HECHO: ejecutar y verificar el commit del agente y el sello del retador.
+   PENDIENTE: revelar y verificar su recibo. Los salts se generan y
    guardan fuera de Git; **nunca se pegan en un chat ni se imprimen**.
 4. Leer `status`, `credits(agent)`, `credits(challenger)` y `escrowed()` onchain.
    Si el resultado es el esperado, cada beneficiario retira su propio credito.
