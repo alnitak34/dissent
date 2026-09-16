@@ -164,6 +164,60 @@ contract StaticViolationRecomputer {
     }
 }
 
+/// @notice Adaptador que funciona durante commit y activa un origen de halt
+///         concreto únicamente cuando recibe evidencia. El helper de
+///         InvalidJump contiene runtime crudo `PUSH1 0x01; JUMP`: el destino 1
+///         no es JUMPDEST. El caso precompile llama 0x08 con un byte, longitud
+///         inválida para el múltiplo de 192 exigido por EIP-197.
+contract HaltOriginRecomputer is IRecomputer {
+    enum Mode {
+        RecInvalidJump,
+        ValInvalidJump,
+        RecPrecompile,
+        ValPrecompile
+    }
+
+    Mode public immutable mode;
+    address public immutable invalidJumpTarget;
+
+    constructor(Mode m, address jumpTarget) {
+        mode = m;
+        invalidJumpTarget = jumpTarget;
+    }
+
+    function scale() external pure returns (uint256) {
+        return 1e18;
+    }
+
+    function domain() external pure returns (bytes32) {
+        return "halt-origin.v1";
+    }
+
+    function validateEvidence(bytes calldata, bytes calldata evidence) external view returns (bool, bytes32) {
+        if (evidence.length == 0) return (true, bytes32(0));
+        if (mode == Mode.ValInvalidJump) _invalidJump();
+        if (mode == Mode.ValPrecompile) _invalidPrecompileInput();
+        return (true, bytes32(0));
+    }
+
+    function recompute(bytes calldata inputs, bytes calldata evidence) external view returns (int256) {
+        if (evidence.length == 0) return abi.decode(inputs, (int256));
+        if (mode == Mode.RecInvalidJump) _invalidJump();
+        if (mode == Mode.RecPrecompile) _invalidPrecompileInput();
+        return abi.decode(inputs, (int256));
+    }
+
+    function _invalidJump() private view {
+        (bool ok,) = invalidJumpTarget.staticcall{gas: 50_000}("");
+        require(ok, "INVALID_JUMP_CHILD_FAILED");
+    }
+
+    function _invalidPrecompileInput() private view {
+        (bool ok,) = address(0x08).staticcall{gas: 100_000}(hex"01");
+        require(ok, "PRECOMPILE_FAILED");
+    }
+}
+
 /// @notice recompute honesto pero HAMBRIENTO: exige haber recibido al menos
 ///         `minGas` (confirma onchain cuanto gas le entregaron) y luego quema
 ///         casi todo, dejando apenas para retornar. Si el nucleo le entrega menos
@@ -266,9 +320,12 @@ contract AdapterFaultTest is Test {
     // una transaccion real; por eso estos casos usan floor + overhead de entrada,
     // no txRequired (que incluye calldata + 21k de la transaccion exterior).
     uint256 constant CORE_ENTRY_OVERHEAD = 80_000;
+    address constant INVALID_JUMP_TARGET = address(0x1111);
 
     function setUp() public {
         core = new DissentCore();
+        // Runtime crudo: PUSH1 0x01; JUMP. PC=1 no contiene JUMPDEST.
+        vm.etch(INVALID_JUMP_TARGET, hex"600156");
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -434,6 +491,31 @@ contract AdapterFaultTest is Test {
             DissentCore.Phase.VALIDATION,
             abi.encode(int256(50))
         );
+    }
+
+    // ── orígenes de halt inventariados por REVM ─────────────────────────────
+    function test_recompute_invalid_jump_anidado_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.RecInvalidJump, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.RECOMPUTE, abi.encode(int256(50)));
+    }
+
+    function test_validate_invalid_jump_anidado_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.ValInvalidJump, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
+    }
+
+    function test_recompute_fallo_precompile_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.RecPrecompile, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.RECOMPUTE, abi.encode(int256(50)));
+    }
+
+    function test_validate_fallo_precompile_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.ValPrecompile, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
     }
 
     // ── adaptador honesto: NO fault ──────────────────────────────────────────

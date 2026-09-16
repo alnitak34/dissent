@@ -34,6 +34,8 @@ Fuentes:
   <https://eips.ethereum.org/EIPS/eip-214>
 - EIP-1153, `TLOAD` permitido y `TSTORE` excepcional en contexto estático:
   <https://eips.ethereum.org/EIPS/eip-1153>
+- EIP-197, precompile de pairing en `0x08` y fallo ante longitud inválida:
+  <https://eips.ethereum.org/EIPS/eip-197>
 - Monad, límite de 30M por transacción y cobro por gas limit:
   <https://docs.monad.xyz/developer-essentials/changelog>
 
@@ -43,14 +45,14 @@ Fuentes:
 | --- | --- | --- |
 | `OutOfGas` | Cubierta como clase, no cada subtipo | `RecBurn`, `ValBurn`, return bomb y las regresiones con el piso funcional terminan en `Faulted` sin bounty. No se aislaron `Memory`, `MemoryLimit`, `Precompile`, `InvalidOperand` ni `ReentrancySentry`. |
 | `OpcodeNotFound` / `InvalidFEOpcode` | Parcial | `invalid()` está probado en validate y recompute. No se desplegó bytecode crudo con cada opcode indefinido. |
-| `InvalidJump` | Pendiente dirigido | Requiere bytecode crudo o generado expresamente; no tiene prueba propia todavía. |
+| `InvalidJump` | Prueba añadida; validación CI pendiente | Un helper con runtime crudo `PUSH1 0x01; JUMP` genera el halt; validate y recompute propagan el fallo y deben terminar sin bounty. Es una llamada anidada: el núcleo solo observa el fallo propagado por el adaptador. |
 | `NotActivated` | Dependiente del fork | Solo existe respecto de una revisión concreta. Debe comprobarse con la configuración efectiva de Monad, no presentarse como propiedad universal de Foundry. |
 | `StackUnderflow` / `StackOverflow` / `OutOfOffset` | Pendiente dirigido | Son caminos de bytecode malformado o límites internos; no están aislados. Para el núcleo deberían observarse como `success == false`, pero eso es una inferencia hasta ejecutar los casos. |
 | `CreateCollision` / `NonceOverflow` / límites de tamaño o prefijo de `CREATE` | No alcanzables como su categoría propia bajo la llamada estática | EIP-214 propaga el modo estático y prohíbe `CREATE`/`CREATE2`; el intento debe fallar primero como cambio de estado durante llamada estática. `SSTORE`, `LOG` y `TSTORE` ya prueban esa familia, no cada opcode. |
 | `StateChangeDuringStaticCall` | Cubierta | `SSTORE` y `LOG` están probados en validate y recompute; `TSTORE` está probado en la suite aislada Cancun. Todos terminan sin bounty. |
 | `CallNotAllowedInsideStatic` | Cubierta | Un `CALL` con valor dentro del adaptador está ejercitado en validate y recompute. Termina en `Faulted`, devuelve ambos principales y no paga bounty. |
 | `OutOfFunds` / `OverflowPayment` | No alcanzables desde el `STATICCALL` directo con valor cero; cubierto el intento anidado de pago | Dissent no transfiere valor al adaptador. El test de `CALL` con valor comprueba que el intento anidado se rechaza en contexto estático antes de producir un pago. |
-| `PrecompileError` / `PrecompileErrorWithContext` | Pendiente dirigido, impacto acotado | Falta un adaptador que propague un fallo real de precompile. Si la llamada exterior devuelve `false`, la política ya no paga bounty; falta demostrarlo con ese origen concreto. |
+| `PrecompileError` / `PrecompileErrorWithContext` | Prueba añadida; validación CI pendiente | El adaptador llama la precompile `0x08` con longitud inválida según EIP-197 y propaga el fallo, en validate y recompute. El test demuestra el resultado económico, no cuál variante interna de REVM eligió el cliente. |
 | `CallTooDeep` | Medida, no demostrada formalmente | La suite aislada intentó 1024 marcos con 30M, alcanzó 399 y falló antes de entrar a `challengeReveal`; la campaña quedó `Open` y no hubo pagos. |
 
 ## Fallos externos que no son una variante de `HaltReason`
@@ -75,9 +77,8 @@ correcto. Esa responsabilidad sigue en la frontera de confianza del adaptador.
 
 ## Próximas pruebas, en orden
 
-1. `InvalidJump` con runtime mínimo controlado.
-2. Un fallo de precompile propagado por el adaptador.
-3. Solo si aporta evidencia adicional: bytecode crudo para stack underflow,
+1. Validar en CI los casos añadidos de `InvalidJump` y precompile.
+2. Solo si aporta evidencia adicional: bytecode crudo para stack underflow,
    stack overflow y out-of-offset.
 
 Estas pruebas no deben cambiar la política: ninguna falla técnica paga bounty.
