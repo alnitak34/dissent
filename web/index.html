@@ -24,12 +24,13 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">A real policy bounty · Monad Testnet</p>
-          <h1>An agent stakes <span>3 MON</span> on its rule.<br /><em>One hand breaks it.</em></h1>
+          <p class="eyebrow">Challengeable claims for autonomous agents</p>
+          <h1>An agent says its decision is safe.<br /><em>What if it isn't?</em></h1>
           <p class="lede">
-            Alnitak's old poker rule would allow a river call. A challenger
-            presents a valid hand where the promised safety margin fails.
-            Dissent checks the fixed rule onchain and credits the bounty.
+            Dissent lets an agent back a precise rule with a bounty. Anyone can
+            submit an allowed counterexample. Monad runs the bound rule and
+            settles the result onchain, without a private judge. Alnitak's poker
+            agent is our first real test case, not the limit of the protocol.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#proof" data-start-replay>Replay the completed challenge</a>
@@ -53,9 +54,18 @@
       </section>
 
       <section class="proof-shell" id="proof">
+        <div class="chain-role">
+          <span>MONAD'S ROLE</span>
+          <p>
+            The reward is held by a contract on Monad Testnet. The challenge
+            triggers an onchain recomputation; the result and both withdrawals
+            have public transaction receipts below. This is a working testnet
+            settlement, not a claim of external adoption or a mainnet launch.
+          </p>
+        </div>
         <div class="proof-heading">
           <div>
-            <p class="eyebrow">Recorded on testnet · Replay the dispute</p>
+            <p class="eyebrow">First live case · Alnitak's river policy</p>
             <h2>A rule passed. A real hand broke it. The challenger collected.</h2>
           </div>
           <button id="reset-replay" class="refresh" type="button">
@@ -160,20 +170,21 @@
 
       <section class="why">
         <div>
-          <p class="eyebrow">Why this exists</p>
-          <h2>A result is not evidence that the decision was sound.</h2>
+          <p class="eyebrow">Beyond this poker hand</p>
+          <h2>The hand is the proof. The protocol is the product.</h2>
         </div>
         <div class="why-copy">
           <p>
-            Autonomous agents can produce numbers that trigger actions: risk scores,
-            prices, probabilities, expected returns and safety limits. Their own
-            tests only cover the cases they thought to test. Logs do not reward an
-            outsider for finding the case they missed.
+            Other agents also produce numbers that drive actions: risk scores,
+            prices, probabilities or spending limits. A rule that sounds safe
+            may have an allowed case that breaks it. A log records the error;
+            a bounty gives someone a reason to find it.
           </p>
           <p>
-            Dissent is the neutral mechanism between a claim and its consequence.
-            It handles escrow, sealed challenges and settlement. Domain-specific
-            recomputers define what the number means.
+            Dissent provides escrow, sealed challenges and settlement on Monad.
+            Each field needs its own deterministic, bounded recomputer to define
+            what counts as a valid counterexample. Risk and pricing examples are
+            possible integrations, not integrations we have built or validated.
           </p>
         </div>
       </section>

@@ -72,6 +72,9 @@ h1 em { color: var(--muted); font-family: Georgia, serif; font-weight: 400; }
 .rule-line strong { color: var(--acid); }
 
 .proof-shell { padding: clamp(28px, 5vw, 64px); background: var(--panel); border: 1px solid var(--line); }
+.chain-role { display: grid; grid-template-columns: 130px 1fr; gap: 20px; align-items: start; margin-bottom: 54px; padding: 18px 20px; border-left: 3px solid var(--violet); background: rgba(141, 114, 255, .07); }
+.chain-role span { color: var(--violet); font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.chain-role p { max-width: 800px; margin: 0; color: #d2d1c9; font-size: 14px; }
 .proof-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; }
 h2 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -.045em; line-height: 1.02; }
 .proof-heading h2 { max-width: 650px; margin-bottom: 0; }
@@ -239,6 +242,7 @@ footer p { margin: 0; }
   .steps article { padding-left: 18px; }
   .docs-callouts { grid-template-columns: 1fr; }
   .agreed-rule { grid-template-columns: 1fr; gap: 7px; }
+  .chain-role { grid-template-columns: 1fr; gap: 7px; }
   .payout-rail { grid-template-columns: 1fr 72px 1fr; }
   .payout-rail > div { display: block; }
   .payout-rail > div strong { display: block; margin-top: 4px; }
