@@ -144,6 +144,7 @@ h2 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -.045em; line-height: 1.
 .replay-control small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .replay-control button { cursor: pointer; }
 .replay-summary { margin: 0 0 30px; }
+.proof-result[hidden] { display: none; }
 
 .verdict { display: flex; gap: 18px; align-items: center; padding: 20px; border: 1px solid var(--line); }
 .verdict-icon { flex: 0 0 auto; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #24251f; color: var(--acid); font-weight: 900; }

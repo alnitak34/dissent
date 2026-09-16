@@ -66,15 +66,15 @@
           <span>MONAD'S ROLE</span>
           <p>
             The reward is held by a contract on Monad Testnet. The challenge
-            triggers an onchain recomputation; the result and both withdrawals
-            have public transaction receipts below. This is a working testnet
+            triggers an onchain recomputation. After the replay, you can inspect
+            the public receipts for the challenge and settlement. This is a working testnet
             settlement, not a claim of external adoption or a mainnet launch.
           </p>
         </div>
         <div class="proof-heading">
           <div>
             <p class="eyebrow">First live case · Alnitak's river policy</p>
-            <h2>A rule passed. A real hand broke it. The challenger collected.</h2>
+            <h2>Can one real hand break the agent's rule?</h2>
           </div>
           <button id="reset-replay" class="refresh" type="button">
             <span aria-hidden="true">↻</span> Reset replay
@@ -83,7 +83,7 @@
 
         <div class="agreed-rule">
           <span>AGREED RULE</span>
-          <strong>Policy violation must stay ≤ 0. Evidence yielding 1 breaks the claim.</strong>
+          <strong>Policy violation must stay ≤ 0. A valid result above 0 would break the claim.</strong>
           <small>The contract recomputes the base and binds a recomputer at commit.</small>
         </div>
 
@@ -114,7 +114,7 @@
         <div class="replay-control">
           <p id="replay-copy">An earlier seal expired. The challenger sealed a second attempt; its evidence remains hidden until reveal.</p>
           <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
-          <small>This replays a completed testnet case. The receipts below are live.</small>
+          <small>This replays a completed testnet case. Verify its receipts at the end.</small>
         </div>
 
         <div class="case-summary replay-summary" hidden>
@@ -136,44 +136,46 @@
           </p>
         </div>
 
-        <div class="verdict" id="verdict" data-state="loading" aria-live="polite">
-          <span class="verdict-icon" aria-hidden="true">···</span>
-          <div>
-            <p class="label">Reading Monad Testnet</p>
-            <h3>Checking the proof directly from the chain</h3>
-            <p id="verdict-detail">Seven receipts, the success event and the final contract state are being checked.</p>
+        <div class="proof-result" id="proof-result" hidden>
+          <div class="verdict" id="verdict" data-state="loading" aria-live="polite">
+            <span class="verdict-icon" aria-hidden="true">···</span>
+            <div>
+              <p class="label">Reading Monad Testnet</p>
+              <h3>Checking the proof directly from the chain</h3>
+              <p id="verdict-detail">Seven receipts, the success event and the final contract state are being checked.</p>
+            </div>
           </div>
+
+          <button id="refresh" class="refresh refresh-proof" type="button">
+            <span aria-hidden="true">↻</span> Refresh chain state
+          </button>
+
+          <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
+
+          <details class="technical">
+            <summary>Show commitment and contract details</summary>
+            <dl>
+              <div><dt>Commitment</dt><dd id="commitment-id"></dd></div>
+              <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
+              <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
+              <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
+            </dl>
+          </details>
+
+          <details class="technical explainer">
+            <summary>Why did the rule go from 0 to 1?</summary>
+            <p>
+              Zero means the initial policy input contains no counterexample; it is
+              not a probability or a claim that the agent is universally safe. For
+              this historical hand, the exact old-model equity was 56.8942%, above
+              the required 42.4170%, so the old gate would allow the call. Under the
+              pressure model specified by this adapter, exact equity was 32.0046%:
+              below that same required margin. The adapter therefore returns 1.
+              These are model-based numbers, not proof of the opponent's actual cards.
+              No LLM judges the submitted evidence.
+            </p>
+          </details>
         </div>
-
-        <button id="refresh" class="refresh refresh-proof" type="button">
-          <span aria-hidden="true">↻</span> Refresh chain state
-        </button>
-
-        <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
-
-        <details class="technical">
-          <summary>Show commitment and contract details</summary>
-          <dl>
-            <div><dt>Commitment</dt><dd id="commitment-id"></dd></div>
-            <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
-            <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
-            <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
-          </dl>
-        </details>
-
-        <details class="technical explainer">
-          <summary>Why did the rule go from 0 to 1?</summary>
-          <p>
-            Zero means the initial policy input contains no counterexample; it is
-            not a probability or a claim that the agent is universally safe. For
-            this historical hand, the exact old-model equity was 56.8942%, above
-            the required 42.4170%, so the old gate would allow the call. Under the
-            pressure model specified by this adapter, exact equity was 32.0046%:
-            below that same required margin. The adapter therefore returns 1.
-            These are model-based numbers, not proof of the opponent's actual cards.
-            No LLM judges the submitted evidence.
-          </p>
-        </details>
       </section>
 
       <section class="why">

@@ -14,9 +14,11 @@ La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
 - que los créditos de challenger y agente quedaron en cero tras retirarlos;
 - que el escrow pendiente quedó en cero.
 
-La reproducción animada usa datos fijos del caso histórico; el panel de
-verificación hace lecturas RPC de solo lectura en cada carga y al pulsar
-«Refresh». Una lectura fallida no se muestra como prueba confirmada. El caso
+La reproducción animada usa datos fijos del caso histórico. El veredicto,
+los recibos y la explicación del resultado permanecen ocultos hasta el último
+paso del replay. Entonces el panel hace lecturas RPC de solo lectura; también
+pueden repetirse con «Refresh». Una lectura fallida no se muestra como prueba
+confirmada. El caso
 anterior de equity está documentado separadamente en `docs/LIVE_DEMO.md`;
 no se mezclan sus porcentajes ni sus transacciones con esta campaña.
 

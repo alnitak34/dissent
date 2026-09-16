@@ -133,8 +133,10 @@ function setReplayStage(stage) {
   const rail = document.querySelector("#payout-rail");
   const action = document.querySelector("#replay-action");
   const summary = document.querySelector(".replay-summary");
+  const proofResult = document.querySelector("#proof-result");
   replay.dataset.stage = stage;
   rail.dataset.stage = stage;
+  proofResult.hidden = stage !== "resolved";
 
   if (stage === "claim") {
     document.querySelector("#versus-copy").textContent = "scenario sealed";
@@ -155,8 +157,8 @@ function setReplayStage(stage) {
     document.querySelector("#stage-comparison").textContent = "River: 5c 9s 2h 6h 4c · pressure trace included";
     document.querySelector("#challenge-result").textContent = "Ready to recompute";
     document.querySelector("#agent-result").textContent = "Claim stands";
-    document.querySelector("#replay-copy").textContent = "The sealed historical state is revealed. The registered recomputer checks the policy's two conditions.";
-    action.textContent = "Run the bound rule";
+    document.querySelector("#replay-copy").textContent = "The historical state is revealed. Next, inspect the recomputation already recorded on Monad.";
+    action.textContent = "Show the onchain verdict";
     summary.hidden = true;
   } else {
     document.querySelector("#versus-copy").textContent = "recomputed onchain";
@@ -178,6 +180,7 @@ function advanceReplay() {
     setReplayStage("evidence");
   } else if (replayStage === "evidence") {
     setReplayStage("resolved");
+    readProof();
   } else {
     document.querySelector("#verdict").scrollIntoView({ behavior: "smooth", block: "center" });
     readProof();
@@ -195,4 +198,3 @@ document.querySelectorAll("[data-start-replay]").forEach((link) => {
 });
 renderTimeline();
 setReplayStage("claim");
-readProof();
