@@ -64,7 +64,10 @@ y pertenencia al dominio. El challenger no aporta equities ni el veredicto.
 
 ## ABI candidato
 
-Estado: **diseño por implementar y medir**, no interfaz desplegada.
+Estado de esta sección: **borrador de ABI previo a la implementación**, no la
+interfaz vigente. El recomputer final se desplegó; su ABI y constantes reales
+están en `src/adapters/AlnitakPolicyBountyRecomputer.sol` y su recorrido en
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md).
 
 ```solidity
 struct PolicyInputs {

@@ -1,16 +1,25 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
-Estado: **implementado y validado en la rama
-`security-no-payable-adapter-fault`; la suite normal tiene 148 tests, la suite
-aislada EIP-1153 tiene 3 y la suite de profundidad tiene 2, todos pasaron en
-Foundry 1.8.1 mediante GitHub Actions; no fusionado a `master` y no desplegado**.
+Estado del código: **implementado en la rama
+`security-no-payable-adapter-fault`; la suite normal tenía 148 tests, la suite
+aislada EIP-1153 tenía 3 y la suite de profundidad tenía 2 en la ejecución de
+CI citada abajo. La rama no está fusionada a `master`.**
+
+Estado en Monad Testnet: **el núcleo endurecido se desplegó el 16-09-2026** en
+[`0x460f9F624da9e23c705c610E1263bf3641bCce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23).
+Se ejecutó una refutación válida con Policy Bounty y se retiraron ambos créditos;
+ver [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). Ese recorrido **no
+ejercitó `AdapterFault` onchain**. La verificación pública de fuente del núcleo
+nuevo y la auditoría externa siguen pendientes de confirmación.
 
 Ejecución verificable más reciente:
 <https://github.com/alnitak34/dissent/actions/runs/35049792323>
 
 ## Hallazgo
 
-La versión desplegada trataba cualquier fallo observado en el `STATICCALL` al
+La versión anterior (núcleo
+[`0x6dCD184c9c0db42FCD0De731F9a2855b38916758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758))
+trataba cualquier fallo observado en el `STATICCALL` al
 adaptador como un `AdapterFault` pagable. El núcleo no puede distinguir de forma
 general entre:
 
@@ -118,7 +127,7 @@ clientes ni una ejecución en Monad Testnet. Solidity documenta una profundidad
 máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
 <https://docs.soliditylang.org/en/latest/security-considerations.html#call-stack-depth>
 
-## Trabajo pendiente antes de desplegar
+## Trabajo pendiente antes de presentarlo como versión pública validada
 
 1. Medir de forma aislada el gas exacto de `_settleFault` si se quiere publicar
    el headroom numérico de `SETTLE_RESERVE`; las regresiones actuales solo
@@ -131,7 +140,11 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
    inventario `docs/EVM_HALT_COVERAGE.md` ya separa lo cubierto, lo parcial y lo
    no alcanzable bajo `STATICCALL`; no afirma exhaustividad formal.
 4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
-5. Fusionar únicamente después de esa revisión o de una decisión explícita de
-   aceptar los riesgos restantes.
-6. Desplegar un `DissentCore` nuevo y actualizar web, direcciones y recibos. El
-   contrato existente en testnet conserva la política anterior.
+5. Fusionar a `master` únicamente después de esa revisión o de una decisión
+   explícita de aceptar los riesgos restantes.
+6. **Despliegue y caso exitoso realizados:** el núcleo nuevo y el recomputer de
+   Policy Bounty están en Testnet; la web de esta rama usa sus direcciones y
+   recibos. Falta comprobar la verificación pública de fuente, probar
+   `AdapterFault` onchain si se quiere sostener esa afirmación para Monad y
+   decidir cuándo actualizar la página publicada desde `master`. El núcleo
+   anterior sigue existiendo en otra dirección y conserva su política previa.

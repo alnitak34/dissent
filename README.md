@@ -24,21 +24,33 @@ Ver [Frontera de confianza](#frontera-de-confianza).
 
 ## Estado
 
-Existe un despliegue **histórico** probado y con código verificado en Monad
-testnet. Ese despliegue conserva la semántica anterior, donde un
-`AdapterFault` pagaba al retador. La fuente actual cambia esa regla: un fallo
-técnico invalida la campaña y devuelve a cada parte su principal. Esta revisión
-de seguridad todavía debe compilarse, probarse y redesplegarse antes de tratarla
-como la versión pública vigente. **Auditoría externa pendiente.**
+Hay **dos versiones distintas** en Monad Testnet:
 
-- `DissentCore`: [`0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
-- `AlnitakRiverRecomputer`: [`0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38)
-- Recibos, bloques, costes y comandos de verificación: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- **Policy Bounty, despliegue del 16-09-2026:**
+  [`DissentCore 0x460f...ce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
+  y [`AlnitakPolicyBountyRecomputer 0x10EE...Cb2d`](https://testnet.monadvision.com/address/0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d).
+  Este núcleo implementa la regla nueva: un `AdapterFault` devuelve el depósito
+  al retador y la recompensa al agente; **no paga bounty por un fallo técnico**.
+  Una refutación válida y los retiros se ejecutaron en testnet; los siete
+  recibos, el compromiso y el estado final están en
+  [`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md).
+- **Versión anterior, histórica:**
+  [`DissentCore 0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
+  y [`AlnitakRiverRecomputer 0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38).
+  Su `AdapterFault` sí pagaba al retador; no debe confundirse con la versión
+  nueva. Recibos y verificación de esta versión:
+  [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-Hay un adaptador de póker de ejemplo (`AlnitakRiverRecomputer`), un puente en
-Python y una interfaz web de solo lectura que comprueba la primera ejecución
-completa contra el RPC público. La indexación general de commitments y la
-escritura desde una wallet siguen siendo trabajo futuro.
+La ruta `AdapterFault` nueva está cubierta por pruebas locales/CI, pero **no
+consta aquí una ejecución de ese camino en Monad Testnet**. La verificación
+pública de la fuente de los contratos nuevos en Sourcify y una auditoría externa
+siguen pendientes de confirmación. La rama actual tampoco está fusionada a
+`master`; la página publicada desde `master` puede mostrar una versión anterior.
+
+Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
+lectura que comprueba la ejecución de Policy Bounty contra el RPC público. La
+indexación general de commitments y la escritura desde una wallet siguen
+siendo trabajo futuro.
 
 ## Estructura de `src/`
 
@@ -47,7 +59,8 @@ escritura desde una wallet siguen siendo trabajo futuro.
 | `src/IRecomputer.sol` | La frontera entre el protocolo y el dominio. Una sola función de valor. |
 | `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin retiro administrativo del escrow, sin pausa y sin proxy. Los beneficiarios retiran sus propios créditos con `withdrawCredit()`. |
 | `src/adapters/AlnitakRiverRecomputer.sol` | Adaptador de póker de ejemplo, port de `_exact_river_mix()` de `strategy.py`. |
-| `src/adapters/PokerEval.sol` | Evaluador de manos de 7 cartas, usado solo por el adaptador. |
+| `src/adapters/AlnitakPolicyBountyRecomputer.sol` | Adaptador de la campaña de política v1; recibe un estado completo como contraejemplo. |
+| `src/adapters/PokerEval.sol` | Evaluador de manos de 7 cartas, usado por ambos adaptadores de póker. |
 
 `src/` fuera de `adapters/` es solo el protocolo y la frontera: nada de un
 dominio concreto vive ahí.
@@ -166,7 +179,13 @@ Las ventanas de revelación se miden en **bloques**; su duración en tiempo es
 Fuentes: <https://docs.monad.xyz/developer-essentials/summary> ·
 <https://docs.monad.xyz/developer-essentials/gas-pricing>
 
-## Verificación de las entradas: fuera de la cadena
+## Adaptador anterior de mano fija: alcance y límites
+
+Esta sección y el puente `armar_commit.py` describen
+`AlnitakRiverRecomputer`, usado en la primera demo; **no** describen el
+espacio de evidencia de `AlnitakPolicyBountyRecomputer` ni su campaña actual.
+
+### Verificación de las entradas: fuera de la cadena
 
 El contrato verifica **aritmética sobre entradas declaradas**. No verifica que las
 entradas hayan ocurrido: el board, las cartas, el bote y el precio los declara el
@@ -184,7 +203,7 @@ cartas, el board, el bote y el precio del compromiso son los de ahí. Es una
 verificación de **terceros, no de la cadena**, y depende de que dev.fun siga
 sirviendo esos endpoints.
 
-## Los límites declarados del dominio de póker
+### Los límites declarados de la demo de mano fija
 
 No son pendientes; son lo que este diseño no puede hacer. En resumen: (1) que las
 entradas sean verdad; (2) que el tier de la evidencia sea el correcto (el retador
@@ -194,13 +213,13 @@ elige uno de tres, no manos sueltas); (3) que el recomputer sea determinista
 sesgo documentado); (6) Sybil entre agente y retador. Un challenge exitoso muestra
 que el número da distinto con otro tier, no que el número nuevo sea el bueno.
 
-El adaptador de Alnitak tiene solo tres tiers. Por eso demuestra de extremo a
+`AlnitakRiverRecomputer` tiene solo tres tiers. Por eso demuestra de extremo a
 extremo la mecánica de Dissent, pero no demuestra todavía el valor comercial de
 una búsqueda abierta: el propio agente podría agotar esos tres casos. Un caso de
 mercado necesita un espacio de contraejemplos suficientemente grande o
 especializado para que encontrar uno tenga valor.
 
-## El puente: de una mano real a los bytes
+### El puente anterior: de una mano real a los bytes
 
 `bridge/` convierte una decisión concreta de una mesa real en los bytes exactos
 que espera `DissentCore.commit`, y muestra los argumentos de `commit()` en orden.
@@ -224,15 +243,18 @@ muestra es un **cálculo offline orientativo a 100 gwei**: la autoridad es
 `block.basefee` subió, manda el resultado onchain. `reward` es `msg.value`, no un
 argumento. `verificar.py` no cambia: sigue verificando solo los inputs.
 
+## Campaña Policy Bounty v1
+
 Integración para otros equipos: **[`docs/INTEGRATION.md`](docs/INTEGRATION.md)**.
 
 El bounty sobre una versión completa de política usa un puente separado. Este
 produce los `inputs` de 96 bytes y la evidencia de 160 bytes que espera
-`AlnitakPolicyBountyRecomputer`, sin firmas, wallet ni hex escrito a mano:
+`AlnitakPolicyBountyRecomputer`, sin firmas, wallet ni hex escrito a mano.
 
-Este adaptador está probado y guardado en el repositorio, pero todavía no está
-desplegado. Las direcciones y los recibos públicos anteriores corresponden al
-caso original de una mano fija.
+Este segundo adaptador está desplegado con el núcleo endurecido. Su campaña
+ejecutada y sus recibos corresponden a la versión **Policy Bounty**, no a la
+demostración anterior de una mano fija. Ver
+[`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md).
 
 ```bash
 python bridge/armar_policy_bounty.py bridge/fixtures/policy-bounty-jhjd.json
@@ -251,10 +273,13 @@ por tanto demuestra el recorrido técnico, **no** una búsqueda amplia o difíci
 
 ## Interfaz de la demo
 
-`web/` presenta la ejecución real documentada en [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md)
-y consulta Monad testnet al cargar. No usa backend, wallet ni dependencias de
-JavaScript. Verifica los cuatro recibos, el estado `Challenged`, el crédito ya
-retirado y el escrow final en cero.
+`web/` presenta la ejecución de Policy Bounty documentada en
+[`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md). Al completar
+el replay consulta Monad Testnet. No usa backend, wallet ni dependencias de
+JavaScript. Verifica siete recibos, el evento de refutación, el estado
+`Challenged`, los dos créditos retirados y el escrow final en cero. La demo
+anterior de una mano fija permanece documentada en
+[`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md), pero ya no es el caso principal de la web.
 
 ```powershell
 node web/serve.mjs

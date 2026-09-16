@@ -2,6 +2,15 @@
 
 Estado de la revisión: **15 de septiembre de 2026**.
 
+**Archivo histórico, no estado vigente.** El 16 de septiembre se desplegaron
+`DissentCore` endurecido y `AlnitakPolicyBountyRecomputer`, se completó una
+refutación en Monad Testnet y la web de la rama
+`security-no-payable-adapter-fault` pasó a verificar sus siete transacciones.
+Esta auditoría conserva la foto y las decisiones **anteriores** a ese recorrido;
+para el estado actual, ver [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md)
+y [`../web/README.md`](../web/README.md). La página publicada desde `master`
+puede seguir mostrando la versión anterior hasta fusionar y publicar la rama.
+
 Objetivo: impedir que la interfaz atribuya al despliegue actual una campaña de
 política que todavía solo existe localmente. La página pública debe distinguir
 el caso onchain ya ejecutado del producto que se pretende presentar.

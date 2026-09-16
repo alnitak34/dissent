@@ -6,8 +6,12 @@ desplegado el 2026-09-14: ese contrato conserva la política anterior de
 `AdapterFault`.
 
 **Estado actual:** ambos contratos fueron desplegados el 2026-09-16 y sus
-invariantes onchain coinciden con el script. La verificación pública en
-Sourcify y la prueba funcional completa siguen pendientes.
+invariantes onchain coinciden con el script. El recorrido funcional de
+refutación válida y retiro de créditos se completó y está registrado en
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). No hay constancia en
+este repositorio de `Status: match` para los dos contratos nuevos ni de una
+prueba onchain de `AdapterFault` o evidencia rechazada. No presentar esos
+caminos como validados en Monad Testnet.
 
 ## Estado validado antes del despliegue
 
@@ -223,15 +227,17 @@ forge verify-contract $rc src/adapters/AlnitakPolicyBountyRecomputer.sol:Alnitak
 
 El despliegue no autoriza todavía una campaña pública.
 
-- [ ] Ejecutar un recorrido controlado con fondos de testnet sobre el núcleo
-  nuevo: commit, challenge commit, espera, reveal y retiro de créditos.
-- [ ] Probar una refutación válida.
+- [x] Ejecutar un recorrido controlado con fondos de testnet sobre el núcleo
+  nuevo: commit, challenge commit, espera, reveal y retiro de créditos; ver
+  [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md).
+- [x] Probar una refutación válida en ese recorrido.
 - [ ] Probar evidencia rechazada.
 - [ ] Probar un `AdapterFault` y confirmar en eventos y créditos que el retador
   recupera solo su depósito y el agente recupera su recompensa: nadie cobra un
   bounty por el fallo técnico.
-- [ ] Confirmar que la web apunta a las direcciones nuevas y las identifica como
-  Monad Testnet.
+- [x] Confirmar que la web de esta **rama local** apunta a las direcciones nuevas
+  y las identifica como Monad Testnet (`web/app.js`). La web publicada desde
+  `master` todavía no incluye estos commits.
 - [ ] Solo después, publicar la campaña o pedir una integración externa.
 
 ## 8. Parada y recuperación
