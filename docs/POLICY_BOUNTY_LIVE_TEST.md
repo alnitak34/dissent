@@ -1,9 +1,8 @@
 # Prueba funcional — Policy Bounty en Monad Testnet
 
-Estado: **preparada, no ejecutada**. Ninguna de las transacciones descritas en
-este documento está autorizada por el mero hecho de existir el script. Cada
-fase se simula primero y requiere una autorización separada antes del
-`--broadcast`.
+Estado: **ejecutada con éxito en Monad Testnet el 2026-09-16**. El registro
+completo, incluidos hashes, bloques, gas y el intento de sello vencido, está en
+`docs/POLICY_BOUNTY_LIVE_RUN.md`.
 
 ## Contratos y roles
 
@@ -124,13 +123,13 @@ El broadcast autorizado transfiere el crédito a la misma wallet challenger.
 
 ## Verificación final
 
-- [ ] `Commitment.status == Challenged`.
-- [ ] `Seal.settled == true`.
-- [ ] `ChallengeSucceeded.newValue == 1` y `threshold == 0`.
-- [ ] Payout acreditado antes del retiro: `3,1 MON`.
-- [ ] Crédito después del retiro: `0`.
-- [ ] Balance de `escrowed` vuelve al valor previo a la campaña.
-- [ ] Registrar tx hashes, bloques, gas cobrado y coste de las cuatro fases.
+- [x] `Commitment.status == Challenged`.
+- [x] `Seal.settled == true`.
+- [x] `ChallengeSucceeded.newValue == 1` y `threshold == 0`.
+- [x] Payout acreditado antes del retiro: `3,1 MON`.
+- [x] Crédito después del retiro: `0`.
+- [x] Balance de `escrowed` vuelve a `0`.
+- [x] Tx hashes, bloques, gas cobrado y coste registrados.
 
 Esta prueba cubre el camino real de refutación. Los caminos
 `ChallengeRejected` y `AdapterFault` permanecen cubiertos por CI; probarlos

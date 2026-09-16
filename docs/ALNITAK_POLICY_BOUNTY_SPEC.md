@@ -1,13 +1,13 @@
 # Especificación candidata — Alnitak River Safety Gate v1
 
-Estado: **adaptador desplegado en Monad Testnet; prueba funcional pendiente**. La regla y el
+Estado: **adaptador desplegado y recorrido funcional ejecutado en Monad
+Testnet; validación de demanda pendiente**. La regla y el
 contraejemplo proceden del código y de mediciones de Alnitak. El verificador
 independiente y el recomputer Solidity coinciden en fixtures y vectores de
 regresión; el flujo completo pasa localmente. El exportador recorrió 2.184
 replays históricos, reconstruyó 11 estados elegibles y encontró tres
 contraejemplos. La medición es retrospectiva, no prospectiva. Todavía falta
-ejecutar el recorrido funcional sobre el despliegue nuevo y validar demanda
-externa.
+validar demanda externa.
 
 ## Afirmación falsable
 
@@ -179,11 +179,12 @@ No prueba que:
 3. **IRecomputer — desplegado en Monad Testnet:**
    `AlnitakPolicyBountyRecomputer` no modifica `DissentCore`; su bytecode y sus
    constantes se comprobaron onchain después del despliegue.
-4. **Gas local — cerrado, medición funcional en testnet pendiente:** recompute medido en 17.141.001
+4. **Gas — cerrado para este recorrido:** recompute medido en 17.141.001
    gas; reveal completo en 17.267.473. Con `R=20M`, `V=100k`, inputs de 96 B y
    evidencia de 160 B, Dissent calcula `txRequired=20.972.966` y recompensa
-   mínima de referencia `2,1172966 MON` a 100 gwei. Todo queda bajo 30M; falta
-   repetir la medición sobre el contrato desplegado.
+   mínima de referencia `2,1172966 MON` a 100 gwei. El reveal real declaró y
+   pagó 22.211.703 gas en Monad Testnet, bajo el límite de 30M. El detalle está
+   en `docs/POLICY_BOUNTY_LIVE_RUN.md`.
 5. **Búsqueda histórica — cerrada, validación prospectiva pendiente:**
    `exportar_policy_bounty.py` recorrió 2.184 replays, reconstruyó 11 estados
    elegibles y encontró tres violaciones sin recibir sus ids como ganadores. La
