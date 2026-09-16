@@ -1,6 +1,7 @@
 # Prueba de AdapterFault en Monad Testnet
 
-Estado: preparada y probada localmente; **no desplegada ni ejecutada onchain**.
+Estado: adaptador de prueba desplegado en Monad Testnet el 2026-09-16;
+**commit, sello y reveal todavia no ejecutados onchain**.
 
 Objetivo limitado: comprobar con recibos reales que un adaptador que funciona al
 crear la campaña pero revierte al revelar produce `Status.Faulted`, devuelve el
@@ -20,6 +21,24 @@ El Core es el ya desplegado en Testnet:
 cadena y otra cuenta de firma. Tras desplegar el probe, las fases posteriores
 comprueban su runtime bytecode exacto, no solo su nombre o dominio.
 
+## Despliegue confirmado
+
+| Campo | Valor |
+|---|---|
+| FaultProbeRecomputer | `0xda0eff9269f555529ce7c87e840cf19b67e9ce5d` |
+| Transaccion | `0x3876ed28e23f668d073f6b60aafe7c1a8a61c0fcbe4c7343dd101055fe890bed` |
+| Bloque | `63070079` |
+| Recibo | `status = 1` |
+| Gas cobrado | `221.603` a `203,847222222` gwei |
+| Coste real | `0,045173155986061866` test MON |
+| Bytecode | 432 bytes; coincide exactamente con el runtime compilado local |
+
+El dry-run con la cuenta real habia estimado 192.055 gas y
+`0,03914987826384621` test MON. Fue **inferior al recibo real**; la diferencia
+fue `29.548` gas y `0,006023277722215656` test MON. No se debe usar esa
+simulacion como coste pagado. No hubo transferencia de recompensa ni deposito
+en esta transaccion: fue solo creacion del adaptador.
+
 ## Fondos y riesgo ANTES de firmar
 
 - El agente inmoviliza `0,25` test MON de recompensa. El retador inmoviliza
@@ -31,20 +50,21 @@ comprueban su runtime bytecode exacto, no solo su nombre o dominio.
   `minGasBackedReward(100000,1000000,32,32) = 0,1867025` test MON y
   `txRequired(...) = 1.667.025` gas. Son valores de esa consulta, no promesa de
   coste final ni garantia de rentabilidad.
-- El dry-run del despliegue mostro 192.055 gas y `0,038987165` test MON al
-  max-fee estimado de 203 gwei. Los otros pasos aun no tienen estimacion RPC
-  sobre el probe desplegado; no se debe presentar ese numero como coste total.
+- El despliegue ya costo `0,045173155986061866` test MON (recibo arriba).
+  Los otros pasos aun no tienen estimacion RPC sobre el probe desplegado;
+  no se debe presentar ese numero como coste total.
 
 ## Orden operativo
 
-1. Revisar `git status`, saldos, chain id y gas actual. Simular el despliegue
+1. HECHO: revisar `git status`, saldos, chain id y gas. Simular el despliegue
    SIN `--broadcast`:
 
    `forge script script/DeployFaultProbe.s.sol:DeployFaultProbe --rpc-url https://testnet-rpc.monad.xyz`
 
-2. Solo con autorizacion informada, desplegar el probe y verificar recibo,
-   direccion y bytecode. La direccion impresa en el dry-run NO es real.
-3. Simular y ejecutar por separado commit del agente, sello del retador y
+2. HECHO: desplegar el probe y verificar recibo, direccion y bytecode. La
+   direccion impresa en el dry-run NO fue la autoridad; si coincide con la
+   real, es porque se uso el mismo sender y nonce.
+3. PENDIENTE: simular y ejecutar por separado commit del agente, sello del retador y
    reveal, verificando cada recibo antes del siguiente. Los salts se generan y
    guardan fuera de Git; **nunca se pegan en un chat ni se imprimen**.
 4. Leer `status`, `credits(agent)`, `credits(challenger)` y `escrowed()` onchain.
