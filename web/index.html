@@ -25,12 +25,11 @@
       <section class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Challengeable claims for autonomous agents</p>
-          <h1>An agent says its decision is safe.<br /><em>What if it isn't?</em></h1>
+          <h1>An agent says it's safe.<br /><em>What if it isn't?</em></h1>
           <p class="lede">
-            Dissent lets an agent back a precise rule with a bounty. Anyone can
-            submit an allowed counterexample. Monad runs the bound rule and
-            settles the result onchain, without a private judge. Alnitak's poker
-            agent is our first real test case, not the limit of the protocol.
+            Dissent turns a precise agent rule into an open bounty. Find an
+            allowed counterexample; Monad recomputes it and settles the result
+            onchain. Our first live case uses Alnitak's poker agent.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#proof" data-start-replay>Replay the completed challenge</a>
@@ -38,17 +37,26 @@
           </div>
         </div>
 
-        <aside class="hero-claim" aria-label="Agent claim preview">
+        <aside class="hero-claim" aria-label="Preview of the Alnitak policy challenge">
           <div class="claim-window-top">
-            <span>COMPLETED CASE 01</span><span>ALNITAK V1</span>
+            <span>CASE 01 / ALNITAK V1</span><span>MONAD TESTNET</span>
           </div>
-          <p class="label">Base policy violation</p>
-          <div class="hero-number"><strong>0</strong><span>COMMITTED</span></div>
-          <div class="rule-line">
-            <span>Allowed violation</span><strong>≤ 0</strong>
+          <p class="hero-card-title">One claim. One sealed counterexample.</p>
+          <div class="hero-test">
+            <div class="hero-test-side">
+              <span>THE CLAIM</span>
+              <strong>0</strong>
+              <small>No violation at commit</small>
+            </div>
+            <div class="hero-test-side hero-test-challenge">
+              <span>THE EVIDENCE</span>
+              <strong>?</strong>
+              <small>Sealed until reveal</small>
+            </div>
           </div>
-          <div class="stake-line">
-            <span>Bounty in escrow</span><strong>3.00 test MON</strong>
+          <div class="hero-claim-footer">
+            <span>RULE: VIOLATION MUST STAY ≤ 0</span>
+            <strong>3 test MON locked</strong>
           </div>
         </aside>
       </section>
