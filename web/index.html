@@ -146,11 +146,18 @@
             </div>
           </div>
 
-          <button id="refresh" class="refresh refresh-proof" type="button">
-            <span aria-hidden="true">↻</span> Refresh chain state
-          </button>
+          <div class="proof-actions">
+            <a id="decisive-receipt" class="receipt-link" target="_blank" rel="noreferrer">View decisive reveal on MonadVision ↗</a>
+            <button id="refresh" class="refresh refresh-proof" type="button">
+              <span aria-hidden="true">↻</span> Refresh chain state
+            </button>
+          </div>
 
-          <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
+          <details class="receipt-details">
+            <summary>Inspect all seven testnet transactions</summary>
+            <p>The full sequence includes an expired first seal, the successful reveal, and both withdrawals.</p>
+            <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
+          </details>
 
           <details class="technical">
             <summary>Show commitment and contract details</summary>

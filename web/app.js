@@ -120,7 +120,7 @@ async function readProof() {
     verdict.querySelector(".verdict-icon").textContent = "!";
     verdict.querySelector(".label").textContent = "Verification incomplete";
     verdict.querySelector("h3").textContent = "The live state could not be confirmed";
-    document.querySelector("#verdict-detail").textContent = `${error.message} Use the transaction links below to inspect the proof.`;
+    document.querySelector("#verdict-detail").textContent = `${error.message} Open the transaction details below to inspect the receipts.`;
     renderTimeline();
   } finally {
     refresh.disabled = false;
@@ -190,6 +190,7 @@ function advanceReplay() {
 document.querySelector("#commitment-id").textContent = COMMITMENT;
 document.querySelector("#core-address").textContent = CORE;
 document.querySelector("#recomputer-address").textContent = RECOMPUTER;
+document.querySelector("#decisive-receipt").href = `${EXPLORER}/tx/${transactions[4].hash}`;
 document.querySelector("#refresh").addEventListener("click", readProof);
 document.querySelector("#replay-action").addEventListener("click", advanceReplay);
 document.querySelector("#reset-replay").addEventListener("click", () => setReplayStage("claim"));

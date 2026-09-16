@@ -17,8 +17,9 @@ La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
 La reproducción animada usa datos fijos del caso histórico. El veredicto,
 los recibos y la explicación del resultado permanecen ocultos hasta el último
 paso del replay. Entonces el panel hace lecturas RPC de solo lectura; también
-pueden repetirse con «Refresh». Una lectura fallida no se muestra como prueba
-confirmada. El caso
+pueden repetirse con «Refresh». El recibo de la revelación decisiva tiene un
+enlace directo a MonadVision; los siete recibos completos están en una sección
+desplegable. Una lectura fallida no se muestra como prueba confirmada. El caso
 anterior de equity está documentado separadamente en `docs/LIVE_DEMO.md`;
 no se mezclan sus porcentajes ni sus transacciones con esta campaña.
 
