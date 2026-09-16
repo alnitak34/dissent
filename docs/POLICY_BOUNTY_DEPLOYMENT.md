@@ -10,7 +10,7 @@ desplegado el 2026-09-14: ese contrato conserva la política anterior de
 | Campo | Valor verificado |
 |---|---|
 | Rama | `security-no-payable-adapter-fault` |
-| Commit local/remoto | `079044a10ce38a7bd8225a70e91796ba7c6fbf37` |
+| Baseline del código desplegable | `079044a10ce38a7bd8225a70e91796ba7c6fbf37` |
 | CI | `Validate AdapterFault security change` — success |
 | CI run | <https://github.com/alnitak34/dissent/actions/runs/35050796748> |
 | Script | `script/DeployPolicyBounty.s.sol` |
@@ -30,17 +30,27 @@ calculados por Foundry.
 
 ## 1. Preflight sin wallet
 
-- [ ] Confirmar que se está en la rama y commit exactos:
+- [ ] Confirmar la rama, que el `HEAD` local coincide con el remoto y que los
+  archivos desplegables no cambiaron desde el baseline validado:
 
 ```powershell
+$baseline = "079044a10ce38a7bd8225a70e91796ba7c6fbf37"
 git status --short --branch
-git rev-parse HEAD
-git ls-remote --heads origin refs/heads/security-no-payable-adapter-fault
+$localHead = git rev-parse HEAD
+$remoteLine = git ls-remote --heads origin refs/heads/security-no-payable-adapter-fault
+$remoteHead = ($remoteLine -split "\s+")[0]
+if ($localHead -ne $remoteHead) { throw "HEAD local y remoto no coinciden" }
+git merge-base --is-ancestor $baseline HEAD
+if ($LASTEXITCODE -ne 0) { throw "el baseline no es ancestro de HEAD" }
+git diff --exit-code $baseline HEAD -- foundry.toml src script/DeployPolicyBounty.s.sol
+if ($LASTEXITCODE -ne 0) { throw "cambiaron archivos desplegables desde el baseline" }
 ```
 
-- [ ] El working tree debe estar limpio y los dos hashes deben ser
-  `079044a10ce38a7bd8225a70e91796ba7c6fbf37`.
-- [ ] Confirmar que el CI del hash exacto sigue en `success`.
+- [ ] El working tree debe estar limpio y `$localHead` debe coincidir con
+  `$remoteHead`.
+- [ ] El baseline debe ser ancestro de `HEAD` y el `git diff` limitado a los
+  archivos desplegables debe estar vacío.
+- [ ] Confirmar que el CI del `HEAD` actual sigue en `success`.
 - [ ] Ejecutar la validación local disponible:
 
 ```powershell
@@ -97,7 +107,8 @@ dry-run:
 | Campo | Valor real |
 |---|---|
 | Fecha y hora UTC | PENDIENTE |
-| Commit desplegado | `079044a10ce38a7bd8225a70e91796ba7c6fbf37` |
+| Commit `HEAD` desplegado | PENDIENTE |
+| Baseline del código desplegable | `079044a10ce38a7bd8225a70e91796ba7c6fbf37` |
 | Deployer | PENDIENTE |
 | DissentCore endurecido — dirección | PENDIENTE |
 | DissentCore endurecido — tx hash | PENDIENTE |
