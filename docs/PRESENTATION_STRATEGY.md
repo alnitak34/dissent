@@ -255,8 +255,9 @@ terceros ni que la regla generalice a decisiones nuevas.
 ### Todavía no demostrado
 
 - una integración de un equipo externo;
-- ejecución onchain de los caminos `AdapterFault` y evidencia rechazada en el
-  núcleo nuevo; solo están cubiertos por pruebas fuera de cadena;
+- ejecución onchain de evidencia rechazada en el núcleo nuevo; aún no consta.
+  Un `AdapterFault` concreto por revert en `recompute` sí se ejecutó onchain
+  en [`FAULT_PROBE.md`](FAULT_PROBE.md), sin probar todos los tipos de fallo;
 - validación prospectiva sobre replays que no existían cuando se diseñó la
   política; el corpus actual es retrospectivo y no demuestra generalización;
 - un comprador que confirme que usaría esta garantía;

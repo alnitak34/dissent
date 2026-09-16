@@ -131,6 +131,7 @@ El broadcast autorizado transfiere el crédito a la misma wallet challenger.
 - [x] Balance de `escrowed` vuelve a `0`.
 - [x] Tx hashes, bloques, gas cobrado y coste registrados.
 
-Esta prueba cubre el camino real de refutación. Los caminos
-`ChallengeRejected` y `AdapterFault` permanecen cubiertos por CI; probarlos
-onchain requiere campañas adicionales y no forma parte de este primer recorrido.
+Esta prueba cubre el camino real de refutación. En una campaña adicional se
+probó onchain un `AdapterFault` por revert en `recompute`; ver
+[`FAULT_PROBE.md`](FAULT_PROBE.md). `ChallengeRejected` sigue cubierto por CI,
+pero no consta una campaña onchain que lo ejercite.

@@ -33,7 +33,10 @@ Hay **dos versiones distintas** en Monad Testnet:
   al retador y la recompensa al agente; **no paga bounty por un fallo técnico**.
   Una refutación válida y los retiros se ejecutaron en testnet; los siete
   recibos, el compromiso y el estado final están en
-  [`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md).
+  [`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md). Un
+  adaptador de prueba que revierte en `recompute` también produjo
+  `Status.Faulted` onchain, sin bounty: recibo y créditos en
+  [`docs/FAULT_PROBE.md`](docs/FAULT_PROBE.md).
 - **Versión anterior, histórica:**
   [`DissentCore 0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
   y [`AlnitakRiverRecomputer 0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38).
@@ -41,8 +44,9 @@ Hay **dos versiones distintas** en Monad Testnet:
   nueva. Recibos y verificación de esta versión:
   [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-La ruta `AdapterFault` nueva está cubierta por pruebas locales/CI, pero **no
-consta aquí una ejecución de ese camino en Monad Testnet**. El 16-09-2026,
+La ruta `AdapterFault` nueva está cubierta por pruebas locales/CI y por **una
+ejecución concreta en Monad Testnet** con un adaptador deliberadamente fallido;
+esto no valida todos los posibles fallos. El 16-09-2026,
 ambas fuentes se verificaron con `Status: match` en Sourcify y MonadVision ya
 muestra **«Contract Source Code Verified»** para los dos contratos nuevos
 (enlaces arriba). La verificación de fuente **no es una auditoría externa**;

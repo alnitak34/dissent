@@ -1,7 +1,7 @@
 # Prueba de AdapterFault en Monad Testnet
 
-Estado: adaptador de prueba, commit y sello ejecutados en Monad Testnet el
-2026-09-16; **reveal todavia no ejecutado onchain**.
+Estado: adaptador de prueba, commit, sello y reveal ejecutados en Monad Testnet
+el 2026-09-16. El compromiso terminó en `Status.Faulted`; no hubo bounty.
 
 Objetivo limitado: comprobar con recibos reales que un adaptador que funciona al
 crear la campaña pero revierte al revelar produce `Status.Faulted`, devuelve el
@@ -77,25 +77,52 @@ ejecutar `reclaim` cuando lo permita el contrato y pagar gas para recuperarla.
 
 El dry-run del sello habia estimado `0,030024918000147906` test MON; volvio
 a subestimar el cobro. El salt del retador **no** se registra aqui ni en Git.
-El dry-run del reveal (sin broadcast) paso y estimo `2.135.320` gas y
-`0,43346996000213532` test MON. Es solo una estimacion; aun no existe recibo
-del reveal. Si el reveal no entra a tiempo, el deposito de `0,01` test MON
-puede perderse mediante `sweepExpiredSeal`.
 
-## Fondos y riesgo ANTES de firmar
+## Reveal y liquidación confirmados
 
-- El agente inmoviliza `0,25` test MON de recompensa. El retador inmoviliza
-  `0,01` test MON de deposito. En el camino esperado, ambos recuperan su
-  principal via credito y `withdrawCredit()`; esas retiradas tambien consumen gas.
-- El gas gastado no se recupera. Si el retador no revela dentro de la ventana,
-  puede perder el deposito. Si una fase revierte, tambien paga el gas cobrado.
+| Campo | Valor |
+|---|---|
+| Transaccion | `0x5505476acaceab00c171c124d58c8107c12f471d4818cb3257bd485f1e53b873` |
+| Bloque | `63074851` |
+| Recibo | `status = 1`; `from = 0x00cf6ceC697E3DCB88a5972Ef083B423dfC00A02`; `to = DissentCore` |
+| Gas cobrado | `2.463.831` a `203,000000001` gwei |
+| Coste real de gas | `0,500157693002463831` test MON |
+| Evento | `AdapterFaulted`, fase `RECOMPUTE`, deposito al retador y recompensa al agente |
+| Lectura onchain | `Status.Faulted`; sello `settled = true`; `escrowed() = 0` |
+| Credito challenger | `0,01` test MON, todavia en el contrato |
+| Credito agente | `0,25` test MON, todavia en el contrato |
+
+El dry-run habia estimado `2.135.320` gas y `0,43346996000213532`
+test MON: subestimo el recibo real en `328.511` gas y
+`0,066687733000328511` test MON. El coste de gas total de las cuatro
+transacciones de esta prueba (despliegue, commit, sello y reveal) fue
+`0,671914949989149264` test MON. Los `0,01` y `0,25` test MON son
+**creditos retirables, no transferencias a las wallets**. No se ha ejecutado
+`withdrawCredit()` para esta prueba; cada retiro requeriria una transaccion
+separada y gas adicional.
+
+Esta ejecucion verifica **este camino concreto**: un adaptador que revierte en
+`recompute` pasa a `Faulted` sin bounty pagable. No verifica todos los modos
+de fallo, no demuestra que el adaptador sea honesto ni equivale a una auditoria.
+Foundry informo ejecucion exitosa mediante `--browser`, pero la usuaria no vio
+la ventana de firma; el recibo confirma la cuenta emisora, **no** explica por
+que no fue visible la interfaz. Revisar la actividad de Rabby antes de otra
+transaccion con wallet.
+
+## Fondos y riesgo observados
+
+- El agente inmovilizo `0,25` test MON de recompensa y el retador `0,01`
+  test MON de deposito. Ambos importes volvieron como creditos retirables;
+  retirarlos consumiria gas adicional.
+- El gas gastado (`0,671914949989149264` test MON entre las cuatro
+  transacciones) no se recupera. Si el retador no hubiera revelado dentro de
+  la ventana, habria podido perder su deposito mediante `sweepExpiredSeal`.
 - En la consulta de preflight del 2026-09-16, el contrato calculo
   `minGasBackedReward(100000,1000000,32,32) = 0,1867025` test MON y
   `txRequired(...) = 1.667.025` gas. Son valores de esa consulta, no promesa de
   coste final ni garantia de rentabilidad.
-- El despliegue ya costo `0,045173155986061866` test MON (recibo arriba).
-  Los otros pasos aun no tienen estimacion RPC sobre el probe desplegado;
-  no se debe presentar ese numero como coste total.
+- Los costes reales de cada fase estan arriba. No incluir retiros no ejecutados
+  en el total ni presentar el dry-run como coste pagado.
 
 ## Orden operativo
 
@@ -107,11 +134,12 @@ puede perderse mediante `sweepExpiredSeal`.
 2. HECHO: desplegar el probe y verificar recibo, direccion y bytecode. La
    direccion impresa en el dry-run NO fue la autoridad; si coincide con la
    real, es porque se uso el mismo sender y nonce.
-3. HECHO: ejecutar y verificar el commit del agente y el sello del retador.
-   PENDIENTE: revelar y verificar su recibo. Los salts se generan y
-   guardan fuera de Git; **nunca se pegan en un chat ni se imprimen**.
-4. Leer `status`, `credits(agent)`, `credits(challenger)` y `escrowed()` onchain.
-   Si el resultado es el esperado, cada beneficiario retira su propio credito.
+3. HECHO: ejecutar y verificar el commit del agente, el sello del retador y
+   el reveal. Los salts se generan y guardan fuera de Git; **nunca se pegan
+   en un chat ni se imprimen**.
+4. HECHO: leer `status`, sello, `credits(agent)`, `credits(challenger)` y
+   `escrowed()` onchain. PENDIENTE, solo si se autoriza por separado: cada
+   beneficiario puede retirar su propio credito pagando gas.
 
 No usar el antiguo DissentCore de Testnet: su politica de `AdapterFault` era
 distinta. No realizar esta prueba en Mainnet.

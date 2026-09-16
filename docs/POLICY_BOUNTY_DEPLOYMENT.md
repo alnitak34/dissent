@@ -14,9 +14,10 @@ contratos obtuvieron `Status: match` en Sourcify y MonadVision muestra
 [`DissentCore`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
 como para
 [`AlnitakPolicyBountyRecomputer`](https://testnet.monadvision.com/address/0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d).
-No hay prueba onchain registrada de `AdapterFault` o evidencia rechazada.
-No presentar esos caminos como validados en Monad Testnet ni confundir la
-verificación de fuente con una auditoría de seguridad.
+Hay una prueba onchain concreta de `AdapterFault` por revert en `recompute`,
+registrada en [`FAULT_PROBE.md`](FAULT_PROBE.md). La evidencia rechazada
+todavía no se ha probado onchain. No presentar el caso de fallo como cobertura
+exhaustiva ni confundir la verificación de fuente con una auditoría de seguridad.
 
 ## Estado validado antes del despliegue
 
@@ -244,9 +245,10 @@ El despliegue no autoriza todavía una campaña pública.
   [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md).
 - [x] Probar una refutación válida en ese recorrido.
 - [ ] Probar evidencia rechazada.
-- [ ] Probar un `AdapterFault` y confirmar en eventos y créditos que el retador
-  recupera solo su depósito y el agente recupera su recompensa: nadie cobra un
-  bounty por el fallo técnico.
+- [x] Probar un `AdapterFault` concreto (revert en `recompute`) y confirmar en
+  eventos y créditos que el retador recupera solo su depósito y el agente su
+  recompensa: nadie cobra un bounty por ese fallo técnico. Ver
+  [`FAULT_PROBE.md`](FAULT_PROBE.md).
 - [x] Confirmar que la web de esta **rama local** apunta a las direcciones nuevas
   y las identifica como Monad Testnet (`web/app.js`). La web publicada desde
   `master` todavía no incluye estos commits.
