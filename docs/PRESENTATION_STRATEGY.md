@@ -124,8 +124,8 @@ La interfaz consulta Monad Testnet y muestra:
 - el challenge y el pago confirmados;
 - `Challenged` como estado final;
 - escrow y crédito en cero después del retiro;
-- enlace a los recibos y direcciones desplegadas; no afirmar verificación
-  pública de fuente para los contratos nuevos sin confirmar `Status: match`.
+- enlace a los recibos, direcciones desplegadas y fuentes verificadas; dejar
+  claro que `Status: match` no equivale a una auditoría de seguridad.
 
 No recorrer código. El código y la suite son respaldo para preguntas, no
 el centro del video.
@@ -231,8 +231,9 @@ con procedencia suficiente.
 ### Evidencia al 16-09-2026
 
 - núcleo endurecido y `AlnitakPolicyBountyRecomputer` desplegados en Monad Testnet;
-- el **nuevo** par de contratos figura «Contract not verified» en MonadVision
-  al 16-09-2026; los enlaces están en
+- el **nuevo** par de contratos obtuvo `Status: match` en Sourcify y figura
+  «Contract Source Code Verified» en MonadVision desde el 16-09-2026;
+  los enlaces y jobs están en
   [`POLICY_BOUNTY_DEPLOYMENT.md`](POLICY_BOUNTY_DEPLOYMENT.md);
 - recorrido commit → sellos → reveal → payout → retiros ejecutado onchain;
 - web de la rama que lee siete recibos y estado final desde el RPC; la página

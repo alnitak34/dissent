@@ -8,13 +8,15 @@ desplegado el 2026-09-14: ese contrato conserva la política anterior de
 **Estado actual:** ambos contratos fueron desplegados el 2026-09-16 y sus
 invariantes onchain coinciden con el script. El recorrido funcional de
 refutación válida y retiro de créditos se completó y está registrado en
-[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). Al 16-09-2026,
-MonadVision muestra **«Contract not verified»** tanto para
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). El 16-09-2026, ambos
+contratos obtuvieron `Status: match` en Sourcify y MonadVision muestra
+**«Contract Source Code Verified»** tanto para
 [`DissentCore`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
 como para
 [`AlnitakPolicyBountyRecomputer`](https://testnet.monadvision.com/address/0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d).
-Tampoco hay prueba onchain registrada de `AdapterFault` o evidencia rechazada.
-No presentar esos caminos como validados en Monad Testnet.
+No hay prueba onchain registrada de `AdapterFault` o evidencia rechazada.
+No presentar esos caminos como validados en Monad Testnet ni confundir la
+verificación de fuente con una auditoría de seguridad.
 
 ## Estado validado antes del despliegue
 
@@ -211,7 +213,8 @@ Si cualquier lectura difiere, no iniciar una campaña.
 
 ## 6. Verificación pública del código
 
-Ejecutar solo con las direcciones reales:
+Comandos ejecutados con las direcciones reales (no repetir para cambiar el
+estado de los contratos):
 
 ```powershell
 forge verify-contract $core src/DissentCore.sol:DissentCore --chain 10143 --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org/
@@ -221,10 +224,16 @@ forge verify-contract $core src/DissentCore.sol:DissentCore --chain 10143 --veri
 forge verify-contract $rc src/adapters/AlnitakPolicyBountyRecomputer.sol:AlnitakPolicyBountyRecomputer --chain 10143 --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org/
 ```
 
-- [ ] Ambos deben terminar en `Status: match`.
-- [ ] Registrar ambos job IDs o URLs de verificación.
-- [ ] Abrir las direcciones en el explorador y comprobar bytecode, creador y
-  transacciones de creación.
+- [x] Ambos terminaron en `Status: match` el 16-09-2026.
+- [x] Jobs de verificación:
+  - DissentCore: [`32eb5e23-b4e9-4446-ba35-e53d80d45a9d`](https://sourcify-api-monad.blockvision.org/verify-ui/jobs/32eb5e23-b4e9-4446-ba35-e53d80d45a9d)
+  - AlnitakPolicyBountyRecomputer: [`1446284a-e6eb-43b5-ae3c-2c37a396ce2d`](https://sourcify-api-monad.blockvision.org/verify-ui/jobs/1446284a-e6eb-43b5-ae3c-2c37a396ce2d)
+- [x] MonadVision muestra «Contract Source Code Verified» en las dos direcciones.
+  Antes del envío, `forge inspect ... deployedBytecode` coincidió byte por byte
+  con `cast code` sobre chain ID 10143: 9.447 bytes para DissentCore y 9.064
+  para el recomputer. El explorador muestra al deployer
+  `0xa3aB9C3697F1964A8082330103C5DCaaA3B1263A` y las transacciones de
+  creación registradas en la tabla anterior.
 
 ## 7. Prueba funcional antes de anunciarlo
 

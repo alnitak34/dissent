@@ -42,10 +42,11 @@ Hay **dos versiones distintas** en Monad Testnet:
   [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 La ruta `AdapterFault` nueva está cubierta por pruebas locales/CI, pero **no
-consta aquí una ejecución de ese camino en Monad Testnet**. Al 16-09-2026,
-MonadVision muestra **«Contract not verified»** para los dos contratos nuevos
-(enlaces arriba); no presentar su fuente como verificada públicamente. Una
-auditoría externa también está pendiente. La rama actual tampoco está fusionada a
+consta aquí una ejecución de ese camino en Monad Testnet**. El 16-09-2026,
+ambas fuentes se verificaron con `Status: match` en Sourcify y MonadVision ya
+muestra **«Contract Source Code Verified»** para los dos contratos nuevos
+(enlaces arriba). La verificación de fuente **no es una auditoría externa**;
+esta sigue pendiente. La rama actual tampoco está fusionada a
 `master`; la página publicada desde `master` puede mostrar una versión anterior.
 
 Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
