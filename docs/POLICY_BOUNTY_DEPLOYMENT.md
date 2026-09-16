@@ -5,6 +5,10 @@ Este documento prepara el despliegue conjunto de un `DissentCore` nuevo y
 desplegado el 2026-09-14: ese contrato conserva la política anterior de
 `AdapterFault`.
 
+**Estado actual:** ambos contratos fueron desplegados el 2026-09-16 y sus
+invariantes onchain coinciden con el script. La verificación pública en
+Sourcify y la prueba funcional completa siguen pendientes.
+
 ## Estado validado antes del despliegue
 
 | Campo | Valor verificado |
@@ -106,18 +110,26 @@ dry-run:
 
 | Campo | Valor real |
 |---|---|
-| Fecha y hora UTC | PENDIENTE |
-| Commit `HEAD` desplegado | PENDIENTE |
+| Fecha y hora UTC | `2026-09-16 04:07:10` / `04:07:40` |
+| Commit `HEAD` desplegado | `75f7e1e15e51fa0895e4a3eb0c3b0c1992d47cbb` |
 | Baseline del código desplegable | `079044a10ce38a7bd8225a70e91796ba7c6fbf37` |
-| Deployer | PENDIENTE |
-| DissentCore endurecido — dirección | PENDIENTE |
-| DissentCore endurecido — tx hash | PENDIENTE |
-| DissentCore endurecido — bloque | PENDIENTE |
-| Policy Bounty recomputer — dirección | PENDIENTE |
-| Policy Bounty recomputer — tx hash | PENDIENTE |
-| Policy Bounty recomputer — bloque | PENDIENTE |
-| Gas cobrado total | PENDIENTE |
-| Coste total en MON de testnet | PENDIENTE |
+| Deployer | `0xa3aB9C3697F1964A8082330103C5DCaaA3B1263A` |
+| DissentCore endurecido — dirección | `0x460f9F624da9e23c705c610E1263bf3641bCce23` |
+| DissentCore endurecido — tx hash | `0x133aff75f159adfeb197e95795ec0fd0a212da4726b2be68c24edf7d06ae758b` |
+| DissentCore endurecido — bloque | `62930184` |
+| DissentCore endurecido — gas cobrado | `3.169.266` |
+| DissentCore endurecido — coste | `0,643360998003169266 MON` |
+| Policy Bounty recomputer — dirección | `0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d` |
+| Policy Bounty recomputer — tx hash | `0xb90c7e0f30be7f9b1de50b473b356ce74c7d1ea3e42a2ea51008c23f872bccd1` |
+| Policy Bounty recomputer — bloque | `62930284` |
+| Policy Bounty recomputer — gas cobrado | `3.044.198` |
+| Policy Bounty recomputer — coste | `0,617972194003044198 MON` |
+| Gas cobrado total | `6.213.464` |
+| Coste total en MON de testnet | `1,261333192006213464 MON` |
+
+El coste real superó en `0,167841426443713464 MON` el último dry-run
+(`1,0934917655625 MON`). La diferencia está registrada como observación; este
+documento no atribuye una causa sin una medición específica.
 
 ## 5. Verificación onchain posterior
 
@@ -173,6 +185,22 @@ Valores esperados:
 - `canonicalInputs`: 96 bytes.
 
 Si cualquier lectura difiere, no iniciar una campaña.
+
+### Resultado onchain del 2026-09-16
+
+| Comprobación | Resultado |
+|---|---|
+| Bytecode DissentCore | presente, `9.447` bytes |
+| Bytecode Policy Bounty recomputer | presente, `9.064` bytes |
+| Constantes del núcleo | todas coinciden |
+| `escrowed` inicial | `0` |
+| `scale` | `1` |
+| `domain` | coincide |
+| `POLICY_SPEC_HASH` | coincide |
+| `ORIGIN_COMMIT` | coincide |
+| `MARGIN_BP` | `1500` |
+| `canonicalInputs` | `96` bytes |
+| Saldo del deployer después del broadcast | `8,755817773961346481 MON` de testnet |
 
 ## 6. Verificación pública del código
 
