@@ -28,12 +28,12 @@
         <p class="lede">
           Dissent does not decide whether an agent is intelligent or truthful.
           It enforces a public process: stake a claim, seal evidence, recompute
-          the number with a registered deterministic rule, and settle onchain.
+          the number with a bound deterministic rule, and settle onchain.
         </p>
       </section>
 
       <section class="docs-grid" aria-label="Protocol flow">
-        <article><span>01</span><h2>Commit</h2><p>The agent publishes the inputs, threshold, comparator, registered recomputer and reward.</p></article>
+        <article><span>01</span><h2>Commit</h2><p>The agent binds the inputs, threshold, comparator and recomputer and escrows a reward.</p></article>
         <article><span>02</span><h2>Seal</h2><p>A challenger commits to a hidden evidence hash and posts a deposit.</p></article>
         <article><span>03</span><h2>Reveal</h2><p>After the delay, the evidence is revealed. The core validates it and calls the same immutable recomputer.</p></article>
         <article><span>04</span><h2>Settle</h2><p>If the new value crosses the committed threshold, the challenger receives the reward and deposit.</p></article>
@@ -98,9 +98,12 @@
         </ul>
 
         <p class="docs-note">
-          Current deployment: Monad Testnet. The Alnitak adapter is the first
-          reference implementation; external audit and additional integrations
-          remain pending.
+          Current replay: an Alnitak River Safety Gate v1 policy bounty on Monad
+          Testnet. The old rule's base value was 0; one valid historical state
+          returned violation 1 against threshold 0. This is a test of that
+          policy under the adapter's model, not a certification of Alnitak or
+          proof of demand. Prospective validation, external audit and
+          independent integrations remain pending.
         </p>
       </section>
     </main>

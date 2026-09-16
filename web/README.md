@@ -1,14 +1,24 @@
 # Dissent web demo
 
-Interfaz estática y de solo lectura para la ejecución completa registrada en
-`docs/LIVE_DEMO.md`. No usa wallet, claves, backend ni dependencias JavaScript.
+Interfaz estática y de solo lectura para la ejecución de **Policy Bounty**
+registrada en [`docs/POLICY_BOUNTY_LIVE_RUN.md`](../docs/POLICY_BOUNTY_LIVE_RUN.md).
+No usa wallet, claves, backend ni dependencias JavaScript.
 
 La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
 
-- los cuatro recibos de la demo (`status = 1`);
+- los siete recibos de la demo (`status = 1`, bloque y contrato esperados),
+  incluido el primer sello vencido y su liquidación;
+- el evento `ChallengeSucceeded` emitido por el core para este commitment y
+  challenger, con `newValue = 1`, `threshold = 0` y payout de 3,1 test MON;
 - que el commitment terminó `Challenged`;
-- que el crédito del challenger quedó en cero después de retirarlo;
+- que los créditos de challenger y agente quedaron en cero tras retirarlos;
 - que el escrow pendiente quedó en cero.
+
+La reproducción animada usa datos fijos del caso histórico; el panel de
+verificación hace lecturas RPC de solo lectura en cada carga y al pulsar
+«Refresh». Una lectura fallida no se muestra como prueba confirmada. El caso
+anterior de equity está documentado separadamente en `docs/LIVE_DEMO.md`;
+no se mezclan sus porcentajes ni sus transacciones con esta campaña.
 
 Servir localmente desde la raíz del repo:
 
@@ -24,10 +34,12 @@ Abrir `http://127.0.0.1:4173`.
 Pages. El workflow se ejecuta al hacer push a `master`, pero GitHub Pages debe
 tener como fuente **GitHub Actions** en la configuración del repositorio.
 
-La UI no afirma que Dissent verifique la verdad de las entradas. Muestra el caso
-preciso que el protocolo sí demuestra: una afirmación numérica fue comprometida,
-una evidencia válida cambió el cálculo determinista, el umbral se cruzó y el pago
-se liquidó sin intervención administrativa.
+La UI no afirma que Dissent verifique la verdad de las entradas. Muestra una
+propiedad concreta de la política histórica v1 de Alnitak que se rompió bajo
+el modelo de presión del adaptador. El commit vincula el recomputer y el
+contrato liquida la refutación bajo esa regla; no se infiere que todos los
+agentes o manos se comporten igual. La demanda y la auditoría externa siguen
+pendientes.
 
 La mano de ejemplo fue jugada por Alnitak en dev.fun Arena. Dissent es un proyecto
 independiente y no está respaldado ni afiliado a dev.fun.

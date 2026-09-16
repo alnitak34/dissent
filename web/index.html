@@ -7,7 +7,7 @@
       name="description"
       content="Dissent makes numerical claims from autonomous agents falsifiable with deterministic, onchain challenges."
     />
-    <title>Dissent — Bug bounties for agent decisions</title>
+    <title>Dissent — A bounty for breaking an agent's policy</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -24,30 +24,30 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Bug bounties for autonomous decisions</p>
-          <h1>An agent says <span>68.57%.</span><br /><em>Would you let it move money?</em></h1>
+          <p class="eyebrow">A real policy bounty · Monad Testnet</p>
+          <h1>An agent stakes <span>3 MON</span> on its rule.<br /><em>One hand breaks it.</em></h1>
           <p class="lede">
-            The agent commits to a numerical decision, a public rule and a
-            reward. Find an allowed counterexample that breaks its boundary,
-            and Monad pays you automatically.
+            Alnitak's old poker rule would allow a river call. A challenger
+            presents a valid hand where the promised safety margin fails.
+            Dissent checks the fixed rule onchain and credits the bounty.
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="#proof" data-start-replay>Challenge this claim</a>
+            <a class="button primary" href="#proof" data-start-replay>Replay the completed challenge</a>
             <a class="button secondary" href="./docs.html#protocol">Read the protocol</a>
           </div>
         </div>
 
         <aside class="hero-claim" aria-label="Agent claim preview">
           <div class="claim-window-top">
-            <span>LIVE CASE 01</span><span>ALNITAK</span>
+            <span>COMPLETED CASE 01</span><span>ALNITAK V1</span>
           </div>
-          <p class="label">Agent output</p>
-          <div class="hero-number"><strong>68.57%</strong><span>SAFE</span></div>
+          <p class="label">Base policy violation</p>
+          <div class="hero-number"><strong>0</strong><span>COMMITTED</span></div>
           <div class="rule-line">
-            <span>Agreed rule</span><strong>equity ≥ 36.29%</strong>
+            <span>Allowed violation</span><strong>≤ 0</strong>
           </div>
           <div class="stake-line">
-            <span>Economic warranty</span><strong>3.00 test MON</strong>
+            <span>Bounty in escrow</span><strong>3.00 test MON</strong>
           </div>
         </aside>
       </section>
@@ -55,8 +55,8 @@
       <section class="proof-shell" id="proof">
         <div class="proof-heading">
           <div>
-            <p class="eyebrow">Verified case · Replay the dispute</p>
-            <h2>One decision. One valid counterexample. One irreversible payout.</h2>
+            <p class="eyebrow">Recorded on testnet · Replay the dispute</p>
+            <h2>A rule passed. A real hand broke it. The challenger collected.</h2>
           </div>
           <button id="reset-replay" class="refresh" type="button">
             <span aria-hidden="true">↻</span> Reset replay
@@ -65,22 +65,22 @@
 
         <div class="agreed-rule">
           <span>AGREED RULE</span>
-          <strong>The claim holds only while deterministic equity stays ≥ 36.29%</strong>
-          <small>Rule and recomputer were fixed before the challenge.</small>
+          <strong>Policy violation must stay ≤ 0. Evidence yielding 1 breaks the claim.</strong>
+          <small>The contract recomputes the base and binds a recomputer at commit.</small>
         </div>
 
         <div class="claim-grid replay" id="replay" data-stage="claim">
           <article class="claim-card">
-            <p class="label">Agent's claim</p>
-            <p class="metric">68.57%</p>
-            <p class="comparison">declared equity <strong>≥ 36.29%</strong></p>
+            <p class="label">Base value · computed onchain</p>
+            <p class="metric">0</p>
+            <p class="comparison">violation count <strong>≤ 0</strong></p>
             <div class="claim-result agent-result"><span></span><b id="agent-result">Claim stands</b></div>
           </article>
 
           <div class="versus" aria-hidden="true"><span id="versus-copy">scenario sealed</span><b>≠</b></div>
 
           <article class="claim-card challenged">
-            <p class="label" id="challenger-label">Challenger's scenario</p>
+            <p class="label" id="challenger-label">Second seal · hidden evidence</p>
             <p class="metric stage-value" id="stage-value">SEALED</p>
             <p class="comparison" id="stage-comparison">Hidden until the reveal window</p>
             <div class="claim-result challenger-result"><span></span><b id="challenge-result">Waiting</b></div>
@@ -94,7 +94,7 @@
         </div>
 
         <div class="replay-control">
-          <p id="replay-copy">The counterexample is committed, but nobody can see it yet.</p>
+          <p id="replay-copy">An earlier seal expired. The challenger sealed a second attempt; its evidence remains hidden until reveal.</p>
           <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
           <small>This replays a completed testnet case. The receipts below are live.</small>
         </div>
@@ -102,14 +102,19 @@
         <div class="case-summary replay-summary" hidden>
           <p class="label">What just happened</p>
           <p>
-            <strong>The permitted <code>OVERBET</code> scenario changed the deterministic
-            result from 68.57% to 17.70%.</strong> The agreed 36.29% threshold broke,
-            so Dissent awarded the 3.00 MON warranty plus the challenger's returned
-            0.10 MON deposit.
+            <strong>On Jh Jd with board 5c 9s 2h 6h 4c, the old gate authorized a call,
+            but the pressure-conditioned equity fell below its promised margin.</strong>
+            The adapter returned violation <code>1</code> against the allowed maximum
+            <code>0</code>. Dissent credited the 3.00 test MON bounty plus the returned
+            0.10 test MON deposit. The earlier expired seal's 0.10 test MON deposit
+            went to the agent. Both credits were withdrawn.
           </p>
           <p class="case-limit">
-            This proves settlement under the registered rule. It does not declare
-            that the adapter represents universal truth.
+            This tests a specific historical v1 rule, not all of Alnitak. The policy
+            was developed after observing part of the history; prospective validation
+            and external audit remain pending. The seven transactions cost
+            2.549064762375447460 test MON in gas; a 3.1 MON credit is not a
+            3.1 MON net profit.
           </p>
         </div>
 
@@ -118,7 +123,7 @@
           <div>
             <p class="label">Reading Monad Testnet</p>
             <h3>Checking the proof directly from the chain</h3>
-            <p id="verdict-detail">Four receipts and the final contract state are being checked.</p>
+            <p id="verdict-detail">Seven receipts, the success event and the final contract state are being checked.</p>
           </div>
         </div>
 
@@ -139,14 +144,16 @@
         </details>
 
         <details class="technical explainer">
-          <summary>Why did 68.57% become 17.70%?</summary>
+          <summary>Why did the rule go from 0 to 1?</summary>
           <p>
-            The first number used Alnitak's full opponent model. The challenge
-            selected its pre-registered polarized OVERBET tier. The adapter then
-            enumerated every possible remaining two-card opponent hand and applied
-            the same public rule. There is no random Monte Carlo draw and no LLM
-            deciding who is right. This is a counterexample under an allowed model,
-            not proof that the real opponent held that range.
+            Zero means the initial policy input contains no counterexample; it is
+            not a probability or a claim that the agent is universally safe. For
+            this historical hand, the exact old-model equity was 56.8942%, above
+            the required 42.4170%, so the old gate would allow the call. Under the
+            pressure model specified by this adapter, exact equity was 32.0046%:
+            below that same required margin. The adapter therefore returns 1.
+            These are model-based numbers, not proof of the opponent's actual cards.
+            No LLM judges the submitted evidence.
           </p>
         </details>
       </section>
@@ -176,8 +183,9 @@
           <p class="eyebrow">The economic gap</p>
           <h2 id="economic-gap-title">Agents test what they expect.<br />Reward what they missed.</h2>
           <p>
-            Dissent is useful when finding a breaking case is difficult, checking a
-            submitted case is deterministic, and a bad decision controls meaningful value.
+            The proposed use is a funded bounty when finding a breaking case is hard,
+            checking it is deterministic, and the underlying decision controls meaningful
+            value. Demand from independent users is not yet established.
           </p>
         </div>
         <div class="gap-options">
@@ -194,13 +202,13 @@
           <article class="selected">
             <span>DISSENT</span>
             <h3>Checks and pays</h3>
-            <p>The registered rule adjudicates the counterexample without a panel or AI judge.</p>
+            <p>The bound recomputer adjudicates the counterexample without a panel or AI judge.</p>
           </article>
         </div>
       </section>
 
       <section class="steps">
-        <article><span>01</span><h3>Commit</h3><p>The agent publishes inputs, a threshold and a reward.</p></article>
+        <article><span>01</span><h3>Commit</h3><p>The agent binds a rule, inputs and threshold and escrows a reward.</p></article>
         <article><span>02</span><h3>Seal</h3><p>A challenger hides evidence before revealing it.</p></article>
         <article><span>03</span><h3>Recompute</h3><p>A deterministic adapter recalculates the value onchain.</p></article>
         <article><span>04</span><h3>Settle</h3><p>The contract pays according to whether the threshold broke.</p></article>
@@ -211,7 +219,8 @@
         <h2>The protocol guarantees the mechanism.<br />The adapter defines the meaning.</h2>
         <p>
           Dissent is not an oracle of truth. Production users should require
-          immutable, audited and publicly verified recomputers. This boundary is
+          immutable, audited and publicly verified recomputers. This testnet
+          adapter has not undergone an external audit. The boundary is
           explicit in the protocol instead of hidden behind an AI evaluator.
         </p>
         <a href="./docs.html#integration">
