@@ -1,5 +1,11 @@
 # Despliegue — Monad testnet
 
+> **Despliegue histórico (2026-09-14).** Las direcciones de este documento
+> corresponden al núcleo anterior al cambio de política de `AdapterFault` y no
+> deben reutilizarse para Policy Bounty. El procedimiento del candidato
+> endurecido está en
+> [`POLICY_BOUNTY_DEPLOYMENT.md`](./POLICY_BOUNTY_DEPLOYMENT.md).
+
 Script: [`script/Deploy.s.sol`](../script/Deploy.s.sol). Despliega `DissentCore` y
 `AlnitakRiverRecomputer` (ninguno tiene argumentos de constructor).
 
