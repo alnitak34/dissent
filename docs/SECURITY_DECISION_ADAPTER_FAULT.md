@@ -1,12 +1,12 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
 Estado: **implementado y validado en la rama
-`security-no-payable-adapter-fault`; la suite normal tiene 144 tests, la suite
+`security-no-payable-adapter-fault`; la suite normal tiene 148 tests, la suite
 aislada EIP-1153 tiene 3 y la suite de profundidad tiene 2, todos pasaron en
 Foundry 1.8.1 mediante GitHub Actions; no fusionado a `master` y no desplegado**.
 
 Ejecución verificable más reciente:
-<https://github.com/alnitak34/dissent/actions/runs/34999684775>
+<https://github.com/alnitak34/dissent/actions/runs/35049792323>
 
 ## Hallazgo
 
@@ -62,7 +62,9 @@ indexables. El MVP no incluye gobernanza ni resolución externa.
 
 `test/AdapterFault.t.sol` cubre fallos de validate y recompute por revert, OOG,
 return bomb, returndata corto, tamaño incorrecto, bool no canónico, `INVALID` y
-violaciones de `STATICCALL` mediante `SSTORE` y `LOG`. Sus aserciones demuestran:
+violaciones de `STATICCALL` mediante `SSTORE`, `LOG` y `CALL` con valor. También
+cubre un `InvalidJump` originado en runtime crudo y un fallo propagado desde la
+precompile `0x08` con longitud inválida. Sus aserciones demuestran:
 
 - `credits(challenger) == deposit`;
 - `credits(agent) == reward`;
@@ -124,10 +126,10 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
 2. Validar EIP-1153 y profundidad también contra Monad Testnet si se decide
    presentarlos como evidencia específica de red; hoy son pruebas de Foundry
    (EIP-1153 usa target Cancun).
-3. Completar las pruebas dirigidas pendientes del inventario
-   `docs/EVM_HALT_COVERAGE.md`: `InvalidJump` y fallo de precompile. El
-   inventario ya separa lo cubierto, lo parcial y lo no alcanzable bajo
-   `STATICCALL`; no afirma que todas las variantes estén verificadas.
+3. Decidir si los casos de bytecode malformado todavía no aislados (stack
+   underflow, stack overflow y out-of-offset) aportan evidencia material. El
+   inventario `docs/EVM_HALT_COVERAGE.md` ya separa lo cubierto, lo parcial y lo
+   no alcanzable bajo `STATICCALL`; no afirma exhaustividad formal.
 4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
 5. Fusionar únicamente después de esa revisión o de una decisión explícita de
    aceptar los riesgos restantes.
