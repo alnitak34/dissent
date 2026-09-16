@@ -1,12 +1,13 @@
 # Especificación candidata — Alnitak River Safety Gate v1
 
-Estado: **prototipo local implementado, no desplegado**. La regla y el
+Estado: **adaptador desplegado en Monad Testnet; prueba funcional pendiente**. La regla y el
 contraejemplo proceden del código y de mediciones de Alnitak. El verificador
 independiente y el recomputer Solidity coinciden en fixtures y vectores de
 regresión; el flujo completo pasa localmente. El exportador recorrió 2.184
 replays históricos, reconstruyó 11 estados elegibles y encontró tres
 contraejemplos. La medición es retrospectiva, no prospectiva. Todavía falta
-revisar y desplegar el adaptador y validar demanda externa.
+ejecutar el recorrido funcional sobre el despliegue nuevo y validar demanda
+externa.
 
 ## Afirmación falsable
 
@@ -175,9 +176,10 @@ No prueba que:
    pueden fabricar el mismo veredicto.
 2. **Identidad y ABI — cerrado como prototipo:** política canónica con hash,
    origen histórico y evidencia fija de 160 bytes.
-3. **IRecomputer — cerrado como prototipo local:**
-   `AlnitakPolicyBountyRecomputer` no modifica `DissentCore`.
-4. **Gas local — cerrado, testnet pendiente:** recompute medido en 17.141.001
+3. **IRecomputer — desplegado en Monad Testnet:**
+   `AlnitakPolicyBountyRecomputer` no modifica `DissentCore`; su bytecode y sus
+   constantes se comprobaron onchain después del despliegue.
+4. **Gas local — cerrado, medición funcional en testnet pendiente:** recompute medido en 17.141.001
    gas; reveal completo en 17.267.473. Con `R=20M`, `V=100k`, inputs de 96 B y
    evidencia de 160 B, Dissent calcula `txRequired=20.972.966` y recompensa
    mínima de referencia `2,1172966 MON` a 100 gwei. Todo queda bajo 30M; falta
