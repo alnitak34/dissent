@@ -231,8 +231,9 @@ con procedencia suficiente.
 ### Evidencia al 16-09-2026
 
 - núcleo endurecido y `AlnitakPolicyBountyRecomputer` desplegados en Monad Testnet;
-- verificación pública de fuente del **nuevo** par de contratos pendiente de
-  confirmación en este repositorio;
+- el **nuevo** par de contratos figura «Contract not verified» en MonadVision
+  al 16-09-2026; los enlaces están en
+  [`POLICY_BOUNTY_DEPLOYMENT.md`](POLICY_BOUNTY_DEPLOYMENT.md);
 - recorrido commit → sellos → reveal → payout → retiros ejecutado onchain;
 - web de la rama que lee siete recibos y estado final desde el RPC; la página
   publicada desde `master` todavía puede mostrar la demo anterior;

@@ -8,10 +8,13 @@ desplegado el 2026-09-14: ese contrato conserva la política anterior de
 **Estado actual:** ambos contratos fueron desplegados el 2026-09-16 y sus
 invariantes onchain coinciden con el script. El recorrido funcional de
 refutación válida y retiro de créditos se completó y está registrado en
-[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). No hay constancia en
-este repositorio de `Status: match` para los dos contratos nuevos ni de una
-prueba onchain de `AdapterFault` o evidencia rechazada. No presentar esos
-caminos como validados en Monad Testnet.
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). Al 16-09-2026,
+MonadVision muestra **«Contract not verified»** tanto para
+[`DissentCore`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
+como para
+[`AlnitakPolicyBountyRecomputer`](https://testnet.monadvision.com/address/0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d).
+Tampoco hay prueba onchain registrada de `AdapterFault` o evidencia rechazada.
+No presentar esos caminos como validados en Monad Testnet.
 
 ## Estado validado antes del despliegue
 

@@ -9,8 +9,10 @@ Estado en Monad Testnet: **el núcleo endurecido se desplegó el 16-09-2026** en
 [`0x460f9F624da9e23c705c610E1263bf3641bCce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23).
 Se ejecutó una refutación válida con Policy Bounty y se retiraron ambos créditos;
 ver [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). Ese recorrido **no
-ejercitó `AdapterFault` onchain**. La verificación pública de fuente del núcleo
-nuevo y la auditoría externa siguen pendientes de confirmación.
+ejercitó `AdapterFault` onchain**. Al 16-09-2026, la pestaña Contract de
+[MonadVision](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
+muestra «Contract not verified» para el núcleo nuevo. La auditoría externa
+también sigue pendiente.
 
 Ejecución verificable más reciente:
 <https://github.com/alnitak34/dissent/actions/runs/35049792323>
@@ -144,7 +146,7 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
    explícita de aceptar los riesgos restantes.
 6. **Despliegue y caso exitoso realizados:** el núcleo nuevo y el recomputer de
    Policy Bounty están en Testnet; la web de esta rama usa sus direcciones y
-   recibos. Falta comprobar la verificación pública de fuente, probar
+   recibos. Falta verificar públicamente la fuente, probar
    `AdapterFault` onchain si se quiere sostener esa afirmación para Monad y
    decidir cuándo actualizar la página publicada desde `master`. El núcleo
    anterior sigue existiendo en otra dirección y conserva su política previa.
