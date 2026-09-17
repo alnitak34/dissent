@@ -123,6 +123,9 @@ compromiso" se **derivan indexando eventos**; el núcleo **no** los almacena.
 La decisión de no pagar por fallos técnicos, su amenaza de origen y los casos
 todavía pendientes están en
 [`docs/SECURITY_DECISION_ADAPTER_FAULT.md`](docs/SECURITY_DECISION_ADAPTER_FAULT.md).
+Para una revisión independiente, las invariantes, límites conocidos y preguntas
+prioritarias están en
+[`docs/EXTERNAL_REVIEW_REQUEST.md`](docs/EXTERNAL_REVIEW_REQUEST.md).
 
 ## Gas y economía
 

@@ -168,10 +168,13 @@ integración live**.
 
 ### "¿Quién confía en la fórmula?"
 
-Nadie tiene que aceptar una fórmula secreta de Dissent. La aplicación elige un
-recomputer público antes de contratar al agente. Dissent garantiza que la misma
-regla identificada se aplica al compromiso y a la impugnación. La calidad de esa
-regla sigue siendo responsabilidad del dominio y debe auditarse.
+Nadie tiene que aceptar una fórmula secreta de Dissent. En el contrato actual,
+**el agente propone la dirección del recomputer** al crear el compromiso; la
+aplicación que vaya a confiar en el resultado debe revisarla y aceptarla por su
+cuenta antes de usar ese compromiso. Dissent guarda esa dirección, pero no
+comprueba que el código sea inmutable ni vincula su `codehash`: un proxy o un
+adaptador con estado puede cambiar de comportamiento. La calidad y estabilidad
+de la regla siguen siendo responsabilidad de quien la integra y deben auditarse.
 
 ### "¿Por qué pagaría por esto?"
 
@@ -222,9 +225,10 @@ Fuente primaria: <https://github.com/MUTHUKUMARAN-K-1/axon/blob/main/contracts/C
 
 ### "¿Dissent verifica IA?"
 
-No de forma universal. Verifica únicamente afirmaciones numéricas falsables para
-las que existe un recomputer determinista, entradas comprometidas y evidencia
-con procedencia suficiente.
+No de forma universal. Liquida impugnaciones de afirmaciones numéricas según
+el recomputer identificado en cada compromiso. Para que el resultado sea una
+prueba útil fuera del contrato, quien lo consume debe confiar en que ese
+recomputer es correcto, estable y apropiado para los datos y la evidencia.
 
 ## Evidencia actual y hueco actual
 
