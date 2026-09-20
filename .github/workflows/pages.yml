@@ -16,6 +16,10 @@ concurrency:
 
 jobs:
   deploy:
+    # GitHub Pages is unavailable for a private repository on the current plan.
+    # Keep the workflow ready for the public submission without producing a
+    # failing check while the repository remains private.
+    if: ${{ github.event.repository.private == false }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
