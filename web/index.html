@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Dissent makes numerical claims from autonomous agents falsifiable with deterministic, onchain challenges."
+      content="Dissent funds counterexample bounties for deterministic agent policies and settles valid breaks on Monad."
     />
-    <title>Dissent — A bounty for breaking an agent's policy</title>
+    <title>Dissent — Counterexample bounties for agent policies</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -24,12 +24,13 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Challengeable claims for autonomous agents</p>
-          <h1>An agent says it's safe.<br /><em>What if it isn't?</em></h1>
+          <p class="eyebrow">Counterexample bounties for agent policies</p>
+          <h1>One valid state can break an agent's policy.<br /><em>Dissent pays whoever finds it.</em></h1>
           <p class="lede">
-            Dissent turns a precise agent rule into an open bounty. Find an
-            allowed counterexample; Monad recomputes it and settles the result
-            onchain. Our first live case uses Alnitak's poker agent.
+            An agent stakes test MON behind a deterministic decision rule.
+            A challenger finds an allowed counterexample. Monad reruns the
+            committed code and settles the result onchain. Alnitak's poker
+            agent is the first live adapter, not the boundary of the protocol.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#proof" data-start-replay>Replay the completed challenge</a>
@@ -204,6 +205,59 @@
             possible integrations, not integrations we have built or validated.
           </p>
         </div>
+      </section>
+
+      <section class="portability" aria-labelledby="portability-title">
+        <div class="portability-intro">
+          <p class="eyebrow">Domain-blind core</p>
+          <h2 id="portability-title">Poker lives in an adapter.<br />DissentCore does not know poker.</h2>
+          <p>
+            The core only binds a rule, calls a four-function recomputer interface,
+            compares one integer with a threshold and settles funds. Every domain
+            must supply its own bounded, deterministic adapter.
+          </p>
+        </div>
+        <div class="architecture" aria-label="Dissent protocol architecture">
+          <article>
+            <span>01</span>
+            <strong>DissentCore</strong>
+            <small>Escrow · sealed challenge · settlement</small>
+          </article>
+          <b aria-hidden="true">→</b>
+          <article>
+            <span>02</span>
+            <strong>IRecomputer</strong>
+            <small>recompute · validate · scale · domain</small>
+          </article>
+          <b aria-hidden="true">→</b>
+          <article class="adapter-node">
+            <span>03</span>
+            <strong>Domain adapter</strong>
+            <small>Poker today · other domains require their own proof</small>
+          </article>
+        </div>
+        <p class="portability-limit">
+          This demonstrates domain-independent architecture, not cross-domain
+          adoption. No independent team has integrated Dissent yet.
+        </p>
+      </section>
+
+      <section class="fit" aria-labelledby="fit-title">
+        <div class="fit-heading">
+          <p class="eyebrow">Does your agent fit?</p>
+          <h2 id="fit-title">Five conditions. Miss one and Dissent may be the wrong tool.</h2>
+        </div>
+        <div class="fit-grid">
+          <article><span>01</span><h3>Precise output</h3><p>The agent produces a numerical result or deterministic decision.</p></article>
+          <article><span>02</span><h3>Actionable boundary</h3><p>That result controls an action, limit or allocation with value at risk.</p></article>
+          <article><span>03</span><h3>Searchable break</h3><p>A challenger can search for an allowed state that violates the rule.</p></article>
+          <article><span>04</span><h3>Deterministic check</h3><p>The submitted state can be recomputed with bounded code onchain.</p></article>
+          <article><span>05</span><h3>Economics close</h3><p>The protected value is greater than the cost of finding and proving the break.</p></article>
+        </div>
+        <p class="fit-note">
+          Dissent is not a universal AI verifier. It does not judge intentions,
+          open-ended language or claims whose inputs cannot be authenticated.
+        </p>
       </section>
 
       <section class="economic-gap" aria-labelledby="economic-gap-title">
