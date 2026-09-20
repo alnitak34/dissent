@@ -2,6 +2,15 @@
 
 Estado de la revisión: **15 de septiembre de 2026**.
 
+**Archivo histórico, no estado vigente.** El 16 de septiembre se desplegaron
+`DissentCore` endurecido y `AlnitakPolicyBountyRecomputer`, se completó una
+refutación en Monad Testnet y la web de la rama
+`security-no-payable-adapter-fault` pasó a verificar sus siete transacciones.
+Esta auditoría conserva la foto y las decisiones **anteriores** a ese recorrido;
+para el estado actual, ver [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md)
+y [`../web/README.md`](../web/README.md). La página publicada desde `master`
+puede seguir mostrando la versión anterior hasta fusionar y publicar la rama.
+
 Objetivo: impedir que la interfaz atribuya al despliegue actual una campaña de
 política que todavía solo existe localmente. La página pública debe distinguir
 el caso onchain ya ejecutado del producto que se pretende presentar.
@@ -17,10 +26,13 @@ La web consulta recibos reales de Monad Testnet para una disputa terminada:
 - el umbral fijo es 36,29%;
 - el contrato acredita y permite retirar 3,1 test MON.
 
-Esto está respaldado por [`LIVE_DEMO.md`](LIVE_DEMO.md) y por los cuatro recibos
-que `web/app.js` consulta. Demuestra commit, seal, reveal, recompute y settlement.
-No demuestra una búsqueda abierta sobre todos los estados de una versión de
-política.
+Esto está respaldado por [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md)
+y por los siete recibos que `web/app.js` consulta. La interfaz verifica el
+evento `ChallengeSucceeded`, los dos eventos `Withdrawn` y el estado
+`Challenged` del commitment. No usa como prueba los saldos globales actuales:
+campañas posteriores pueden cambiarlos sin invalidar esta ejecución. Demuestra
+commit, seal, reveal, recompute, settlement y ambos retiros. No demuestra una
+búsqueda abierta sobre todos los estados de una versión de política.
 
 ## Producto nuevo commiteado localmente
 

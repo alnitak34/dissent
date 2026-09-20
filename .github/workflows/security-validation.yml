@@ -1,0 +1,61 @@
+name: Validate AdapterFault security change
+
+on:
+  push:
+    branches: [master, security-no-payable-adapter-fault]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundry:
+    name: Foundry validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Foundry 1.8.1
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.1
+
+      - name: Show Foundry version
+        run: forge --version
+
+      - name: Run complete test suite
+        run: forge test -vvv
+
+      - name: Run EIP-1153 transient-storage boundary tests
+        run: |
+          cp security-tests/TransientStorageBoundary.t.sol test/TransientStorageBoundary.t.sol
+          forge test --evm-version cancun --match-contract TransientStorageBoundaryTest -vvv
+          rm test/TransientStorageBoundary.t.sol
+
+      - name: Run 30M call-depth boundary tests
+        run: |
+          cp security-tests/CallDepthBoundary.t.sol test/CallDepthBoundary.t.sol
+          forge test --match-contract CallDepthBoundaryTest -vvv
+          rm test/CallDepthBoundary.t.sol
+
+      - name: Run lint
+        run: forge lint
+
+      - name: Check contract sizes
+        run: forge build --sizes
+
+      - name: Test web proof verification
+        run: node --test web/proof.test.mjs
+
+      - name: Test Python bridge
+        run: python3 -m unittest discover bridge
+
+      - name: Report formatting differences
+        continue-on-error: true
+        run: forge fmt --check

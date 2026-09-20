@@ -83,6 +83,141 @@ contract FaultRecomputer is IRecomputer {
     }
 }
 
+/// @notice Adaptador con ABI compatible pero funciones deliberadamente no-view.
+///         Dissent las invoca mediante STATICCALL, así que cualquier opcode que
+///         intente modificar estado debe terminar como fallo técnico. `INVALID`
+///         cubre además un exceptional halt que no es revert ni OOG.
+contract StaticViolationRecomputer {
+    enum Mode {
+        RecInvalid,
+        RecSstore,
+        RecLog,
+        RecCallValue,
+        ValInvalid,
+        ValSstore,
+        ValLog,
+        ValCallValue
+    }
+
+    Mode public mode;
+
+    constructor(Mode m) {
+        mode = m;
+    }
+
+    function scale() external pure returns (uint256) {
+        return 1e18;
+    }
+
+    function domain() external pure returns (bytes32) {
+        return "static-violation.v1";
+    }
+
+    function validateEvidence(bytes calldata, bytes calldata evidence) external returns (bool, bytes32) {
+        if (evidence.length == 0) return (true, bytes32(0));
+        if (mode == Mode.ValInvalid) {
+            assembly {
+                invalid()
+            }
+        }
+        if (mode == Mode.ValSstore) {
+            assembly {
+                sstore(0, 1)
+            }
+        }
+        if (mode == Mode.ValLog) {
+            assembly {
+                log0(0, 0)
+            }
+        }
+        if (mode == Mode.ValCallValue) {
+            // EIP-214: CALL con valor no está permitido bajo STATICCALL.
+            (bool ok,) = address(0xBEEF).call{value: 1}("");
+            require(ok, "CALL_VALUE_FAILED");
+        }
+        return (true, bytes32(0));
+    }
+
+    function recompute(bytes calldata inputs, bytes calldata evidence) external returns (int256) {
+        if (evidence.length == 0) return abi.decode(inputs, (int256));
+        if (mode == Mode.RecInvalid) {
+            assembly {
+                invalid()
+            }
+        }
+        if (mode == Mode.RecSstore) {
+            assembly {
+                sstore(0, 1)
+            }
+        }
+        if (mode == Mode.RecLog) {
+            assembly {
+                log0(0, 0)
+            }
+        }
+        if (mode == Mode.RecCallValue) {
+            // EIP-214: CALL con valor no está permitido bajo STATICCALL.
+            (bool ok,) = address(0xBEEF).call{value: 1}("");
+            require(ok, "CALL_VALUE_FAILED");
+        }
+        return abi.decode(inputs, (int256));
+    }
+}
+
+/// @notice Adaptador que funciona durante commit y activa un origen de halt
+///         concreto únicamente cuando recibe evidencia. El helper de
+///         InvalidJump contiene runtime crudo `PUSH1 0x01; JUMP`: el destino 1
+///         no es JUMPDEST. El caso precompile llama 0x08 con un byte, longitud
+///         inválida para el múltiplo de 192 exigido por EIP-197.
+contract HaltOriginRecomputer is IRecomputer {
+    enum Mode {
+        RecInvalidJump,
+        ValInvalidJump,
+        RecPrecompile,
+        ValPrecompile
+    }
+
+    Mode public immutable mode;
+    address public immutable invalidJumpTarget;
+
+    constructor(Mode m, address jumpTarget) {
+        mode = m;
+        invalidJumpTarget = jumpTarget;
+    }
+
+    function scale() external pure returns (uint256) {
+        return 1e18;
+    }
+
+    function domain() external pure returns (bytes32) {
+        return "halt-origin.v1";
+    }
+
+    function validateEvidence(bytes calldata, bytes calldata evidence) external view returns (bool, bytes32) {
+        if (evidence.length == 0) return (true, bytes32(0));
+        if (mode == Mode.ValInvalidJump) _invalidJump();
+        if (mode == Mode.ValPrecompile) _invalidPrecompileInput();
+        return (true, bytes32(0));
+    }
+
+    function recompute(bytes calldata inputs, bytes calldata evidence) external view returns (int256) {
+        if (evidence.length == 0) return abi.decode(inputs, (int256));
+        if (mode == Mode.RecInvalidJump) _invalidJump();
+        if (mode == Mode.RecPrecompile) _invalidPrecompileInput();
+        return abi.decode(inputs, (int256));
+    }
+
+    function _invalidJump() private view {
+        (bool ok,) = invalidJumpTarget.staticcall{gas: 50_000}("");
+        require(ok, "INVALID_JUMP_CHILD_FAILED");
+    }
+
+    function _invalidPrecompileInput() private view {
+        (bool ok,) = address(0x08).staticcall{gas: 100_000}(hex"01");
+        require(ok, "PRECOMPILE_FAILED");
+    }
+}
+
 /// @notice recompute honesto pero HAMBRIENTO: exige haber recibido al menos
 ///         `minGas` (confirma onchain cuanto gas le entregaron) y luego quema
 ///         casi todo, dejando apenas para retornar. Si el nucleo le entrega menos
@@ -180,9 +315,17 @@ contract AdapterFaultTest is Test {
     uint32 constant RGL = 1_000_000;
     uint32 constant VGL = 300_000;
     uint32 constant MEL = 131_072; // MAX_EVIDENCE_LEN del protocolo: evidencia grande para starvation
+    // Debe mantenerse alineado con ENTRY_OVERHEAD de DissentCore. En un test,
+    // `{gas: ...}` limita una llamada interna y no reproduce el intrinseco de
+    // una transaccion real; por eso estos casos usan floor + overhead de entrada,
+    // no txRequired (que incluye calldata + 21k de la transaccion exterior).
+    uint256 constant CORE_ENTRY_OVERHEAD = 80_000;
+    address constant INVALID_JUMP_TARGET = address(0x1111);
 
     function setUp() public {
         core = new DissentCore();
+        // Runtime crudo: PUSH1 0x01; JUMP. PC=1 no contiene JUMPDEST.
+        vm.etch(INVALID_JUMP_TARGET, hex"600156");
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -192,11 +335,15 @@ contract AdapterFaultTest is Test {
         return keccak256(abi.encode(ev, salt, who));
     }
 
-    function _commit(FaultRecomputer rc, uint32 mel) internal returns (bytes32 id) {
+    function _commitAddress(address rc, uint32 mel) internal returns (bytes32 id) {
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, mel, bytes32(0)
+            rc, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, mel, bytes32(0)
         );
+    }
+
+    function _commit(FaultRecomputer rc, uint32 mel) internal returns (bytes32 id) {
+        return _commitAddress(address(rc), mel);
     }
 
     function _seal(bytes32 id, bytes memory ev) internal returns (uint256 selloEn) {
@@ -206,19 +353,24 @@ contract AdapterFaultTest is Test {
         vm.roll(selloEn + core.REVEAL_DELAY_BLOCKS());
     }
 
-    function _assertFaulted(bytes32 id, DissentCore.Phase phase, bytes memory ev) internal {
+    function _assertFaultedAtGas(bytes32 id, DissentCore.Phase phase, bytes memory ev, uint256 callGas) internal {
         _seal(id, ev);
         vm.expectEmit(true, true, false, true, address(core));
-        emit DissentCore.AdapterFaulted(id, alice, phase, uint256(REWARD) + DEPOSIT);
+        emit DissentCore.AdapterFaulted(id, alice, phase, DEPOSIT, REWARD);
         vm.prank(alice, alice);
-        core.challengeReveal{gas: 30_000_000}(id, abi.encode(BASE), ev, "s");
-        assertEq(core.credits(alice), uint256(REWARD) + DEPOSIT, "el retador cobra reward + deposito");
-        assertEq(core.credits(agent), 0, "el agente pierde la recompensa");
+        core.challengeReveal{gas: callGas}(id, abi.encode(BASE), ev, "s");
+        assertEq(core.credits(alice), DEPOSIT, "el retador solo recupera su deposito");
+        assertEq(core.credits(agent), REWARD, "la recompensa vuelve al agente");
+        assertEq(core.escrowed(), 0, "el fault liquida ambos principales");
         assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Faulted));
         // sello settled: sweep no puede pagarle al agente tras el fault
         vm.roll(block.number + core.REVEAL_DELAY_BLOCKS() + core.REVEAL_WINDOW_BLOCKS() + 1);
         vm.expectRevert(DissentCore.NoSeal.selector);
         core.sweepExpiredSeal(id, alice);
+    }
+
+    function _assertFaulted(bytes32 id, DissentCore.Phase phase, bytes memory ev) internal {
+        _assertFaultedAtGas(id, phase, ev, 30_000_000);
     }
 
     // ── faults de recompute ─────────────────────────────────────────────────
@@ -248,12 +400,122 @@ contract AdapterFaultTest is Test {
         _assertFaulted(_commit(new FaultRecomputer(FaultRecomputer.Mode.ValBurn), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
     }
 
+    // ── liquidacion de fault con el presupuesto funcional minimo modelado ───
+    // Estos dos casos ejercitan la rama mas cara para SETTLE_RESERVE: el
+    // adaptador consume practicamente todo el cap y despues el nucleo debe aun
+    // escribir DOS creditos (deposito al retador y reward al agente).
+    function test_recompute_OOG_liquida_con_floor_mas_entry_overhead() public {
+        bytes memory ev = abi.encode(int256(50));
+        uint256 callGas = core.functionGasFloor(VGL, RGL, 32, ev.length) + CORE_ENTRY_OVERHEAD;
+        _assertFaultedAtGas(
+            _commit(new FaultRecomputer(FaultRecomputer.Mode.RecBurn), 64), DissentCore.Phase.RECOMPUTE, ev, callGas
+        );
+    }
+
+    function test_validate_OOG_liquida_con_floor_mas_entry_overhead() public {
+        bytes memory ev = abi.encode(int256(50));
+        uint256 callGas = core.functionGasFloor(VGL, RGL, 32, ev.length) + CORE_ENTRY_OVERHEAD;
+        _assertFaultedAtGas(
+            _commit(new FaultRecomputer(FaultRecomputer.Mode.ValBurn), 64), DissentCore.Phase.VALIDATION, ev, callGas
+        );
+    }
+
     function test_validate_returndata_mal_tamano_es_fault() public {
         _assertFaulted(_commit(new FaultRecomputer(FaultRecomputer.Mode.ValBadSize), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
     }
 
     function test_validate_bool_no_canonico_es_fault() public {
         _assertFaulted(_commit(new FaultRecomputer(FaultRecomputer.Mode.ValBadBool), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
+    }
+
+    // ── exceptional halts y violaciones de STATICCALL ───────────────────────
+    function test_recompute_invalid_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecInvalid)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_recompute_sstore_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecSstore)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_recompute_log_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecLog)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_recompute_call_con_valor_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.RecCallValue)), 64),
+            DissentCore.Phase.RECOMPUTE,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_invalid_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValInvalid)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_sstore_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValSstore)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_log_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValLog)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    function test_validate_call_con_valor_en_staticcall_es_fault_sin_bounty() public {
+        _assertFaulted(
+            _commitAddress(address(new StaticViolationRecomputer(StaticViolationRecomputer.Mode.ValCallValue)), 64),
+            DissentCore.Phase.VALIDATION,
+            abi.encode(int256(50))
+        );
+    }
+
+    // ── orígenes de halt inventariados por REVM ─────────────────────────────
+    function test_recompute_invalid_jump_anidado_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.RecInvalidJump, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.RECOMPUTE, abi.encode(int256(50)));
+    }
+
+    function test_validate_invalid_jump_anidado_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.ValInvalidJump, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
+    }
+
+    function test_recompute_fallo_precompile_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.RecPrecompile, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.RECOMPUTE, abi.encode(int256(50)));
+    }
+
+    function test_validate_fallo_precompile_es_fault_sin_bounty() public {
+        HaltOriginRecomputer rc =
+            new HaltOriginRecomputer(HaltOriginRecomputer.Mode.ValPrecompile, INVALID_JUMP_TARGET);
+        _assertFaulted(_commitAddress(address(rc), 64), DissentCore.Phase.VALIDATION, abi.encode(int256(50)));
     }
 
     // ── adaptador honesto: NO fault ──────────────────────────────────────────
@@ -308,8 +570,8 @@ contract AdapterFaultTest is Test {
     // ── starvation: evidencia grande + adaptador que consume casi exactamente R,
     //    y CONFIRMA onchain que recibio >= R. Si el chequeo inmediato no reservara
     //    el encode, recompute recibiria < R, revertiria "UNDER_DELIVERED" y esto
-    //    seria un AdapterFault pagable. Con la reserva correcta: NO hay fault. ─────
-    function test_starvation_no_produce_fault_pagable() public {
+    //    seria un AdapterFault. Con la reserva correcta: NO hay fault. ──────────────
+    function test_starvation_no_produce_fault() public {
         // minGas = R - slack: exige haber recibido casi todo el limite prometido.
         GasHungryRecomputer rc = new GasHungryRecomputer(uint256(RGL) - 20_000);
         vm.prank(agent, agent);

@@ -1,8 +1,11 @@
 # Estrategia de presentación de Dissent
 
-Estado: **dirección de producto propuesta; el protocolo y el adaptador Alnitak
-por salida están desplegados. El bounty de política sigue local y la adopción
-externa todavía no está validada**.
+Estado: **guion de trabajo, no inventario técnico vigente**. El Policy Bounty
+ya se desplegó y ejecutó en Monad Testnet; ver
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md). La adopción externa,
+la auditoría y la validación prospectiva siguen pendientes. Las cifras de tests,
+capturas y estados de la web mencionados más abajo son instantáneas de cuando
+se redactó este guion; deben verificarse antes de grabar o publicar.
 
 ## La idea que debe recordar un juez
 
@@ -121,9 +124,10 @@ La interfaz consulta Monad Testnet y muestra:
 - el challenge y el pago confirmados;
 - `Challenged` como estado final;
 - escrow y crédito en cero después del retiro;
-- enlace a los recibos y contratos verificados.
+- enlace a los recibos, direcciones desplegadas y fuentes verificadas; dejar
+  claro que `Status: match` no equivale a una auditoría de seguridad.
 
-No recorrer código. El código y los 131 tests son respaldo para preguntas, no
+No recorrer código. El código y la suite son respaldo para preguntas, no
 el centro del video.
 
 ### 105–120 s — El producto general
@@ -144,10 +148,14 @@ Cierre:
 > Dissent turns an agent mandate into an open, paid search for the state it
 > cannot survive.
 
-## Cambios necesarios en la web
+## Plan de web escrito antes del replay actual
 
-La web actual demuestra el caso, pero empieza explicando el protocolo. Para la
-demo debe empezar creando una decisión:
+La lista siguiente conserva las decisiones de diseño originales. Los puntos
+2, 3 y 5 están implementados en la web de esta rama. El CTA del punto 1 todavía
+dice `Replay the completed challenge`; del punto 4, direcciones y recibos sí
+quedaron en detalles secundarios, pero la web no contiene una explicación de
+Monte Carlo. El punto 6 (tarjeta ERC-8004) sigue siendo una propuesta, **no una
+integración live**.
 
 1. Sustituir el primer CTA por **Challenge the claim** o **Reveal the evidence**.
 2. Construir una secuencia controlada de tres estados: claim, evidence, payout.
@@ -160,10 +168,13 @@ demo debe empezar creando una decisión:
 
 ### "¿Quién confía en la fórmula?"
 
-Nadie tiene que aceptar una fórmula secreta de Dissent. La aplicación elige un
-recomputer público antes de contratar al agente. Dissent garantiza que la misma
-regla identificada se aplica al compromiso y a la impugnación. La calidad de esa
-regla sigue siendo responsabilidad del dominio y debe auditarse.
+Nadie tiene que aceptar una fórmula secreta de Dissent. En el contrato actual,
+**el agente propone la dirección del recomputer** al crear el compromiso; la
+aplicación que vaya a confiar en el resultado debe revisarla y aceptarla por su
+cuenta antes de usar ese compromiso. Dissent guarda esa dirección, pero no
+comprueba que el código sea inmutable ni vincula su `codehash`: un proxy o un
+adaptador con estado puede cambiar de comportamiento. La calidad y estabilidad
+de la regla siguen siendo responsabilidad de quien la integra y deben auditarse.
 
 ### "¿Por qué pagaría por esto?"
 
@@ -214,47 +225,55 @@ Fuente primaria: <https://github.com/MUTHUKUMARAN-K-1/axon/blob/main/contracts/C
 
 ### "¿Dissent verifica IA?"
 
-No de forma universal. Verifica únicamente afirmaciones numéricas falsables para
-las que existe un recomputer determinista, entradas comprometidas y evidencia
-con procedencia suficiente.
+No de forma universal. Liquida impugnaciones de afirmaciones numéricas según
+el recomputer identificado en cada compromiso. Para que el resultado sea una
+prueba útil fuera del contrato, quien lo consume debe confiar en que ese
+recomputer es correcto, estable y apropiado para los datos y la evidencia.
 
 ## Evidencia actual y hueco actual
 
-### Hecho hoy
+### Evidencia al 16-09-2026
 
-- protocolo y adaptador Alnitak desplegados en Monad Testnet;
-- contratos verificados públicamente;
-- recorrido commit → seal → reveal → payout ejecutado onchain;
-- web que lee recibos y estado final desde el RPC;
-- 131 tests Foundry y 38 tests del bridge en el último estado verificado;
+- núcleo endurecido y `AlnitakPolicyBountyRecomputer` desplegados en Monad Testnet;
+- el **nuevo** par de contratos obtuvo `Status: match` en Sourcify y figura
+  «Contract Source Code Verified» en MonadVision desde el 16-09-2026;
+  los enlaces y jobs están en
+  [`POLICY_BOUNTY_DEPLOYMENT.md`](POLICY_BOUNTY_DEPLOYMENT.md);
+- recorrido commit → sellos → reveal → payout → retiros ejecutado onchain;
+- web de la rama que lee siete recibos y estado final desde el RPC; la página
+  publicada desde `master` todavía puede mostrar la demo anterior;
+- suites y CI documentados en [`SECURITY_DECISION_ADAPTER_FAULT.md`](SECURITY_DECISION_ADAPTER_FAULT.md);
 - exportador ejecutado sobre 2.184 replays locales: 11 estados elegibles y 3
   contraejemplos históricos distintos; ver
   [`HISTORICAL_CORPUS_AUDIT.md`](HISTORICAL_CORPUS_AUDIT.md);
-- recomputer de campaña local: `QhJs`, `Ac8c` y `JhJd` dan 1; `4hAh` da 0;
-  Python y Solidity coinciden en sus valores exactos, y el flujo completo
-  acredita 3,1 MON de prueba al challenger;
+- recomputer de campaña: las fixtures locales `QhJs`, `Ac8c` y `JhJd` dan 1;
+  `4hAh` da 0. La ejecución onchain documentada usa `JhJd` y acredita 3,1
+  test MON al challenger; no afirmar que los otros casos se ejecutaron onchain;
 - recompute 17.141.001 gas y reveal completo 17.267.473 bajo el perfil local
   Monad; `txRequired=20.972.966` con el cap recomendado de 20M.
 
-La ejecución onchain actual refuta una afirmación numérica sobre una mano fija.
-No demuestra todavía la campaña sobre una versión de política descrita arriba.
+La ejecución onchain actual refuta una afirmación de **Policy Bounty v1** con un
+estado concreto. No demuestra una búsqueda abierta realizada onchain, uso por
+terceros ni que la regla generalice a decisiones nuevas.
 
 ### Todavía no demostrado
 
 - una integración de un equipo externo;
-- despliegue testnet del recomputer de campaña y una ejecución pública;
+- ejecución onchain de evidencia rechazada en el núcleo nuevo; aún no consta.
+  Un `AdapterFault` concreto por revert en `recompute` sí se ejecutó onchain
+  en [`FAULT_PROBE.md`](FAULT_PROBE.md), sin probar todos los tipos de fallo;
 - validación prospectiva sobre replays que no existían cuando se diseñó la
   política; el corpus actual es retrospectivo y no demuestra generalización;
 - un comprador que confirme que usaría esta garantía;
 - un segundo dominio con entradas y regla propias;
 - conexión opcional con ERC-8004 Validation Registry.
 
-No presentar esos cuatro puntos como terminados.
+No presentar estos puntos como terminados.
 
 ## Siguiente secuencia de trabajo
 
-1. Convertir la web en la escena interactiva claim → evidence → payout sin
-   alterar la lectura onchain existente.
+1. Revisar que web, README y recibos describan el mismo despliegue; la escena
+   claim → evidence → payout ya existe en la rama.
 2. Preparar una ficha de integración de una página para equipos: qué salida
    sirve, qué deben aportar y qué construimos nosotros.
 3. Elegir un solo candidato real y solicitar una respuesta concreta: salida,

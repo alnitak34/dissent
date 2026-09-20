@@ -1,12 +1,13 @@
 # Especificación candidata — Alnitak River Safety Gate v1
 
-Estado: **prototipo local implementado, no desplegado**. La regla y el
+Estado: **adaptador desplegado y recorrido funcional ejecutado en Monad
+Testnet; validación de demanda pendiente**. La regla y el
 contraejemplo proceden del código y de mediciones de Alnitak. El verificador
 independiente y el recomputer Solidity coinciden en fixtures y vectores de
 regresión; el flujo completo pasa localmente. El exportador recorrió 2.184
 replays históricos, reconstruyó 11 estados elegibles y encontró tres
 contraejemplos. La medición es retrospectiva, no prospectiva. Todavía falta
-revisar y desplegar el adaptador y validar demanda externa.
+validar demanda externa.
 
 ## Afirmación falsable
 
@@ -63,7 +64,10 @@ y pertenencia al dominio. El challenger no aporta equities ni el veredicto.
 
 ## ABI candidato
 
-Estado: **diseño por implementar y medir**, no interfaz desplegada.
+Estado de esta sección: **borrador de ABI previo a la implementación**, no la
+interfaz vigente. El recomputer final se desplegó; su ABI y constantes reales
+están en `src/adapters/AlnitakPolicyBountyRecomputer.sol` y su recorrido en
+[`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md).
 
 ```solidity
 struct PolicyInputs {
@@ -175,13 +179,15 @@ No prueba que:
    pueden fabricar el mismo veredicto.
 2. **Identidad y ABI — cerrado como prototipo:** política canónica con hash,
    origen histórico y evidencia fija de 160 bytes.
-3. **IRecomputer — cerrado como prototipo local:**
-   `AlnitakPolicyBountyRecomputer` no modifica `DissentCore`.
-4. **Gas local — cerrado, testnet pendiente:** recompute medido en 17.141.001
+3. **IRecomputer — desplegado en Monad Testnet:**
+   `AlnitakPolicyBountyRecomputer` no modifica `DissentCore`; su bytecode y sus
+   constantes se comprobaron onchain después del despliegue.
+4. **Gas — cerrado para este recorrido:** recompute medido en 17.141.001
    gas; reveal completo en 17.267.473. Con `R=20M`, `V=100k`, inputs de 96 B y
    evidencia de 160 B, Dissent calcula `txRequired=20.972.966` y recompensa
-   mínima de referencia `2,1172966 MON` a 100 gwei. Todo queda bajo 30M; falta
-   repetir la medición sobre el contrato desplegado.
+   mínima de referencia `2,1172966 MON` a 100 gwei. El reveal real declaró y
+   pagó 22.211.703 gas en Monad Testnet, bajo el límite de 30M. El detalle está
+   en `docs/POLICY_BOUNTY_LIVE_RUN.md`.
 5. **Búsqueda histórica — cerrada, validación prospectiva pendiente:**
    `exportar_policy_bounty.py` recorrió 2.184 replays, reconstruyó 11 estados
    elegibles y encontró tres violaciones sin recibir sus ids como ganadores. La

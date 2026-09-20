@@ -64,8 +64,9 @@ overhead). La evidencia grande **no** reduce el gas entregado.
    evidencias válidas de tu adaptador (no solo el base: el camino con evidencia
    puede ser más caro). Igual para `validateEvidence`.
 2. Declará `R` y `V` **por encima** de esos peores casos, con margen. Si `R` queda
-   corto para una evidencia honesta, ese challenge **faultea** y **el agente pierde
-   la recompensa**: el incentivo te empuja a declarar suficiente.
+   corto para una evidencia honesta, la campaña queda **`Faulted`**: el retador
+   recupera su depósito y la recompensa vuelve al agente. No hay bounty porque
+   un fallo técnico no demuestra que la afirmación sea falsa.
 3. El commit exige que `R` cubra al menos el `recompute` base (si no, revierte), y
    que la **transacción completa del peor caso** entre en 30M
    (`txRequired ≤ 30.000.000`).
@@ -125,7 +126,7 @@ menor). Cubre el presupuesto de gas de referencia, **no** garantiza rentabilidad
 - `ChallengeSucceeded` / `ChallengeFailed` — resultado de un reveal resuelto.
 - `ChallengeRejected` — evidencia malformada (inconcluso).
 - `AdapterFaulted` (con `phase` = VALIDATION o RECOMPUTE) — fallo técnico del
-  adaptador.
+  adaptador; incluye `challengerRefund` y `agentRefund`. No paga bounty.
 - `ChallengeVoided` — retador anulado porque otro ya resolvió.
 - `SealExpired`, `Reclaimed`, `Credited`, `Withdrawn`.
 
@@ -166,11 +167,14 @@ contract EjemploRecomputer is IRecomputer {
       canónico (0 o 1).
 - [ ] **Toda evidencia que `validateEvidence` acepte (`ok = true`) debe poder pasar
       por `recompute` sin revertir ni hacer OOG** dentro de `recomputeGasLimit`. Si
-      `validate` acepta algo que `recompute` no puede procesar, es un `AdapterFault`
-      y el agente pierde la recompensa.
+      `validate` acepta algo que `recompute` no puede procesar, la campaña queda
+      `Faulted`; el retador recupera su depósito y el agente su recompensa.
 - [ ] `recompute` y `validateEvidence` son **deterministas** y no dependen del
       llamador ni del contexto de bloque (o si lo hacen, entendés y aceptás las
       consecuencias de la frontera de confianza).
+- [ ] No leen storage transitorio (`TLOAD`) ni otro estado que un tercero pueda
+      preparar en la misma transacción. `STATICCALL` bloquea `TSTORE`, pero no
+      convierte una lectura transitoria en una función pura.
 - [ ] `R` y `V` cubren el **peor caso medido** con margen; la evidencia más cara
       cabe en `R`.
 - [ ] `maxEvidenceLen` es el mínimo que tu adaptador realmente necesita.
