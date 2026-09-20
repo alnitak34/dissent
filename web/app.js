@@ -1,3 +1,5 @@
+import { hasSuccessfulChallenge, hasWithdrawal } from "./proof.mjs";
+
 const RPC_URL = "https://testnet-rpc.monad.xyz";
 const EXPLORER = "https://testnet.monadvision.com";
 const CORE = "0x460f9F624da9e23c705c610E1263bf3641bCce23";
@@ -6,7 +8,9 @@ const CHALLENGER = "0x00cf6ceC697E3DCB88a5972Ef083B423dfC00A02";
 const AGENT = "0xa3aB9C3697F1964A8082330103C5DCaaA3B1263A";
 const COMMITMENT = "0xeabab853de85ea81b5cb837ac289b03995e33063d0ce8b457d531a390a2f4bd0";
 const CHALLENGE_SUCCEEDED = "0x91c1883709a1e9edb879e595583d9d3b74a04df0fbaf5b3eb92587fadfc17e78";
+const WITHDRAWN = "0x7084f5476618d8e60b11ef0d7d3f06914655adb8793e28ff7f018d4c76d505d5";
 const PAYOUT = 3100000000000000000n;
+const AGENT_WITHDRAWAL = 100000000000000000n;
 
 const transactions = [
   { name: "Commit", detail: "Agent locks 3 test MON", hash: "0x82fa86b28ddcbc86673fa48e1cd30132a6408f99924b78d0557c885b101dcaa6", block: 62934464 },
@@ -20,9 +24,6 @@ const transactions = [
 
 const selectors = {
   commitment: `0x839df945${COMMITMENT.slice(2)}`,
-  credits: `0xfe5ff468${CHALLENGER.slice(2).padStart(64, "0")}`,
-  agentCredits: `0xfe5ff468${AGENT.slice(2).padStart(64, "0")}`,
-  escrowed: "0x01522b1e",
 };
 
 let requestId = 0;
@@ -64,18 +65,6 @@ function lastWord(hex) {
   return hex.slice(-64);
 }
 
-function hasSuccessfulChallenge(receipt) {
-  return receipt?.logs?.some((log) => {
-    if (log.address.toLowerCase() !== CORE.toLowerCase()) return false;
-    if (log.topics[0]?.toLowerCase() !== CHALLENGE_SUCCEEDED) return false;
-    if (log.topics[1]?.toLowerCase() !== COMMITMENT.toLowerCase()) return false;
-    if (log.topics[2]?.toLowerCase() !== `0x${CHALLENGER.slice(2).toLowerCase().padStart(64, "0")}`) return false;
-    const words = log.data.slice(2).match(/.{64}/g);
-    return words?.length === 4 && BigInt(`0x${words[0]}`) === 1n &&
-      BigInt(`0x${words[1]}`) === 0n && BigInt(`0x${words[2]}`) === PAYOUT;
-  }) ?? false;
-}
-
 async function readProof() {
   const refresh = document.querySelector("#refresh");
   const verdict = document.querySelector("#verdict");
@@ -84,15 +73,12 @@ async function readProof() {
   verdict.querySelector(".verdict-icon").textContent = "···";
   verdict.querySelector(".label").textContent = "Reading Monad Testnet";
   verdict.querySelector("h3").textContent = "Checking the proof directly from the chain";
-  document.querySelector("#verdict-detail").textContent = "Seven receipts, the ChallengeSucceeded event and the final contract state are being checked.";
+  document.querySelector("#verdict-detail").textContent = "Seven receipts, the ChallengeSucceeded event, both withdrawals and the commitment state are being checked.";
 
   try {
-    const [receipts, commitmentData, creditData, agentCreditData, escrowData] = await Promise.all([
+    const [receipts, commitmentData] = await Promise.all([
       Promise.all(transactions.map((tx) => rpc("eth_getTransactionReceipt", [tx.hash]))),
       rpc("eth_call", [{ to: CORE, data: selectors.commitment }, "latest"]),
-      rpc("eth_call", [{ to: CORE, data: selectors.credits }, "latest"]),
-      rpc("eth_call", [{ to: CORE, data: selectors.agentCredits }, "latest"]),
-      rpc("eth_call", [{ to: CORE, data: selectors.escrowed }, "latest"]),
     ]);
 
     renderTimeline(receipts);
@@ -100,11 +86,28 @@ async function readProof() {
       receipt?.status === "0x1" && Number.parseInt(receipt.blockNumber, 16) === transactions[index].block &&
       receipt.to?.toLowerCase() === CORE.toLowerCase());
     const status = Number.parseInt(lastWord(commitmentData), 16);
-    const credit = BigInt(creditData);
-    const agentCredit = BigInt(agentCreditData);
-    const escrow = BigInt(escrowData);
-    const complete = allConfirmed && hasSuccessfulChallenge(receipts[4]) &&
-      status === 2 && credit === 0n && agentCredit === 0n && escrow === 0n;
+    const challengeConfirmed = hasSuccessfulChallenge(receipts[4], {
+      core: CORE,
+      eventTopic: CHALLENGE_SUCCEEDED,
+      commitment: COMMITMENT,
+      challenger: CHALLENGER,
+      newValue: 1n,
+      threshold: 0n,
+      payout: PAYOUT,
+    });
+    const challengerWithdrew = hasWithdrawal(receipts[5], {
+      core: CORE,
+      eventTopic: WITHDRAWN,
+      beneficiary: CHALLENGER,
+      amount: PAYOUT,
+    });
+    const agentWithdrew = hasWithdrawal(receipts[6], {
+      core: CORE,
+      eventTopic: WITHDRAWN,
+      beneficiary: AGENT,
+      amount: AGENT_WITHDRAWAL,
+    });
+    const complete = allConfirmed && challengeConfirmed && challengerWithdrew && agentWithdrew && status === 2;
 
     if (!complete) {
       throw new Error("The current state does not match the recorded completed challenge.");
@@ -114,7 +117,7 @@ async function readProof() {
     verdict.querySelector(".verdict-icon").textContent = "✓";
     verdict.querySelector(".label").textContent = "Live onchain state";
     verdict.querySelector("h3").textContent = "Claim refuted · payout withdrawn";
-    document.querySelector("#verdict-detail").textContent = "Seven receipts and the 1 > 0 payout event confirmed. Status: Challenged. Both credits and escrow: zero after withdrawal.";
+    document.querySelector("#verdict-detail").textContent = "Seven receipts, the 1 > 0 payout event and both withdrawals confirmed. Commitment status: Challenged.";
   } catch (error) {
     verdict.dataset.state = "error";
     verdict.querySelector(".verdict-icon").textContent = "!";

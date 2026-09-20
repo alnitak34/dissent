@@ -311,6 +311,9 @@ forge test --match-contract GasModelCalibrationTest -vv
 # tests offline del puente (sin red ni credenciales)
 python -m unittest discover bridge -p "test_*.py"
 python bridge/mano.py
+
+# tests offline de la verificacion de eventos de la web
+node --test web/proof.test.mjs
 ```
 
 Todo corre sin red, sin claves y sin desplegar nada.

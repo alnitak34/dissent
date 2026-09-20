@@ -11,8 +11,12 @@ La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
 - el evento `ChallengeSucceeded` emitido por el core para este commitment y
   challenger, con `newValue = 1`, `threshold = 0` y payout de 3,1 test MON;
 - que el commitment terminó `Challenged`;
-- que los créditos de challenger y agente quedaron en cero tras retirarlos;
-- que el escrow pendiente quedó en cero.
+- los eventos `Withdrawn` exactos del challenger (3,1 test MON) y del agente
+  (0,1 test MON) en los dos recibos registrados.
+
+La verificación es local a esta campaña. No exige que los créditos o el escrow
+globales del contrato sigan en cero: otras campañas pueden cambiar esos saldos
+después sin invalidar los recibos ni el resultado de este commitment.
 
 La reproducción animada usa datos fijos del caso histórico. El veredicto,
 los recibos y la explicación del resultado permanecen ocultos hasta el último
@@ -30,6 +34,12 @@ node web/serve.mjs
 ```
 
 Abrir `http://127.0.0.1:4173`.
+
+Probar la verificación de eventos sin red:
+
+```powershell
+node --test web/proof.test.mjs
+```
 
 ## Publicación
 

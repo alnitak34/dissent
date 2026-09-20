@@ -26,10 +26,13 @@ La web consulta recibos reales de Monad Testnet para una disputa terminada:
 - el umbral fijo es 36,29%;
 - el contrato acredita y permite retirar 3,1 test MON.
 
-Esto está respaldado por [`LIVE_DEMO.md`](LIVE_DEMO.md) y por los cuatro recibos
-que `web/app.js` consulta. Demuestra commit, seal, reveal, recompute y settlement.
-No demuestra una búsqueda abierta sobre todos los estados de una versión de
-política.
+Esto está respaldado por [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md)
+y por los siete recibos que `web/app.js` consulta. La interfaz verifica el
+evento `ChallengeSucceeded`, los dos eventos `Withdrawn` y el estado
+`Challenged` del commitment. No usa como prueba los saldos globales actuales:
+campañas posteriores pueden cambiarlos sin invalidar esta ejecución. Demuestra
+commit, seal, reveal, recompute, settlement y ambos retiros. No demuestra una
+búsqueda abierta sobre todos los estados de una versión de política.
 
 ## Producto nuevo commiteado localmente
 
