@@ -151,7 +151,7 @@ Cierre:
 ## Plan de web escrito antes del replay actual
 
 La lista siguiente conserva las decisiones de diseño originales. Los puntos
-2, 3 y 5 están implementados en la web de esta rama. El CTA del punto 1 todavía
+2, 3 y 5 están implementados en la web de `master`. El CTA del punto 1 todavía
 dice `Replay the completed challenge`; del punto 4, direcciones y recibos sí
 quedaron en detalles secundarios, pero la web no contiene una explicación de
 Monte Carlo. El punto 6 (tarjeta ERC-8004) sigue siendo una propuesta, **no una
@@ -240,8 +240,8 @@ recomputer es correcto, estable y apropiado para los datos y la evidencia.
   los enlaces y jobs están en
   [`POLICY_BOUNTY_DEPLOYMENT.md`](POLICY_BOUNTY_DEPLOYMENT.md);
 - recorrido commit → sellos → reveal → payout → retiros ejecutado onchain;
-- web de la rama que lee siete recibos y estado final desde el RPC; la página
-  publicada desde `master` todavía puede mostrar la demo anterior;
+- web pública que lee siete recibos y estado final desde el RPC; la rama se
+  fusionó a `master` el 20-09-2026 y Vercel muestra el replay actual;
 - suites y CI documentados en [`SECURITY_DECISION_ADAPTER_FAULT.md`](SECURITY_DECISION_ADAPTER_FAULT.md);
 - exportador ejecutado sobre 2.184 replays locales: 11 estados elegibles y 3
   contraejemplos históricos distintos; ver

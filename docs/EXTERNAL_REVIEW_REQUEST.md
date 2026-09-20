@@ -1,9 +1,9 @@
 # Solicitud de revisión externa — Dissent
 
 Estado: material para pedir una revisión técnica, **no** una auditoría ni una
-afirmación de seguridad. La rama `security-no-payable-adapter-fault` no está
-fusionada a `master`. No enviar fondos reales ni usar el adaptador de prueba en
-producción.
+afirmación de seguridad. El cambio se fusionó a `master` el 20-09-2026 mediante
+el PR #1 (merge commit `5cd68f4`). No enviar fondos reales ni usar el adaptador
+de prueba en producción.
 
 ## Qué revisar
 

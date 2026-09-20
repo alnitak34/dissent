@@ -50,8 +50,9 @@ esto no valida todos los posibles fallos. El 16-09-2026,
 ambas fuentes se verificaron con `Status: match` en Sourcify y MonadVision ya
 muestra **«Contract Source Code Verified»** para los dos contratos nuevos
 (enlaces arriba). La verificación de fuente **no es una auditoría externa**;
-esta sigue pendiente. La rama actual tampoco está fusionada a
-`master`; la página publicada desde `master` puede mostrar una versión anterior.
+esta sigue pendiente. La rama de seguridad se fusionó a `master` el 20-09-2026
+mediante el PR #1 (merge commit `5cd68f4`), y la página pública en Vercel muestra
+el replay verificable de Policy Bounty.
 
 Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
 lectura que comprueba la ejecución de Policy Bounty contra el RPC público. La

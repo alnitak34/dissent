@@ -44,8 +44,10 @@ node --test web/proof.test.mjs
 ## Publicación
 
 `.github/workflows/pages.yml` publica únicamente esta carpeta mediante GitHub
-Pages. El workflow se ejecuta al hacer push a `master`, pero GitHub Pages debe
-tener como fuente **GitHub Actions** en la configuración del repositorio.
+Pages. Mientras el repositorio sea privado en un plan sin Pages para repositorios
+privados, el job se omite. Al hacer público el repositorio, el push a `master`
+vuelve a habilitarlo; GitHub Pages debe tener como fuente **GitHub Actions**.
+La página pública vigente se sirve desde Vercel.
 
 La UI no afirma que Dissent verifique la verdad de las entradas. Muestra una
 propiedad concreta de la política histórica v1 de Alnitak que se rompió bajo

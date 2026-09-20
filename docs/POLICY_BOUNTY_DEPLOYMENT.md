@@ -249,9 +249,9 @@ El despliegue no autoriza todavía una campaña pública.
   eventos y créditos que el retador recupera solo su depósito y el agente su
   recompensa: nadie cobra un bounty por ese fallo técnico. Ver
   [`FAULT_PROBE.md`](FAULT_PROBE.md).
-- [x] Confirmar que la web de esta **rama local** apunta a las direcciones nuevas
-  y las identifica como Monad Testnet (`web/app.js`). La web publicada desde
-  `master` todavía no incluye estos commits.
+- [x] Confirmar que la web apunta a las direcciones nuevas y las identifica como
+  Monad Testnet (`web/app.js`). La rama se fusionó a `master` el 20-09-2026 y la
+  página pública en Vercel muestra este recorrido.
 - [ ] Solo después, publicar la campaña o pedir una integración externa.
 
 ## 8. Parada y recuperación

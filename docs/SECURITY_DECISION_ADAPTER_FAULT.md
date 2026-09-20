@@ -1,9 +1,9 @@
 # Decisión de seguridad: un fallo del adaptador no paga bounty
 
-Estado del código: **implementado en la rama
-`security-no-payable-adapter-fault`; la suite normal tenía 148 tests, la suite
-aislada EIP-1153 tenía 3 y la suite de profundidad tenía 2 en la ejecución de
-CI citada abajo. La rama no está fusionada a `master`.**
+Estado del código: **implementado y fusionado a `master` el 20-09-2026 mediante
+el PR #1 (merge commit `5cd68f4`). La suite normal, la suite aislada EIP-1153 y
+la suite de profundidad pasaron en la validación de `master` #26; la validación
+posterior #27 también terminó correctamente.**
 
 Estado en Monad Testnet: **el núcleo endurecido se desplegó el 16-09-2026** en
 [`0x460f9F624da9e23c705c610E1263bf3641bCce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23).
@@ -146,12 +146,13 @@ máxima de 1024 y señala que la regla 63/64 de EIP-150 dificulta llegar a ella:
    inventario `docs/EVM_HALT_COVERAGE.md` ya separa lo cubierto, lo parcial y lo
    no alcanzable bajo `STATICCALL`; no afirma exhaustividad formal.
 4. Someter el cambio a revisión externa; la suite no sustituye una auditoría.
-5. Fusionar a `master` únicamente después de esa revisión o de una decisión
-   explícita de aceptar los riesgos restantes.
+5. **Cerrado el 20-09-2026:** fusionado a `master` mediante una decisión
+   explícita de aceptar los riesgos restantes; la auditoría externa sigue
+   pendiente y no debe darse por sustituida por el merge.
 6. **Despliegue y dos caminos concretos realizados:** el núcleo nuevo y el
-   recomputer de Policy Bounty están en Testnet; la web de esta rama usa sus
+   recomputer de Policy Bounty están en Testnet; la web pública usa sus
    direcciones y recibos del camino exitoso. La fuente ya se verificó
    públicamente. Un `AdapterFault` por revert en `recompute` también quedó
-   probado onchain, pero no aparece aún en esa web; decidir cuándo actualizar
-   la página publicada desde `master`. El núcleo anterior sigue existiendo
+   probado onchain, pero no aparece aún en el replay principal; decidir si
+   aporta valor visible antes de añadirlo. El núcleo anterior sigue existiendo
    en otra dirección y conserva su política previa.

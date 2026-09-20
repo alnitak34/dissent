@@ -13,7 +13,8 @@ Ejecución verificable:
 `DissentCore` llama `validateEvidence` y `recompute` mediante `STATICCALL`. Desde
 el núcleo, los fallos de ejecución del adaptador colapsan en la misma señal:
 `success == false`; una respuesta exitosa pero con ABI no canónico también se
-rechaza. La política de esta rama no paga un bounty por ninguna de esas señales:
+rechaza. La política vigente en `master` no paga un bounty por ninguna de esas
+señales:
 liquida la campaña como `Faulted`, devuelve el depósito al challenger y devuelve
 la recompensa al agente.
 
