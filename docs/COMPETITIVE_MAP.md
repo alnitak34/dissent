@@ -1,6 +1,6 @@
 # Mapa competitivo de Dissent
 
-Estado de la revisión: **15 de septiembre de 2026**. Este documento registra
+Estado de la revisión: **20 de septiembre de 2026**. Este documento registra
 productos vecinos encontrados y la diferencia comprobable. Una búsqueda abierta
 no demuestra inexistencia mundial; por tanto, Dissent no debe presentarse como
 "el primero" ni como una categoría sin competidores.
@@ -27,6 +27,9 @@ La propuesta que se contrasta es:
 | [AXON ConfidenceBond](https://github.com/MUTHUKUMARAN-K-1/axon/blob/main/contracts/ConfidenceBond.sol) | AXON bloquea 0,001 OKB tras cada veredicto `SAFE`; cualquiera puede llamar `challenge(token)` y cobrar si el ledger muestra después `HIGH RISK` dentro de siete días. El contrato confirma que solo `oracle` publica veredictos y que `challenge(token)` no recibe evidencia. Está desplegado en X Layer mainnet. | Es el vecino económico más cercano encontrado: dinero detrás de un veredicto y pago a un challenger. Sin embargo, su condición de éxito es un **cambio posterior del propio oráculo**. Dissent fija una política y permite presentar ahora un estado concreto que el recomputer reproduce como contraejemplo; no depende de que el emisor cambie su veredicto. |
 | [ARF Onchain](https://github.com/arf-foundation/arf-onchain) | Proyecto de Metropolis que registra atestaciones firmadas de riesgo y condiciona la ejecución a identidad, política, firma, límites y decisión. Declara que no reproduce el modelo de riesgo completo onchain. | ARF prueba procedencia y aplica autorización. Dissent intenta financiar y liquidar una búsqueda de contraejemplos contra una propiedad pública del modelo. Es posible socio y competidor de infraestructura; el encaje depende de que exista un invariante determinista publicable. |
 | [Red Sentinel](https://app.redsentinel.xyz/attack/keone_hon) | Arena con bounties para romper agentes mediante jailbreak, prompt injection e ingeniería social. | Es el vecino narrativo más visible: «rompe al agente y cobra». Su objeto es el comportamiento conversacional de un modelo; Dissent restringe el veredicto a un contraejemplo numérico que un contrato reproduce sin LLM. |
+| [Proof-of-Audit](https://github.com/akoita/proof-of-audit) | Un auditor agente publica un juicio sobre un contrato, bloquea ETH y acepta desafíos. Su README declara que la resolución final depende hoy de una clave de árbitro controlada por el operador; el verificador ejecutable es asesor y la evidencia ordinaria pasa a revisión manual. | Es el competidor narrativo más cercano encontrado: stake, afirmación y challenge. Dissent tiene un alcance más estrecho y elimina el árbitro solo cuando un estado concreto puede ser reproducido por el recomputer comprometido. Proof-of-Audit cubre juicios de auditoría más amplios que Dissent no puede resolver determinísticamente. |
+| [Proof-of-Agent](https://github.com/proof-of-agent/protocol) | Registro con stake y slashing por infracciones objetivas: doble firma y heartbeat ausente. Un challenger aporta firmas o activa una ventana de refutación. | Demuestra que stake, challenge y slashing objetivo ya existen. Sus infracciones están enumeradas por el protocolo; Dissent permite que cada adaptador defina una política numérica y un espacio de contraejemplos. |
+| [AgentTrust](https://github.com/forge-town/monad-blitz-shanghai-2026) | Varios agentes resuelven la misma tarea, comprometen respuestas, ponen collateral y se validan entre sí mediante consenso y un juez. | Su unidad es el acuerdo entre múltiples agentes sobre una tarea. Dissent no busca consenso: exige un único witness reproducible contra una regla comprometida. |
 
 ## Lectura sostenida
 
@@ -51,12 +54,13 @@ La propuesta que se contrasta es:
 
 ## Amenaza principal
 
-La amenaza no es AgentProof: su producto central es testing. AXON demuestra que
-el patrón «un agente pone dinero detrás de un veredicto y un challenger puede
-cobrar» ya está construido y desplegado. Agent Bounties demuestra que también
-existen mercados con commit/reveal y verificadores. La amenaza más directa es
-que cualquiera de ellos añada un modo «encuentra un contraejemplo de esta
-política». Por eso la defensa de Dissent no puede ser la frase. Debe ser:
+La amenaza no es AgentProof: su producto central es testing. AXON y
+Proof-of-Audit demuestran que el patrón «un agente pone dinero detrás de un
+veredicto y un challenger puede cobrar» ya está ocupado. Proof-of-Agent cubre
+slashing objetivo y Agent Bounties demuestra que también existen mercados con
+commit/reveal y verificadores. La amenaza más directa es que cualquiera añada
+un modo «encuentra un contraejemplo de esta política». Por eso la defensa de
+Dissent no puede ser stake + challenge. Debe ser:
 
 1. especificación de política y evidencia canónicas;
 2. adaptadores seguros que nunca conviertan bytes hostiles en un pago falso;
@@ -66,11 +70,12 @@ política». Por eso la defensa de Dissent no puede ser la frase. Debe ser:
 
 ## Consecuencia para la presentación
 
-No abrir con "reputación para agentes" ni con "seguridad de IA". Ambas categorías
-están saturadas. Abrir con una acción visible:
+No abrir con "reputación para agentes", "seguridad de IA" ni "un agente pone
+stake y puede ser desafiado". Las tres formulaciones ya tienen vecinos. Abrir
+con la categoría precisa y después con una acción visible:
 
-> **This agent put 3 MON on its own policy. One valid state broke it. Monad paid
-> the proof.**
+> **Counterexample bounties for agent policies. One valid state broke this
+> policy. The committed code reproduced it, and Monad paid the challenger.**
 
 Después explicar la categoría: pruebas y guards buscan fallos con capacidad
 interna; Dissent ofrece dinero para que cualquiera busque lo que el equipo no

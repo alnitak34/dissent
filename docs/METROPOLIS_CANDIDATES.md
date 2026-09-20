@@ -1,6 +1,6 @@
 # Candidatos reales de Metropolis para integrar Dissent
 
-Estado de la revisión: **15 de septiembre de 2026**.
+Estado de la revisión: **20 de septiembre de 2026**.
 
 Este documento no afirma adopción. Registra proyectos públicos encontrados en
 los canales de Monad y contrasta cada uno contra los cinco requisitos de
@@ -102,6 +102,35 @@ ParaMEV solo pasa a implementación si el equipo acepta exponer un **invariante
 estrecho**, no todo su detector, que pueda verificarse contra un bloque y recibos
 identificados.
 
+## Prioridad 3 — AgentPay
+
+Fuente primaria: <https://github.com/x2v-co/agentpay>
+
+### Hechos verificados
+
+- AgentPay es una implementación de referencia de compras autónomas construida
+  para Metropolis sobre Monad.
+- La política firmada enlaza wallet, merchant, modelo, presupuesto, chain, asset
+  y expiración.
+- Una reserva compromete el request y los límites de tokens antes de ejecutar;
+  Permit2 autoriza un máximo y el settlement registra el consumo medido.
+- El repositorio advierte que los reportes de tests del worker son declarados por
+  el operador, no atestaciones criptográficas.
+
+### Filtro de encaje
+
+| Requisito | Estado | Evidencia o pregunta pendiente |
+| --- | --- | --- |
+| Otro componente consume la cifra | **Sí** | El flujo usa presupuesto, techo por inferencia y uso medido para autorizar y liquidar. |
+| Búsqueda adversarial no trivial | **No demostrado** | Los límites simples pueden comprobarse exhaustivamente y no justificar un bounty. |
+| Witness determinista | **Posible, estrecho** | Podría existir una propiedad sobre policy + receipt, pero no debe depender del output del modelo ni del test report del operador. |
+| Procedencia verificable | **Parcial** | Policy, firmas y receipt existen; hay que confirmar cuáles quedan verificables para un contrato. |
+| Valor superior al challenge | **Por confirmar** | La política controla pagos, pero el valor del caso de demo es pequeño y no demuestra economía comercial. |
+
+AgentPay es el candidato más débil de los tres. Solo avanza si su equipo identifica
+una propiedad que no sea una comparación trivial que su propio flujo ya pueda
+comprobar antes de pagar.
+
 ## No priorizar ahora
 
 ### Quantum Portfolio
@@ -137,9 +166,13 @@ La frase que concentra la diferencia es:
 Esto no está validado como demanda hasta que ARF u otro equipo responda con una
 propiedad concreta y acepte probar la integración.
 
-## Próxima acción externa propuesta
+## Mensajes dirigidos preparados
 
-Enviar un mensaje dirigido a `@petterjuan`, no otro anuncio general:
+No enviar hasta confirmar la cuenta y el canal exactos de cada destinatario.
+Una respuesta negativa también es evidencia de mercado; no se intentará forzar
+un adaptador si falta determinismo, procedencia o economía.
+
+### 1 — ARF Onchain
 
 ```text
 Hi Juan, I’m Julieta (Alnitak), building Dissent in the same Metropolis track.
@@ -160,5 +193,46 @@ that is useful too. I’d rather establish the trust boundary honestly than forc
 an integration.
 ```
 
-Enviar el mensaje constituye contacto externo y requiere aprobación de Julieta
-en el momento de enviarlo.
+### 2 — ParaMEV
+
+```text
+Hi, I’m Julieta (Alnitak), building Dissent for Metropolis Track 04.
+
+I read ParaMEV’s public risk API and methodology. Dissent funds the search for
+one allowed counterexample to a deterministic agent policy, then reruns that
+specific witness on Monad and settles the bounty without an AI or human judge.
+
+I am not asking you to expose the production detector or private thresholds. Is
+there one narrow public invariant over a fixed Monad block, pool and receipt set
+that a risk response should always satisfy? If you have one real response plus
+the public input source, I can first test whether it is deterministic and
+economically meaningful. I will say no if it does not fit rather than force an
+integration.
+
+Thanks — even a quick “not compatible because the score is intentionally
+non-reproducible” would help define the boundary honestly.
+```
+
+### 3 — AgentPay
+
+```text
+Hi, I’m Julieta (Alnitak), also building for Metropolis.
+
+I read AgentPay’s policy and receipt flow. Dissent is a counterexample bounty
+for deterministic agent policies: an agent funds a numerical boundary, a
+challenger submits one allowed state that breaks it, and Monad reruns the bound
+rule and settles the result.
+
+Do you have one non-trivial property over a signed policy and purchase receipt
+that another component relies on, but that is not already exhausted by your
+normal preflight checks? I am specifically avoiding model output and
+operator-reported test results because Dissent needs a deterministic witness
+with verifiable inputs.
+
+If you can share one example policy, receipt shape and boundary, I can check the
+fit before proposing any code. A “no, our remaining checks are either trivial
+or offchain-trusted” is also a useful answer.
+```
+
+Enviar cualquiera de estos mensajes constituye contacto externo y requiere
+aprobación de Julieta en el momento de enviarlo.
