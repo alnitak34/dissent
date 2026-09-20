@@ -2,7 +2,9 @@ name: Validate AdapterFault security change
 
 on:
   push:
-    branches: [security-no-payable-adapter-fault]
+    branches: [master, security-no-payable-adapter-fault]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -50,6 +52,9 @@ jobs:
 
       - name: Test web proof verification
         run: node --test web/proof.test.mjs
+
+      - name: Test Python bridge
+        run: python3 -m unittest discover bridge
 
       - name: Report formatting differences
         continue-on-error: true
