@@ -27,13 +27,19 @@ el número y si es honesto— la define el adaptador. Ver
 
 ## Estado
 
-Hay **dos versiones distintas** en Monad Testnet:
+Hay una versión vigente con registro y dos despliegues históricos en Monad
+Testnet:
 
-> La arquitectura con `RecomputerRegistry` de esta rama todavía no está
-> desplegada. Las direcciones siguientes son despliegues históricos del núcleo
-> anterior y se conservan como evidencia del replay ya ejecutado.
-
-- **Policy Bounty, despliegue del 16-09-2026:**
+- **Versión vigente con `RecomputerRegistry`:**
+  [`DissentCore 0x6861...0a87`](https://testnet.monadvision.com/address/0x686164f708b87d1A63bEE8Aa3130298246690a87),
+  [`RecomputerRegistry 0xD92a...0B9b`](https://testnet.monadvision.com/address/0xD92a8aa9C28168484abB6D03eC261DD1FC1b0B9b)
+  y [`AlnitakPolicyBountyRecomputer 0xaC87...6880`](https://testnet.monadvision.com/address/0xaC87125846C19A978B3D847a9E49Dd7744aa6880).
+  La política activa es
+  `0xd50b859dbdf6d6fcd167fefb8626bc64bd44683881f58098c24612a720e09cef`.
+  Una refutación válida completó `commit → seal → reveal → withdraw` en cuatro
+  transacciones. La web de solo lectura verifica esos recibos, el evento
+  `ChallengeSucceeded`, el estado `Challenged` y el retiro de 3,1 test MON.
+- **Policy Bounty sin registro, despliegue histórico del 16-09-2026:**
   [`DissentCore 0x460f...ce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
   y [`AlnitakPolicyBountyRecomputer 0x10EE...Cb2d`](https://testnet.monadvision.com/address/0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d).
   Este núcleo implementa la regla nueva: un `AdapterFault` devuelve el depósito
@@ -44,22 +50,21 @@ Hay **dos versiones distintas** en Monad Testnet:
   adaptador de prueba que revierte en `recompute` también produjo
   `Status.Faulted` onchain, sin bounty: recibo y créditos en
   [`docs/FAULT_PROBE.md`](docs/FAULT_PROBE.md).
-- **Versión anterior, histórica:**
+- **Versión anterior a Policy Bounty, histórica:**
   [`DissentCore 0x6dCD...6758`](https://testnet.monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758)
   y [`AlnitakRiverRecomputer 0x2a26...8E38`](https://testnet.monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38).
   Su `AdapterFault` sí pagaba al retador; no debe confundirse con la versión
   nueva. Recibos y verificación de esta versión:
   [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
-La ruta `AdapterFault` nueva está cubierta por pruebas locales/CI y por **una
+La ruta `AdapterFault` está cubierta por pruebas locales/CI y por **una
 ejecución concreta en Monad Testnet** con un adaptador deliberadamente fallido;
-esto no valida todos los posibles fallos. El 16-09-2026,
-ambas fuentes se verificaron con `Status: match` en Sourcify y MonadVision ya
-muestra **«Contract Source Code Verified»** para los dos contratos nuevos
-(enlaces arriba). La verificación de fuente **no es una auditoría externa**;
-esta sigue pendiente. La rama de seguridad se fusionó a `master` el 20-09-2026
-mediante el PR #1 (merge commit `5cd68f4`), y la página pública en Vercel muestra
-el replay verificable de Policy Bounty.
+esto no valida todos los posibles fallos. Las fuentes de los tres contratos de
+la versión vigente obtuvieron `Status: match` en Sourcify. La verificación de
+fuente **no es una auditoría externa**; esta sigue pendiente. La rama de
+seguridad se fusionó a `master` el 20-09-2026 mediante el PR #1 (merge commit
+`5cd68f4`), y la página pública en Vercel muestra el replay verificable de Policy
+Bounty.
 
 Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
 lectura que comprueba la ejecución de Policy Bounty contra el RPC público. La
@@ -283,9 +288,10 @@ El bounty sobre una versión completa de política usa un puente separado. Este
 produce los `inputs` de 96 bytes y la evidencia de 160 bytes que espera
 `AlnitakPolicyBountyRecomputer`, sin firmas, wallet ni hex escrito a mano.
 
-Este segundo adaptador está desplegado con el núcleo endurecido. Su campaña
-ejecutada y sus recibos corresponden a la versión **Policy Bounty**, no a la
-demostración anterior de una mano fija. Ver
+Este segundo adaptador está desplegado y activo en `RecomputerRegistry`. La
+campaña vigente corresponde a **Policy Bounty** y no a la demostración anterior
+de una mano fija. El replay y sus recibos están en `web/`; la ejecución anterior
+sin registro permanece documentada en
 [`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md).
 
 ```bash
@@ -305,12 +311,11 @@ por tanto demuestra el recorrido técnico, **no** una búsqueda amplia o difíci
 
 ## Interfaz de la demo
 
-`web/` presenta la ejecución de Policy Bounty documentada en
-[`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md). Al completar
+`web/` presenta la ejecución vigente de Policy Bounty con registro. Al completar
 el replay consulta Monad Testnet. No usa backend, wallet ni dependencias de
-JavaScript. Verifica siete recibos, el evento de refutación, el estado
-`Challenged`, los dos créditos retirados y el escrow final en cero. La demo
-anterior de una mano fija permanece documentada en
+JavaScript. Verifica cuatro recibos, el evento de refutación, el estado
+`Challenged` y el retiro de 3,1 test MON por el challenger. La demo anterior de
+una mano fija permanece documentada en
 [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md), pero ya no es el caso principal de la web.
 
 ```powershell

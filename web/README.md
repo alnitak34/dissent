@@ -1,18 +1,17 @@
 # Dissent web demo
 
 Interfaz estática y de solo lectura para la ejecución de **Policy Bounty**
-registrada en [`docs/POLICY_BOUNTY_LIVE_RUN.md`](../docs/POLICY_BOUNTY_LIVE_RUN.md).
+con un recomputer activo en `RecomputerRegistry` sobre Monad Testnet.
 No usa wallet, claves, backend ni dependencias JavaScript.
 
 La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
 
-- los siete recibos de la demo (`status = 1`, bloque y contrato esperados),
-  incluido el primer sello vencido y su liquidación;
+- los cuatro recibos de la demo (`status = 1`, bloque y contrato esperados):
+  commitment, sello, reveal y retiro;
 - el evento `ChallengeSucceeded` emitido por el core para este commitment y
   challenger, con `newValue = 1`, `threshold = 0` y payout de 3,1 test MON;
 - que el commitment terminó `Challenged`;
-- los eventos `Withdrawn` exactos del challenger (3,1 test MON) y del agente
-  (0,1 test MON) en los dos recibos registrados.
+- el evento `Withdrawn` exacto del challenger por 3,1 test MON.
 
 La verificación es local a esta campaña. No exige que los créditos o el escrow
 globales del contrato sigan en cero: otras campañas pueden cambiar esos saldos
@@ -22,7 +21,7 @@ La reproducción animada usa datos fijos del caso histórico. El veredicto,
 los recibos y la explicación del resultado permanecen ocultos hasta el último
 paso del replay. Entonces el panel hace lecturas RPC de solo lectura; también
 pueden repetirse con «Refresh». El recibo de la revelación decisiva tiene un
-enlace directo a MonadVision; los siete recibos completos están en una sección
+enlace directo a MonadVision; los cuatro recibos completos están en una sección
 desplegable. Una lectura fallida no se muestra como prueba confirmada. El caso
 anterior de equity está documentado separadamente en `docs/LIVE_DEMO.md`;
 no se mezclan sus porcentajes ni sus transacciones con esta campaña.

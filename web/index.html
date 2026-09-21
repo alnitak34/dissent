@@ -111,7 +111,7 @@
           <div class="versus" aria-hidden="true"><span id="versus-copy">scenario sealed</span><b>≠</b></div>
 
           <article class="claim-card challenged">
-            <p class="label" id="challenger-label">Second seal · hidden evidence</p>
+            <p class="label" id="challenger-label">Evidence seal · hidden scenario</p>
             <p class="metric stage-value" id="stage-value">SEALED</p>
             <p class="comparison" id="stage-comparison">Hidden until the reveal window</p>
             <div class="claim-result challenger-result"><span></span><b id="challenge-result">Waiting</b></div>
@@ -125,7 +125,7 @@
         </div>
 
         <div class="replay-control">
-          <p id="replay-copy">An earlier seal expired. The challenger sealed a second attempt; its evidence remains hidden until reveal.</p>
+          <p id="replay-copy">The challenger commits a hash of the evidence and locks a deposit. The scenario remains hidden until reveal.</p>
           <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
           <small>This replays a completed testnet case. Verify its receipts at the end.</small>
         </div>
@@ -138,14 +138,13 @@
             safety margin.</strong>
             The recomputer returned violation <code>1</code> against the allowed maximum
             <code>0</code>. Dissent credited the 3.00 test MON bounty plus the returned
-            0.10 test MON deposit. The earlier expired seal's 0.10 test MON deposit
-            went to the agent. Both credits were withdrawn.
+            0.10 test MON deposit. The challenger then withdrew the full 3.10 test MON credit.
           </p>
           <p class="case-limit">
             This tests a specific historical v1 rule, not all of Alnitak. The policy
             was developed after observing part of the history; prospective validation
-            and external audit remain pending. The seven transactions cost
-            2.549064762375447460 test MON in gas; a 3.1 MON credit is not a
+            and external audit remain pending. The four transactions cost
+            2.948191977000170577 test MON in gas; a 3.1 MON credit is not a
             3.1 MON net profit.
           </p>
         </div>
@@ -156,7 +155,7 @@
             <div>
               <p class="label">Reading Monad Testnet</p>
               <h3>Checking the proof directly from the chain</h3>
-              <p id="verdict-detail">Seven receipts, the success event and the final contract state are being checked.</p>
+              <p id="verdict-detail">Four receipts, the success event, the withdrawal and the final contract state are being checked.</p>
             </div>
           </div>
 
@@ -168,8 +167,8 @@
           </div>
 
           <details class="receipt-details">
-            <summary>Inspect all seven testnet transactions</summary>
-            <p>The full sequence includes an expired first seal, the successful reveal, and both withdrawals.</p>
+            <summary>Inspect all four testnet transactions</summary>
+            <p>The full sequence includes the commitment, evidence seal, successful reveal and challenger withdrawal.</p>
             <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
           </details>
 
@@ -178,6 +177,7 @@
             <dl>
               <div><dt>Commitment</dt><dd id="commitment-id"></dd></div>
               <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
+              <div><dt>RecomputerRegistry</dt><dd id="registry-address"></dd></div>
               <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
               <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
             </dl>
@@ -313,12 +313,13 @@
         <p class="eyebrow">Trust boundary</p>
         <h2>The protocol guarantees the mechanism.<br />The recomputer defines the meaning.</h2>
         <p>
-          Dissent is not an oracle of truth. The agent names the recomputer;
-          applications must approve that rule before relying on a claim.
-          The core binds its address, not its code hash or future behavior.
-          Production users should require immutable, audited and publicly
-          verified recomputers. This testnet recomputer has not undergone an
-          external audit.
+          Dissent is not an oracle of truth. A registry curator approves each
+          policy before agents can use it. The registry entry fixes the
+          recomputer address, runtime code hash, deposit and execution bounds.
+          The core checks the active policy and code hash at commitment, then
+          checks the stored code hash again at reveal. This prevents silent code
+          replacement; it does not prove that the domain rule is correct. This
+          testnet recomputer has not undergone an external audit.
         </p>
         <a href="./docs.html#integration">
           Build a recomputer →
