@@ -42,7 +42,7 @@
           <div class="claim-window-top">
             <span>CASE 01 / ALNITAK V1</span><span>MONAD TESTNET</span>
           </div>
-          <p class="hero-card-title">One claim. One sealed counterexample.</p>
+          <p class="hero-card-title">One rule. One sealed counterexample.</p>
           <div class="hero-test">
             <div class="hero-test-side">
               <span>THE CLAIM</span>
@@ -66,10 +66,22 @@
         <div class="chain-role">
           <span>MONAD'S ROLE</span>
           <p>
-            The reward is held by a contract on Monad Testnet. The challenge
-            triggers an onchain recomputation. After the replay, you can inspect
-            the public receipts for the challenge and settlement. This is a working testnet
-            settlement, not a claim of external adoption or a mainnet launch.
+            Dissent could run on another EVM chain. Monad matters in this case
+            because its execution budget lets the deterministic recomputation
+            and settlement happen onchain. The bounty, result and payout are
+            publicly verifiable. This is a working testnet settlement, not a
+            claim of external adoption or a mainnet launch.
+          </p>
+        </div>
+        <div class="completed-result" aria-label="Completed testnet result">
+          <span>COMPLETED TESTNET RESULT</span>
+          <strong>
+            A challenger found an allowed hand where Alnitak's call fell below
+            the rule's required safety margin.
+          </strong>
+          <p>
+            Dissent recomputed the violation onchain, refuted the rule and
+            released the bounty. Replay the completed challenge below.
           </p>
         </div>
         <div class="proof-heading">
@@ -85,7 +97,7 @@
         <div class="agreed-rule">
           <span>AGREED RULE</span>
           <strong>Policy violation must stay ≤ 0. A valid result above 0 would break the claim.</strong>
-          <small>The contract recomputes the base and binds a recomputer at commit.</small>
+          <small>The contract binds a fixed onchain checker, called the recomputer, at commit.</small>
         </div>
 
         <div class="claim-grid replay" id="replay" data-stage="claim">
@@ -121,9 +133,10 @@
         <div class="case-summary replay-summary" hidden>
           <p class="label">What just happened</p>
           <p>
-            <strong>On Jh Jd with board 5c 9s 2h 6h 4c, the old gate authorized a call,
-            but the pressure-conditioned equity fell below its promised margin.</strong>
-            The adapter returned violation <code>1</code> against the allowed maximum
+            <strong>Alnitak's old rule said call. Under the stronger opponent model
+            already specified by the recomputer, that call fell below the promised
+            safety margin.</strong>
+            The recomputer returned violation <code>1</code> against the allowed maximum
             <code>0</code>. Dissent credited the 3.00 test MON bounty plus the returned
             0.10 test MON deposit. The earlier expired seal's 0.10 test MON deposit
             went to the agent. Both credits were withdrawn.
@@ -210,11 +223,11 @@
       <section class="portability" aria-labelledby="portability-title">
         <div class="portability-intro">
           <p class="eyebrow">Domain-blind core</p>
-          <h2 id="portability-title">Poker lives in an adapter.<br />DissentCore does not know poker.</h2>
+          <h2 id="portability-title">Poker lives in one recomputer.<br />DissentCore does not know poker.</h2>
           <p>
             The core only binds a rule, calls a four-function recomputer interface,
             compares one integer with a threshold and settles funds. Every domain
-            must supply its own bounded, deterministic adapter.
+            must supply its own bounded, deterministic recomputer.
           </p>
         </div>
         <div class="architecture" aria-label="Dissent protocol architecture">
@@ -232,7 +245,7 @@
           <b aria-hidden="true">→</b>
           <article class="adapter-node">
             <span>03</span>
-            <strong>Domain adapter</strong>
+            <strong>Domain recomputer</strong>
             <small>Poker today · other domains require their own proof</small>
           </article>
         </div>
@@ -292,19 +305,19 @@
       <section class="steps">
         <article><span>01</span><h3>Commit</h3><p>The agent binds a rule, inputs and threshold and escrows a reward.</p></article>
         <article><span>02</span><h3>Seal</h3><p>A challenger hides evidence before revealing it.</p></article>
-        <article><span>03</span><h3>Recompute</h3><p>A deterministic adapter recalculates the value onchain.</p></article>
+        <article><span>03</span><h3>Recompute</h3><p>A deterministic recomputer recalculates the value onchain.</p></article>
         <article><span>04</span><h3>Settle</h3><p>The contract pays according to whether the threshold broke.</p></article>
       </section>
 
       <section class="boundary">
         <p class="eyebrow">Trust boundary</p>
-        <h2>The protocol guarantees the mechanism.<br />The adapter defines the meaning.</h2>
+        <h2>The protocol guarantees the mechanism.<br />The recomputer defines the meaning.</h2>
         <p>
           Dissent is not an oracle of truth. The agent names the recomputer;
           applications must approve that rule before relying on a claim.
           The core binds its address, not its code hash or future behavior.
           Production users should require immutable, audited and publicly
-          verified recomputers. This testnet adapter has not undergone an
+          verified recomputers. This testnet recomputer has not undergone an
           external audit.
         </p>
         <a href="./docs.html#integration">
