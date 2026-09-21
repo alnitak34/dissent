@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ILegacyDissentCore} from "./interfaces/ILegacyDissentCore.sol";
+import {DissentCore} from "../src/DissentCore.sol";
+import {IRecomputerRegistry} from "../src/IRecomputerRegistry.sol";
 import {AlnitakPolicyBountyRecomputer} from "../src/adapters/AlnitakPolicyBountyRecomputer.sol";
 
 /// @notice Fases separadas para probar Policy Bounty sobre el despliegue
@@ -11,10 +12,13 @@ import {AlnitakPolicyBountyRecomputer} from "../src/adapters/AlnitakPolicyBounty
 abstract contract PolicyBountyBase is Script {
     uint256 internal constant MONAD_TESTNET_CHAIN_ID = 10143;
 
-    address internal constant CORE = 0x460f9F624da9e23c705c610E1263bf3641bCce23;
-    address internal constant RECOMPUTER = 0x10EE57C2c75308118C527d909c6FDCF77BBaCb2d;
+    address internal constant CORE = 0x686164f708b87d1A63bEE8Aa3130298246690a87;
+    address internal constant REGISTRY = 0xD92a8aa9C28168484abB6D03eC261DD1FC1b0B9b;
+    address internal constant RECOMPUTER = 0xaC87125846C19A978B3D847a9E49Dd7744aa6880;
     address internal constant AGENT = 0xa3aB9C3697F1964A8082330103C5DCaaA3B1263A;
     address internal constant CHALLENGER = 0x00cf6ceC697E3DCB88a5972Ef083B423dfC00A02;
+
+    bytes32 internal constant POLICY_ID = 0xd50b859dbdf6d6fcd167fefb8626bc64bd44683881f58098c24612a720e09cef;
 
     uint256 internal constant REWARD = 3 ether;
     uint128 internal constant DEPOSIT = 0.1 ether;
@@ -31,7 +35,20 @@ abstract contract PolicyBountyBase is Script {
     function _requireDeployment() internal view {
         require(block.chainid == MONAD_TESTNET_CHAIN_ID, "solo Monad testnet 10143");
         require(CORE.code.length != 0, "DissentCore endurecido no desplegado");
+        require(REGISTRY.code.length != 0, "RecomputerRegistry no desplegado");
         require(RECOMPUTER.code.length != 0, "Policy Bounty recomputer no desplegado");
+
+        DissentCore core = DissentCore(CORE);
+        require(address(core.registry()) == REGISTRY, "registry inesperado");
+
+        IRecomputerRegistry.Policy memory policy = IRecomputerRegistry(REGISTRY).getPolicy(POLICY_ID);
+        require(policy.active, "policy inactiva");
+        require(policy.recomputer == RECOMPUTER, "policy recomputer inesperado");
+        require(policy.codeHash == RECOMPUTER.codehash, "policy codehash inesperado");
+        require(policy.challengeDeposit == DEPOSIT, "policy deposit inesperado");
+        require(policy.recomputeGasLimit == RECOMPUTE_GAS_LIMIT, "policy R inesperado");
+        require(policy.validateGasLimit == VALIDATE_GAS_LIMIT, "policy V inesperado");
+        require(policy.maxEvidenceLen == MAX_EVIDENCE_LEN, "policy max evidence inesperado");
 
         AlnitakPolicyBountyRecomputer recomputer = AlnitakPolicyBountyRecomputer(RECOMPUTER);
         require(recomputer.POLICY_SPEC_HASH() == POLICY_HASH, "policy hash inesperado");
@@ -62,13 +79,15 @@ abstract contract PolicyBountyBase is Script {
         );
     }
 
-    function _requireCommitment(ILegacyDissentCore.Commitment memory commitment, bytes memory inputs) internal pure {
-        require(commitment.status == ILegacyDissentCore.Status.Open, "commitment no esta Open");
+    function _requireCommitment(DissentCore.Commitment memory commitment, bytes memory inputs) internal view {
+        require(commitment.status == DissentCore.Status.Open, "commitment no esta Open");
         require(commitment.agent == AGENT, "agent inesperado");
         require(commitment.recomputer == RECOMPUTER, "recomputer inesperado");
+        require(commitment.policyId == POLICY_ID, "policy inesperada");
+        require(commitment.recomputerCodeHash == RECOMPUTER.codehash, "codehash inesperado");
         require(commitment.inputsHash == keccak256(inputs), "inputs inesperados");
         require(commitment.threshold == THRESHOLD, "threshold inesperado");
-        require(commitment.comparator == ILegacyDissentCore.Comparator.AtMost, "comparator inesperado");
+        require(commitment.comparator == DissentCore.Comparator.AtMost, "comparator inesperado");
         require(commitment.reward == REWARD, "reward inesperada");
         require(commitment.deposit == DEPOSIT, "deposit inesperado");
         require(commitment.recomputeGasLimit == RECOMPUTE_GAS_LIMIT, "R inesperado");
@@ -81,7 +100,7 @@ abstract contract PolicyBountyBase is Script {
 contract PolicyBountyCommit is PolicyBountyBase {
     function run() external returns (bytes32 id) {
         _requireDeployment();
-        ILegacyDissentCore core = ILegacyDissentCore(CORE);
+        DissentCore core = DissentCore(CORE);
         bytes memory inputs = _inputs();
         bytes32 agentSalt = vm.envBytes32("DISSENT_AGENT_SALT");
         require(agentSalt != bytes32(0), "agent salt vacio");
@@ -95,16 +114,12 @@ contract PolicyBountyCommit is PolicyBountyBase {
         vm.startBroadcast();
         _requireBroadcastSender(AGENT);
         id = core.commit{value: REWARD}(
-            RECOMPUTER,
+            POLICY_ID,
             inputs,
             THRESHOLD,
-            ILegacyDissentCore.Comparator.AtMost,
+            DissentCore.Comparator.AtMost,
             ACTION,
-            DEPOSIT,
             WINDOW,
-            RECOMPUTE_GAS_LIMIT,
-            VALIDATE_GAS_LIMIT,
-            MAX_EVIDENCE_LEN,
             agentSalt
         );
         vm.stopBroadcast();
@@ -119,7 +134,7 @@ contract PolicyBountyCommit is PolicyBountyBase {
 contract PolicyBountyChallengeCommit is PolicyBountyBase {
     function run() external returns (bytes32 sealedHash) {
         _requireDeployment();
-        ILegacyDissentCore core = ILegacyDissentCore(CORE);
+        DissentCore core = DissentCore(CORE);
         AlnitakPolicyBountyRecomputer recomputer = AlnitakPolicyBountyRecomputer(RECOMPUTER);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 challengerSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
@@ -146,7 +161,7 @@ contract PolicyBountyChallengeCommit is PolicyBountyBase {
 contract PolicyBountyChallengeReveal is PolicyBountyBase {
     function run() external {
         _requireDeployment();
-        ILegacyDissentCore core = ILegacyDissentCore(CORE);
+        DissentCore core = DissentCore(CORE);
         AlnitakPolicyBountyRecomputer recomputer = AlnitakPolicyBountyRecomputer(RECOMPUTER);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 challengerSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
@@ -179,10 +194,10 @@ contract PolicyBountyChallengeReveal is PolicyBountyBase {
 contract PolicyBountyWithdraw is PolicyBountyBase {
     function run() external {
         _requireDeployment();
-        ILegacyDissentCore core = ILegacyDissentCore(CORE);
+        DissentCore core = DissentCore(CORE);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
-        ILegacyDissentCore.Commitment memory commitment = core.getCommitment(id);
-        require(commitment.status == ILegacyDissentCore.Status.Challenged, "commitment no fue refutado");
+        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        require(commitment.status == DissentCore.Status.Challenged, "commitment no fue refutado");
         require(core.credits(CHALLENGER) == REWARD + DEPOSIT, "credito challenger inesperado");
 
         vm.startBroadcast();
