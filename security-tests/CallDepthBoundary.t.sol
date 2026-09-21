@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice Recomputer mínimo: el base viene de inputs y el challenge de evidence.
 contract DepthHonestRecomputer is IRecomputer {
@@ -69,7 +70,7 @@ contract DepthChallenger {
     }
 }
 
-contract CallDepthBoundaryTest is Test {
+contract CallDepthBoundaryTest is Test, RegistryTestSupport {
     DissentCore private core;
     DepthHonestRecomputer private recomputer;
     address private agent = makeAddr("agent");
@@ -84,25 +85,22 @@ contract CallDepthBoundaryTest is Test {
     uint32 private constant MEL = 32;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         recomputer = new DepthHonestRecomputer();
         vm.deal(address(this), 100 ether);
         vm.deal(agent, 100 ether);
     }
 
     function _newCampaign(bytes32 campaignSalt) private returns (bytes32 id, DepthChallenger challenger) {
+        bytes32 policyId = _policy(address(recomputer), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            address(recomputer),
+            policyId,
             abi.encode(BASE),
             THRESHOLD,
             DissentCore.Comparator.AtLeast,
             "call",
-            DEPOSIT,
             1 hours,
-            RGL,
-            VGL,
-            MEL,
             campaignSalt
         );
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice Prueba de referencia EIP-1153. Vive fuera de test/ para no cambiar
 ///         el target EVM del build normal. CI la copia temporalmente a test/ y
@@ -97,7 +98,7 @@ contract SameTransactionChallenger {
     }
 }
 
-contract TransientStorageBoundaryTest is Test {
+contract TransientStorageBoundaryTest is Test, RegistryTestSupport {
     DissentCore private core;
     address private agent = makeAddr("agent");
     address private alice = makeAddr("alice");
@@ -111,25 +112,22 @@ contract TransientStorageBoundaryTest is Test {
     uint32 private constant MEL = 64;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         vm.deal(address(this), 100 ether);
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
     }
 
     function _commit(address recomputer, bytes32 salt) private returns (bytes32 id) {
+        bytes32 policyId = _policy(recomputer, DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            recomputer,
+            policyId,
             abi.encode(BASE),
             THRESHOLD,
             DissentCore.Comparator.AtLeast,
             "call",
-            DEPOSIT,
             1 hours,
-            RGL,
-            VGL,
-            MEL,
             salt
         );
     }
