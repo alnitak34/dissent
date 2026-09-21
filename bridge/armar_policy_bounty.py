@@ -95,7 +95,18 @@ def wad(value):
     return value.numerator * 10**18 // value.denominator
 
 
-def build(case_document, spec_document):
+def policy_id_hex(value):
+    text = value[2:] if value.startswith("0x") else value
+    try:
+        raw = bytes.fromhex(text)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("policy-id no es hexadecimal") from exc
+    if len(raw) != 32:
+        raise argparse.ArgumentTypeError("policy-id debe tener 32 bytes")
+    return "0x" + raw.hex()
+
+
+def build(case_document, spec_document, policy_id):
     result = policy_bounty.verify_case(case_document)
     inputs = encode_policy_inputs(spec_document)
     evidence = encode_evidence(case_document)
@@ -114,12 +125,17 @@ def build(case_document, spec_document):
             "violation": result["violation"],
         },
         "commit": {
+            "policyId": policy_id,
             "threshold": 0,
             "comparator": "AtMost",
             "action": ACTION,
-            "recomputeGasLimit": RECOMPUTE_GAS_LIMIT,
-            "validateGasLimit": VALIDATE_GAS_LIMIT,
-            "maxEvidenceLen": MAX_EVIDENCE_LEN,
+            "window": "<seconds; >= MIN_WINDOW>",
+            "salt": "<agent bytes32>",
+            "registeredPolicyExpected": {
+                "recomputeGasLimit": RECOMPUTE_GAS_LIMIT,
+                "validateGasLimit": VALIDATE_GAS_LIMIT,
+                "maxEvidenceLen": MAX_EVIDENCE_LEN,
+            },
         },
     }
 
@@ -128,8 +144,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case", help="JSON candidate in policy-bounty fixture format")
     parser.add_argument("--spec", default=policy_spec.default_path())
+    parser.add_argument("--policy-id", required=True, type=policy_id_hex,
+                        help="bytes32 de una politica ya registrada")
     args = parser.parse_args()
-    output = build(policy_bounty.load(args.case), policy_spec.load(args.spec))
+    output = build(policy_bounty.load(args.case), policy_spec.load(args.spec), args.policy_id)
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
 

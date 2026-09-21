@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @title GasBudget — cada operacion de usuario contra el limite de 30M por tx
 ///
@@ -33,7 +34,7 @@ import {DissentCore} from "../src/DissentCore.sol";
 /// una transaccion suelta:
 ///
 ///     forge test --match-contract GasBudgetTest --isolate -vv
-contract GasBudgetTest is Test {
+contract GasBudgetTest is Test, RegistryTestSupport {
     uint256 constant TX_LIMIT = 30_000_000;
     bytes32 constant SAL = keccak256("sal");
 
@@ -41,6 +42,7 @@ contract GasBudgetTest is Test {
     DissentCore core;
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
+    bytes32 policyId;
 
     string[6] ops = [
         "commit",
@@ -55,7 +57,8 @@ contract GasBudgetTest is Test {
 
     function setUp() public {
         rc = new AlnitakRiverRecomputer();
-        core = new DissentCore();
+        core = _deployRegistryCore();
+        policyId = _policy(address(rc), 0.1 ether, 20_000_000, 100_000, 32);
         vm.deal(agent, 1000 ether);
         vm.deal(alice, 1000 ether);
     }
@@ -113,7 +116,7 @@ contract GasBudgetTest is Test {
             3 ether,
             abi.encodeCall(
                 DissentCore.commit,
-                (address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, salt)
+                (policyId, inp, umbral, DissentCore.Comparator.AtLeast, "call", 1 days, salt)
             )
         );
         bytes32 id = abi.decode(r, (bytes32));

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IRecomputer} from "./IRecomputer.sol";
+import {IRecomputerRegistry} from "./IRecomputerRegistry.sol";
 
 /// @title DissentCore — apuestas sobre afirmaciones deterministas
 /// @notice Un agente afirma que f(entradas) cumple un umbral, escrowea una
@@ -14,13 +15,16 @@ import {IRecomputer} from "./IRecomputer.sol";
 /// contrato llamando al IRecomputer. Las entradas son datos; los numeros son
 /// resultados. De ahi salen las tres decisiones que atraviesan el diseno:
 ///
-///   - NO hay owner, NO hay withdraw() administrativo, NO hay pausa, NO hay
-///     proxy. Los unicos caminos por los que sale MON son challenge exitoso,
+///   - El nucleo no tiene owner, withdraw() administrativo, pausa ni proxy. El
+///     registro externo si tiene un curator limitado a admitir o desactivar
+///     politicas para commits futuros; no custodia ni mueve el MON del nucleo.
+///     Los unicos caminos por los que sale MON son challenge exitoso,
 ///     challenge fallido, seal vencido y reclaim vencido, y los cuatro
 ///     desembocan en `credits`. Nadie puede sacar plata que no le corresponda
 ///     por una de esas reglas, ni siquiera quien desplego.
-///   - El nucleo MIDE en vez de PREGUNTAR. No le pregunta al recalculador
-///     cuanto gas necesita: lo mide en el commit y usa esa medicion como techo.
+///   - Los limites de gas y evidencia no los elige el agente: vienen de una
+///     politica inmutable del registro. El nucleo mide el recompute base en el
+///     commit y rechaza la politica si su cap registrado no alcanza.
 ///   - El recalculador se invoca por STATICCALL, consecuencia de declararlo
 ///     `view` en la interfaz. No puede reentrar escribiendo estado.
 ///
@@ -31,6 +35,8 @@ import {IRecomputer} from "./IRecomputer.sol";
 /// retador primero sella keccak256(abi.encode(evidence, salt, msg.sender)) y
 /// recien despues revela. Nadie puede copiar lo que no ve.
 contract DissentCore {
+    IRecomputerRegistry public immutable registry;
+
     // ── constantes de tiempo, en BLOQUES ─────────────────────────────────────
     //
     // REVEAL_DELAY_BLOCKS: cuantos bloques tienen que pasar entre sellar y
@@ -142,12 +148,15 @@ contract DissentCore {
     /// @notice En que fase fallo el adaptador, para el evento AdapterFaulted.
     enum Phase {
         VALIDATION,
-        RECOMPUTE
+        RECOMPUTE,
+        CODEHASH
     }
 
     struct Commitment {
         address agent;
         address recomputer;
+        bytes32 policyId;
+        bytes32 recomputerCodeHash;
         bytes32 inputsHash; // keccak256(inputs); los bytes se pasan, no se guardan
         bytes32 domain; // lo que devolvio recomputer.domain() en el commit
         bytes32 actionHash; // la accion declarada; NUNCA entra en la identidad
@@ -207,6 +216,8 @@ contract DissentCore {
         bytes32 indexed id,
         address indexed agent,
         address indexed recomputer,
+        bytes32 policyId,
+        bytes32 recomputerCodeHash,
         bytes32 inputsHash,
         bytes32 domain,
         int256 threshold,
@@ -295,6 +306,14 @@ contract DissentCore {
     error NothingToWithdraw();
     error TransferFailed();
     error Reentrancy();
+    error InvalidRegistry(address registry);
+    error PolicyNotActive(bytes32 policyId);
+    error RecomputerCodeChanged(bytes32 expected, bytes32 actual);
+
+    constructor(address registry_) {
+        if (registry_ == address(0) || registry_.code.length == 0) revert InvalidRegistry(registry_);
+        registry = IRecomputerRegistry(registry_);
+    }
 
     modifier nonReentrant() {
         if (locked) revert Reentrancy();
@@ -321,16 +340,12 @@ contract DissentCore {
     ///         presentacion y no puede decidir si dos compromisos son el mismo.
     function computeCommitmentId(
         address agent,
-        address recomputer,
+        bytes32 policyId,
         bytes32 inputsHash,
         int256 threshold,
         Comparator comparator,
         uint128 reward,
-        uint128 deposit,
         uint64 windowEnds,
-        uint32 recomputeGasLimit,
-        uint32 validateGasLimit,
-        uint32 maxEvidenceLen,
         uint256 effectiveGasPrice,
         bytes32 salt
     ) public view returns (bytes32) {
@@ -339,16 +354,12 @@ contract DissentCore {
                 block.chainid,
                 address(this),
                 agent,
-                recomputer,
+                policyId,
                 inputsHash,
                 threshold,
                 comparator,
                 reward,
-                deposit,
                 windowEnds,
-                recomputeGasLimit,
-                validateGasLimit,
-                maxEvidenceLen,
                 effectiveGasPrice,
                 salt
             )
@@ -465,18 +476,25 @@ contract DissentCore {
     /// @notice El agente publica entradas, umbral, accion y recompensa. El
     ///         contrato calcula el valor base EL MISMO y lo guarda.
     function commit(
-        address recomputer,
+        bytes32 policyId,
         bytes calldata inputs,
         int256 threshold,
         Comparator comparator,
         string calldata action,
-        uint128 deposit,
         uint64 window,
-        uint32 recomputeGasLimit,
-        uint32 validateGasLimit,
-        uint32 maxEvidenceLen,
         bytes32 salt
     ) external payable nonReentrant returns (bytes32 id) {
+        IRecomputerRegistry.Policy memory policy = registry.getPolicy(policyId);
+        if (!policy.active || policy.recomputer == address(0)) revert PolicyNotActive(policyId);
+        bytes32 actualCodeHash = policy.recomputer.codehash;
+        if (actualCodeHash != policy.codeHash) revert RecomputerCodeChanged(policy.codeHash, actualCodeHash);
+
+        address recomputer = policy.recomputer;
+        uint128 deposit = policy.challengeDeposit;
+        uint32 recomputeGasLimit = policy.recomputeGasLimit;
+        uint32 validateGasLimit = policy.validateGasLimit;
+        uint32 maxEvidenceLen = policy.maxEvidenceLen;
+
         if (msg.value == 0) revert ZeroReward();
         if (msg.value > type(uint128).max) revert BadValue(msg.value, type(uint128).max);
         if (deposit == 0) revert ZeroDeposit();
@@ -506,16 +524,12 @@ contract DissentCore {
 
         id = computeCommitmentId(
             msg.sender,
-            recomputer,
+            policyId,
             inputsHash,
             threshold,
             comparator,
             reward,
-            deposit,
             windowEnds,
-            recomputeGasLimit,
-            validateGasLimit,
-            maxEvidenceLen,
             effectiveGasPrice,
             salt
         );
@@ -551,6 +565,8 @@ contract DissentCore {
         commitments[id] = Commitment({
             agent: msg.sender,
             recomputer: recomputer,
+            policyId: policyId,
+            recomputerCodeHash: policy.codeHash,
             inputsHash: inputsHash,
             domain: dom,
             actionHash: keccak256(bytes(action)),
@@ -581,6 +597,8 @@ contract DissentCore {
             id,
             msg.sender,
             recomputer,
+            policyId,
+            policy.codeHash,
             inputsHash,
             dom,
             threshold,
@@ -676,6 +694,15 @@ contract DissentCore {
             revert InsufficientChallengeGas();
         }
         if (keccak256(inputs) != c.inputsHash) revert InputsMismatch(c.inputsHash, keccak256(inputs));
+
+        // La politica fija el runtime codehash. Comprobarlo solo al crear el
+        // compromiso no basta: el codigo podria cambiar antes del reveal. Un
+        // cambio invalida la campana como fallo tecnico; nunca prueba que la
+        // afirmacion sea falsa y por eso no paga bounty.
+        if (c.recomputer.codehash != c.recomputerCodeHash) {
+            _settleFault(id, c, msg.sender, dep, Phase.CODEHASH);
+            return;
+        }
 
         // Chequeo inmediato antes del STATICCALL a validate: encode de validate,
         // entrega de V, encode FUTURO de recompute, entrega de R, y liquidacion.

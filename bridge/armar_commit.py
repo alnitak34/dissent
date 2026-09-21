@@ -31,10 +31,10 @@ WAD = 10 ** 18
 BP_TO_WAD = 10 ** 14
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
-# Politica de gas RECOMENDADA para el adaptador Alnitak. NO es autoridad: son
-# valores sugeridos que el agente pasa a commit(). El recompute peor caso medido
-# de Alnitak ronda 17.92M; 20M deja margen. La evidencia del adaptador es
-# abi.encode(uint256 tier), 32 bytes exactos, asi que maxEvidenceLen = 32.
+# Snapshot RECOMENDADO de la politica registrada para el adaptador Alnitak. NO
+# es autoridad y el agente ya no pasa estos valores a commit(): debe comparar
+# este snapshot con registry.getPolicy(policyId). El recompute peor caso medido
+# ronda 17.92M; 20M deja margen. La evidencia es abi.encode(uint256 tier), 32 B.
 ALNITAK_RECOMPUTE_GAS_LIMIT = 20_000_000
 ALNITAK_VALIDATE_GAS_LIMIT = 100_000
 ALNITAK_MAX_EVIDENCE_LEN = 32
@@ -71,6 +71,17 @@ def cargar(args):
         % args.tableId)
 
 
+def bytes32_hex(value):
+    text = value[2:] if value.startswith("0x") else value
+    try:
+        raw = bytes.fromhex(text)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("policy-id no es hexadecimal") from exc
+    if len(raw) != 32:
+        raise argparse.ArgumentTypeError("policy-id debe tener 32 bytes")
+    return "0x" + raw.hex()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -82,6 +93,8 @@ def main():
                     help="bajar del endpoint publico de arena.dev.fun (sin credenciales)")
     ap.add_argument("--json", dest="salida_json",
                     help="ademas, escribir todo a este archivo")
+    ap.add_argument("--policy-id", required=True, type=bytes32_hex,
+                    help="bytes32 de una politica ya registrada")
     args = ap.parse_args()
 
     replay, fuente = cargar(args)
@@ -128,28 +141,26 @@ def main():
     action_str = "river call %s vs %s @ %s#%s" % (
         "".join(d["holeTxt"]), " ".join(d["boardTxt"]), d["tableId"], d["sequence"])
     print("ARGUMENTOS DE commit()  (orden exacto de DissentCore.commit)")
-    print("  1  recomputer       : <address del AlnitakRiverRecomputer desplegado>")
+    print("  1  policyId         : %s" % args.policy_id)
     print("  2  inputs           : 0x%s" % raw.hex())
     print("                        (inputsLength = %d bytes)" % len(raw))
     print("  3  threshold        : %d   (= %d bp en WAD; es el precio)" % (umbral, d["priceBp"]))
     print("  4  comparator       : 0 (AtLeast)")
     print("  5  action           : %r" % action_str)
-    print("  6  deposit          : <wei; lo fija el agente, p.ej. 0.1 ether>")
-    print("  7  window           : <segundos; >= MIN_WINDOW (1 hora)>")
-    print("  8  recomputeGasLimit : %d   (recomendado Alnitak)" % ALNITAK_RECOMPUTE_GAS_LIMIT)
-    print("  9  validateGasLimit  : %d      (recomendado)" % ALNITAK_VALIDATE_GAS_LIMIT)
-    print("  10 maxEvidenceLen    : %d           (evidencia Alnitak = 32 bytes)" % ALNITAK_MAX_EVIDENCE_LEN)
-    print("  11 salt              : <bytes32 a eleccion del agente>")
+    print("  6  window           : <segundos; >= MIN_WINDOW (1 hora)>")
+    print("  7  salt             : <bytes32 a eleccion del agente>")
     print("")
     print("  reward: es msg.value (el MON enviado con la llamada), NO un argumento.")
+    print("  deposit y limites: los fija registry.getPolicy(policyId), NO el agente.")
     print("")
     print("EVIDENCIA QUE ESPERA EL ADAPTADOR (la que trae el retador)")
     print("  abi.encode(uint256 tier), tier en {0,1,2}  ->  32 bytes exactos")
     print("")
     print("RECOMPENSA MINIMA DE REFERENCIA  (calculo OFFLINE, orientativo)")
-    print("  a 100 gwei, con la politica recomendada: ~%.7f MON (%d wei)"
+    print("  snapshot a 100 gwei, con la politica recomendada: ~%.7f MON (%d wei)"
           % (ALNITAK_MIN_REWARD_REF_WEI / WAD, ALNITAK_MIN_REWARD_REF_WEI))
     print("  NO ES AUTORIDAD. Antes del commit, leer del contrato:")
+    print("    registry.getPolicy(policyId), y luego")
     print("    minGasBackedReward(validateGasLimit, recomputeGasLimit, inputs.length, maxEvidenceLen)")
     print("  y enviar msg.value >= ese valor. Si block.basefee subio, manda el resultado ONCHAIN.")
     print("  (origen del snapshot: test EconomicBackingTest.test_alnitak_politica_recomendada_R20M)")
@@ -169,16 +180,20 @@ def main():
         d2["inputsHex"] = "0x" + raw.hex()
         d2["inputsHash"] = "0x" + h.hex()
         d2["inputsLength"] = len(raw)
+        d2["policyId"] = args.policy_id
         d2["threshold"] = umbral
         d2["action"] = action_str
-        d2["recomputeGasLimit"] = ALNITAK_RECOMPUTE_GAS_LIMIT
-        d2["validateGasLimit"] = ALNITAK_VALIDATE_GAS_LIMIT
-        d2["maxEvidenceLen"] = ALNITAK_MAX_EVIDENCE_LEN
+        d2["registeredPolicyExpected"] = {
+            "recomputeGasLimit": ALNITAK_RECOMPUTE_GAS_LIMIT,
+            "validateGasLimit": ALNITAK_VALIDATE_GAS_LIMIT,
+            "maxEvidenceLen": ALNITAK_MAX_EVIDENCE_LEN,
+        }
         d2["evidenceFormat"] = "abi.encode(uint256 tier), 32 bytes"
         d2["minRewardRefWei"] = ALNITAK_MIN_REWARD_REF_WEI
         d2["minRewardRefNote"] = (
-            "orientativo offline a 100 gwei; la autoridad es minGasBackedReward(...) "
-            "onchain justo antes del commit. reward es msg.value, no un argumento."
+            "orientativo offline a 100 gwei; leer registry.getPolicy(policyId) y "
+            "minGasBackedReward(...) onchain justo antes del commit. reward es "
+            "msg.value, no un argumento."
         )
         d2["urlPublica"] = mano.url_replay(d["tableId"])
         with open(args.salida_json, "w", encoding="utf-8", newline="\n") as f:

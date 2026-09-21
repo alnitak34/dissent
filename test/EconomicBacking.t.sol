@@ -5,9 +5,10 @@ import {Test, console} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {MockRecomputer} from "./mocks/MockRecomputer.sol";
 import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice Commit 2: respaldo economico (MIN_GAS_BACKED_REWARD) y precio efectivo.
-contract EconomicBackingTest is Test {
+contract EconomicBackingTest is Test, RegistryTestSupport {
     DissentCore core;
     MockRecomputer rc;
     AlnitakRiverRecomputer al;
@@ -22,16 +23,17 @@ contract EconomicBackingTest is Test {
     uint32 constant MEL = 64;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         rc = new MockRecomputer();
         al = new AlnitakRiverRecomputer();
         vm.deal(agent, 1000 ether);
     }
 
     function _commit(uint256 value, uint32 r, uint32 v, uint32 mel) internal returns (bytes32 id) {
+        bytes32 policyId = _policy(address(rc), DEPOSIT, r, v, mel);
         vm.prank(agent);
         id = core.commit{value: value}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, r, v, mel, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -64,10 +66,11 @@ contract EconomicBackingTest is Test {
     function test_reward_exacta_menos_uno_revierte() public {
         vm.fee(0);
         uint256 minR = core.minGasBackedReward(VGL, RGL, 32, MEL);
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.RewardBelowGasBacking.selector, minR - 1, minR));
         core.commit{value: minR - 1}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -86,18 +89,19 @@ contract EconomicBackingTest is Test {
         vm.warp(1_000_000);
         vm.fee(200 gwei);
         uint256 reward = core.minGasBackedReward(VGL, RGL, 32, MEL); // sirve para ambas basefees
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
 
         // commit 1: basefee 120 gwei, misma reward
         vm.fee(120 gwei);
         vm.prank(agent);
         bytes32 id1 = core.commit{value: reward}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
         // commit 2: basefee 200 gwei, MISMA reward, mismo timestamp/salt/params
         vm.fee(200 gwei);
         vm.prank(agent);
         bytes32 id2 = core.commit{value: reward}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
 
         assertTrue(id1 != id2, "solo cambia el precio -> id distinto");
@@ -111,8 +115,8 @@ contract EconomicBackingTest is Test {
         uint64 we = core.getCommitment(id1).windowEnds;
         bytes32 h = keccak256(abi.encode(BASE));
         assertTrue(
-            core.computeCommitmentId(agent, address(rc), h, THRESHOLD, DissentCore.Comparator.AtLeast, uint128(reward), DEPOSIT, we, RGL, VGL, MEL, 120 gwei, bytes32(0))
-                != core.computeCommitmentId(agent, address(rc), h, THRESHOLD, DissentCore.Comparator.AtLeast, uint128(reward), DEPOSIT, we, RGL, VGL, MEL, 200 gwei, bytes32(0)),
+            core.computeCommitmentId(agent, policyId, h, THRESHOLD, DissentCore.Comparator.AtLeast, uint128(reward), we, 120 gwei, bytes32(0))
+                != core.computeCommitmentId(agent, policyId, h, THRESHOLD, DissentCore.Comparator.AtLeast, uint128(reward), we, 200 gwei, bytes32(0)),
             "computeCommitmentId depende solo del precio aqui"
         );
     }
@@ -126,15 +130,16 @@ contract EconomicBackingTest is Test {
         // el id lo calculamos con los mismos parametros (reward = minReward exacta);
         // computeCommitmentId es view y toma `agent` como argumento, no msg.sender.
         uint64 we = uint64(block.timestamp) + WINDOW;
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         bytes32 id = core.computeCommitmentId(
-            agent, address(rc), keccak256(abi.encode(BASE)), THRESHOLD, DissentCore.Comparator.AtLeast,
-            uint128(minReward), DEPOSIT, we, RGL, VGL, MEL, effPrice, bytes32(0)
+            agent, policyId, keccak256(abi.encode(BASE)), THRESHOLD, DissentCore.Comparator.AtLeast,
+            uint128(minReward), we, effPrice, bytes32(0)
         );
         vm.expectEmit(true, false, false, true, address(core));
         emit DissentCore.CommitGasPolicy(id, RGL, VGL, MEL, effPrice, totalGasBacking, minReward);
         vm.prank(agent);
         core.commit{value: minReward}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 

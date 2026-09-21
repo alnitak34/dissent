@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
 
 /// @notice Adaptador honesto en el commit (recompute con evidencia vacia funciona)
@@ -301,7 +302,7 @@ contract ValidateGasProbe is IRecomputer {
     }
 }
 
-contract AdapterFaultTest is Test {
+contract AdapterFaultTest is Test, RegistryTestSupport {
     DissentCore core;
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
@@ -323,7 +324,7 @@ contract AdapterFaultTest is Test {
     address constant INVALID_JUMP_TARGET = address(0x1111);
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         // Runtime crudo: PUSH1 0x01; JUMP. PC=1 no contiene JUMPDEST.
         vm.etch(INVALID_JUMP_TARGET, hex"600156");
         vm.deal(agent, 100 ether);
@@ -336,9 +337,10 @@ contract AdapterFaultTest is Test {
     }
 
     function _commitAddress(address rc, uint32 mel) internal returns (bytes32 id) {
+        bytes32 policyId = _policy(rc, DEPOSIT, RGL, VGL, mel);
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            rc, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, mel, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -574,9 +576,10 @@ contract AdapterFaultTest is Test {
     function test_starvation_no_produce_fault() public {
         // minGas = R - slack: exige haber recibido casi todo el limite prometido.
         GasHungryRecomputer rc = new GasHungryRecomputer(uint256(RGL) - 20_000);
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent, agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
         bytes memory ev = new bytes(130_000); // grande, <= MEL
         vm.prank(alice, alice);
@@ -606,10 +609,11 @@ contract AdapterFaultTest is Test {
         assertGt(txReq, 30_000_000, "pero la tx completa NO");
 
         FaultRecomputer rc = new FaultRecomputer(FaultRecomputer.Mode.Honest); // crear ANTES del expectRevert
+        bytes32 policyId = _policy(address(rc), DEPOSIT, rBig, VGL, maxEv);
         vm.prank(agent, agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.GasLimitsTooLarge.selector, txReq, uint256(30_000_000)));
         core.commit{value: REWARD}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, rBig, VGL, maxEv, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -623,10 +627,11 @@ contract AdapterFaultTest is Test {
         // reward >= respaldo de gas para este R grande (~3 MON al precio piso).
         uint256 reward = core.minGasBackedReward(VGL, r, 32, maxEv);
         vm.deal(agent, reward + 1 ether);
+        FaultRecomputer honest = new FaultRecomputer(FaultRecomputer.Mode.Honest);
+        bytes32 policyId = _policy(address(honest), DEPOSIT, r, VGL, maxEv);
         vm.prank(agent, agent);
         bytes32 id = core.commit{value: reward}(
-            address(new FaultRecomputer(FaultRecomputer.Mode.Honest)),
-            abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, r, VGL, maxEv, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
         assertEq(uint8(core.getCommitment(id).status), uint8(DissentCore.Status.Open));
     }
@@ -706,9 +711,10 @@ contract AdapterFaultTest is Test {
     uint256 constant CALLEE_ENTRY_MAX = 3000; // cota medida del overhead de entrada del callee
 
     function _commitProbe(address rc, uint32 r, uint32 v, uint32 mel) internal returns (bytes32 id) {
+        bytes32 policyId = _policy(rc, DEPOSIT, r, v, mel);
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            address(rc), abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, r, v, mel, bytes32(0)
+            policyId, abi.encode(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 

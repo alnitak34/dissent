@@ -25,6 +25,7 @@ FIXTURE = os.path.join(AQUI, "fixtures", "alnitak-river-minimal.json")
 # El mismo hash literal que test/ManoReal.t.sol (INPUTS_HASH). El hash pin̈ea los
 # bytes de forma unica: si inputsHex cambiara, el hash cambiaria.
 INPUTS_HASH = "0xa174393d39f1e1ec234522a9c80f28e565e8b9908e567c452065e156f56a73ac"
+POLICY_ID = "0x" + "11" * 32
 
 
 def _replay():
@@ -57,7 +58,7 @@ class TestSalidaJSON(unittest.TestCase):
         try:
             subprocess.run(
                 [sys.executable, os.path.join(AQUI, "armar_commit.py"), TABLE, str(SEQ),
-                 "--replay", replay, "--json", out],
+                 "--replay", replay, "--policy-id", POLICY_ID, "--json", out],
                 check=True, capture_output=True,
             )
             with open(out, encoding="utf-8") as f:
@@ -65,11 +66,13 @@ class TestSalidaJSON(unittest.TestCase):
         finally:
             os.remove(out)
 
-    def test_json_trae_los_tres_limites_e_inputs_length(self):
+    def test_json_trae_policy_y_snapshot_registrado(self):
         j = self._correr_json()
-        self.assertEqual(j["recomputeGasLimit"], armar_commit.ALNITAK_RECOMPUTE_GAS_LIMIT)
-        self.assertEqual(j["validateGasLimit"], armar_commit.ALNITAK_VALIDATE_GAS_LIMIT)
-        self.assertEqual(j["maxEvidenceLen"], armar_commit.ALNITAK_MAX_EVIDENCE_LEN)
+        self.assertEqual(j["policyId"], POLICY_ID)
+        policy = j["registeredPolicyExpected"]
+        self.assertEqual(policy["recomputeGasLimit"], armar_commit.ALNITAK_RECOMPUTE_GAS_LIMIT)
+        self.assertEqual(policy["validateGasLimit"], armar_commit.ALNITAK_VALIDATE_GAS_LIMIT)
+        self.assertEqual(policy["maxEvidenceLen"], armar_commit.ALNITAK_MAX_EVIDENCE_LEN)
         self.assertEqual(j["inputsLength"], 352)
         self.assertEqual(j["inputsHash"], INPUTS_HASH)
 
@@ -86,7 +89,8 @@ class TestSalidaTexto(unittest.TestCase):
     def _stdout(self):
         replay = FIXTURE
         r = subprocess.run(
-            [sys.executable, os.path.join(AQUI, "armar_commit.py"), TABLE, str(SEQ), "--replay", replay],
+            [sys.executable, os.path.join(AQUI, "armar_commit.py"), TABLE, str(SEQ),
+             "--replay", replay, "--policy-id", POLICY_ID],
             check=True, capture_output=True, text=True, encoding="utf-8",
         )
         return r.stdout
@@ -100,9 +104,8 @@ class TestSalidaTexto(unittest.TestCase):
         self.assertTrue(0 <= ini < fin, "no encontre el bloque de argumentos")
         bloque = out[ini:fin]
         orden = [
-            "recomputer", "inputs", "threshold", "comparator", "action",
-            "deposit", "window", "recomputeGasLimit", "validateGasLimit",
-            "maxEvidenceLen", "salt",
+            "policyId", "inputs", "threshold", "comparator", "action",
+            "window", "salt",
         ]
         pos = [bloque.find(x) for x in orden]
         self.assertTrue(all(p >= 0 for p in pos), "faltan argumentos en el bloque")
@@ -112,8 +115,18 @@ class TestSalidaTexto(unittest.TestCase):
         out = self._stdout()
         self.assertIn("NO ES AUTORIDAD", out)
         self.assertIn("minGasBackedReward", out)
+        self.assertIn("registry.getPolicy", out)
         self.assertIn("ONCHAIN", out)
         self.assertIn("reward: es msg.value", out)
+
+    def test_policy_id_invalido_falla_antes_de_generar_salida(self):
+        r = subprocess.run(
+            [sys.executable, os.path.join(AQUI, "armar_commit.py"), TABLE, str(SEQ),
+             "--replay", FIXTURE, "--policy-id", "0x1234"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("32 bytes", r.stderr)
 
 
 if __name__ == "__main__":

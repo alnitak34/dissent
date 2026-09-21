@@ -1,20 +1,24 @@
 # Solicitud de revisión externa — Dissent
 
 Estado: material para pedir una revisión técnica, **no** una auditoría ni una
-afirmación de seguridad. El cambio se fusionó a `master` el 20-09-2026 mediante
-el PR #1 (merge commit `5cd68f4`). No enviar fondos reales ni usar el adaptador
-de prueba en producción.
+afirmación de seguridad. El endurecimiento de `AdapterFault` se fusionó a
+`master` el 20-09-2026 mediante el PR #1 (merge commit `5cd68f4`). La arquitectura
+posterior con `RecomputerRegistry` está en revisión y todavía no está desplegada.
+No enviar fondos reales ni usar el adaptador de prueba en producción.
 
 ## Qué revisar
 
 Dissent permite que un agente financie una recompensa para una afirmación
-numérica. El agente aporta al `commit` la dirección de un `IRecomputer`,
-entradas, umbral y recompensa. El núcleo calcula el valor base, guarda la
-dirección del adaptador, y después acepta evidencia sellada de un retador. El
-adaptador calcula el valor nuevo y el núcleo liquida según el umbral.
+numérica. El agente aporta al `commit` un `policyId` activo, entradas, umbral y
+recompensa. Un registro curado e independiente fija para esa política la
+dirección y `EXTCODEHASH` del `IRecomputer`, el depósito y los límites. El núcleo
+copia esos campos, calcula el valor base y después acepta evidencia sellada de
+un retador. El adaptador calcula el valor nuevo y el núcleo liquida según el
+umbral.
 
-Código principal: [`src/DissentCore.sol`](../src/DissentCore.sol) y
-[`src/IRecomputer.sol`](../src/IRecomputer.sol). El caso funcional está en
+Código principal: [`src/DissentCore.sol`](../src/DissentCore.sol),
+[`src/RecomputerRegistry.sol`](../src/RecomputerRegistry.sol) y
+[`src/IRecomputer.sol`](../src/IRecomputer.sol). El caso funcional histórico está en
 [`POLICY_BOUNTY_LIVE_RUN.md`](POLICY_BOUNTY_LIVE_RUN.md); el caso de fallo
 técnico en [`FAULT_PROBE.md`](FAULT_PROBE.md). Ambos son ejecuciones concretas
 en Monad Testnet, no cobertura exhaustiva. La decisión de seguridad y las
@@ -25,6 +29,7 @@ pruebas adversariales están en
 
 1. Un bounty solo sale de un `recompute` que devuelve un `int256` canónico y
    cruza el umbral. Un `revert`, OOG o retorno ABI inválido nunca paga bounty.
+   Un cambio del runtime codehash entre commit y reveal tampoco paga bounty.
 2. Ante `AdapterFault`, el sello se liquida, el retador recupera solo su
    depósito y el agente solo su recompensa; no queda un segundo camino de
    `sweepExpiredSeal` sobre ese sello.
@@ -37,11 +42,13 @@ pruebas adversariales están en
 
 ## Límites conocidos; no pedir que se asuman resueltos
 
-- El **agente elige** la dirección del adaptador. El núcleo no certifica que
-  su fórmula sea correcta, ni vincula el `codehash`, ni impide un proxy o un
-  adaptador con estado mutable. El consumidor debe aprobar la regla antes de
-  confiar en ella.
-- Un agente puede elegir un adaptador que funcione al `commit` y falle al
+- El agente ya no elige directamente el adaptador: un **curator** admite las
+  políticas para commits nuevos. Esa cuenta puede aprobar código defectuoso o
+  malicioso; la curaduría no certifica la fórmula.
+- El registro vincula el `EXTCODEHASH` de la dirección del recomputer, pero eso
+  no inmoviliza la implementación detrás de un proxy ni impide un adaptador con
+  estado mutable. El consumidor debe aprobar la regla antes de confiar en ella.
+- Una política aprobada puede funcionar al `commit` y fallar al
   revelar. Con la política actual la campaña queda `Faulted`, el retador
   recupera su depósito pero pierde el gas, y el agente recupera su recompensa.
 - Un adaptador puede devolver números canónicos dependientes de contexto EVM
@@ -64,6 +71,9 @@ pruebas adversariales están en
 5. ¿Qué política mínima de aceptación de adaptadores necesitaría una
    aplicación real para que el resultado sea útil, sin afirmar que el núcleo
    comprueba algo que hoy no comprueba?
+6. ¿Puede un registro malicioso, comprometido o no conforme devolver políticas
+   distintas entre llamadas de modo que el núcleo guarde una configuración
+   engañosa, y qué garantía debe exigir el despliegue sobre el registro?
 
 No se pide certificar el sistema como seguro. Se pide un contraejemplo
 reproducible o una lista priorizada de riesgos residuales, citando función,

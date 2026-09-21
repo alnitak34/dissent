@@ -2,7 +2,9 @@
 
 Guía para escribir un `recomputer` propio e integrar un dominio nuevo. El
 protocolo (`DissentCore`) es agnóstico de dominio; todo lo específico vive detrás
-de `IRecomputer`.
+de `IRecomputer`. Los agentes no pasan una dirección arbitraria al crear un
+compromiso: usan el `policyId` de una configuración aprobada en
+`RecomputerRegistry`.
 
 > Antes de nada, leé la **[Frontera de confianza](../README.md#frontera-de-confianza)**:
 > el núcleo garantiza la mecánica, tu adaptador define la semántica. Un adaptador
@@ -50,10 +52,26 @@ es, cuenta como **fallo técnico del adaptador** (`AdapterFault`), no como respu
 
 Devolver un returndata enorme no ayuda: el núcleo solo copia 32/64 bytes.
 
+## Registrar la política
+
+El curator registra una sola vez la combinación de:
+
+- dirección y `EXTCODEHASH` del recomputer;
+- depósito del challenger;
+- `recomputeGasLimit` (R), `validateGasLimit` (V) y `maxEvidenceLen`.
+
+El `policyId` deriva de esos campos, la cadena y la dirección del registro. Los
+campos no se pueden editar ni sobrescribir. El curator solo puede desactivar o
+reactivar la política para **commits futuros**; los compromisos existentes
+conservan la copia que guardó el núcleo. El núcleo vuelve a comprobar el
+`EXTCODEHASH` antes del reveal; si cambió, liquida como `AdapterFault` sin bounty.
+El registro es una admisión curada, no
+una auditoría ni una prueba de corrección.
+
 ## Elegir y medir `recomputeGasLimit` (R) y `validateGasLimit` (V)
 
-`R` y `V` son **límites de gas que declarás en el commit** y quedan en la identidad
-del compromiso (no se pueden cambiar después). Para cada llamada, el núcleo
+`R` y `V` son **límites de gas fijados en la política registrada** y quedan en la
+identidad del compromiso (no se pueden cambiar después). Para cada llamada, el núcleo
 **reserva gas suficiente para solicitar el cap declarado bajo EIP-150** (la regla
 del 1/64 retenido por quien llama); el adaptador **observa algo menos** que el cap
 por su propio overhead de entrada, como demuestran los probes de
@@ -63,7 +81,7 @@ overhead). La evidencia grande **no** reduce el gas entregado.
 1. Medí offline el **peor caso** de `recompute(inputs, evidence)` sobre TODAS las
    evidencias válidas de tu adaptador (no solo el base: el camino con evidencia
    puede ser más caro). Igual para `validateEvidence`.
-2. Declará `R` y `V` **por encima** de esos peores casos, con margen. Si `R` queda
+2. Registrá `R` y `V` **por encima** de esos peores casos, con margen. Si `R` queda
    corto para una evidencia honesta, la campaña queda **`Faulted`**: el retador
    recupera su depósito y la recompensa vuelve al agente. No hay bounty porque
    un fallo técnico no demuestra que la afirmación sea falsa.
@@ -76,8 +94,8 @@ forma reproducible con `network = "monad"`.
 
 ## Elegir `maxEvidenceLen`
 
-Es el largo máximo de `evidence` que el compromiso acepta (≤ `MAX_EVIDENCE_LEN` del
-protocolo, 128 KiB). Declaralo **igual al largo real** que tu adaptador necesita
+Es el largo máximo de `evidence` que la política acepta (≤ `MAX_EVIDENCE_LEN` del
+protocolo, 128 KiB). Registralo **igual al largo real** que tu adaptador necesita
 (para Alnitak, la evidencia es `abi.encode(uint256 tier)` = **32 bytes**). Un
 `maxEvidenceLen` chico y ajustado acota el peor caso de gas y el respaldo económico.
 
@@ -90,15 +108,16 @@ uint256 minReward = core.minGasBackedReward(V, R, inputs.length, maxEvidenceLen)
 
 `minGasBackedReward = (txRequired + CHALLENGE_COMMIT_GAS) · effectiveGasPrice`,
 donde `effectiveGasPrice = max(100 gwei, block.basefee)`. **Consultalo justo antes
-del commit**: si `block.basefee` subió, el valor cambia, y **manda el resultado
+del commit**, usando los valores leídos de `registry.getPolicy(policyId)`: si
+`block.basefee` subió, el valor cambia, y **manda el resultado
 onchain** (el `commit` revierte con `RewardBelowGasBacking` si `msg.value` es
 menor). Cubre el presupuesto de gas de referencia, **no** garantiza rentabilidad
 (ver la fórmula `expectedNet` en el README).
 
 ## Flujo
 
-1. **`commit(recomputer, inputs, threshold, comparator, action, deposit, window,
-   recomputeGasLimit, validateGasLimit, maxEvidenceLen, salt)`** con
+1. El agente consulta una política activa y llama
+   **`commit(policyId, inputs, threshold, comparator, action, window, salt)`** con
    `msg.value = reward ≥ minGasBackedReward`. Devuelve el `id`.
 2. El retador **`challengeCommit(id, sealedHash)`** con
    `sealedHash = keccak256(abi.encode(evidence, salt, msg.sender))`, pagando
@@ -125,7 +144,7 @@ menor). Cubre el presupuesto de gas de referencia, **no** garantiza rentabilidad
 - `ChallengeSealed` — un sello nuevo.
 - `ChallengeSucceeded` / `ChallengeFailed` — resultado de un reveal resuelto.
 - `ChallengeRejected` — evidencia malformada (inconcluso).
-- `AdapterFaulted` (con `phase` = VALIDATION o RECOMPUTE) — fallo técnico del
+- `AdapterFaulted` (con `phase` = VALIDATION, RECOMPUTE o CODEHASH) — fallo técnico del
   adaptador; incluye `challengerRefund` y `agentRefund`. No paga bounty.
 - `ChallengeVoided` — retador anulado porque otro ya resolvió.
 - `SealExpired`, `Reclaimed`, `Credited`, `Withdrawn`.
@@ -175,8 +194,10 @@ contract EjemploRecomputer is IRecomputer {
 - [ ] No leen storage transitorio (`TLOAD`) ni otro estado que un tercero pueda
       preparar en la misma transacción. `STATICCALL` bloquea `TSTORE`, pero no
       convierte una lectura transitoria en una función pura.
-- [ ] `R` y `V` cubren el **peor caso medido** con margen; la evidencia más cara
+- [ ] La política registrada fija `R` y `V` que cubren el **peor caso medido** con margen; la evidencia más cara
       cabe en `R`.
-- [ ] `maxEvidenceLen` es el mínimo que tu adaptador realmente necesita.
+- [ ] El `maxEvidenceLen` registrado es el mínimo que tu adaptador realmente necesita.
+- [ ] La fuente, bytecode, `domain`, escala y límites de la política fueron
+      revisados antes de pedir su registro; la curaduría no reemplaza una auditoría.
 - [ ] El adaptador es **inmutable** (sin proxy, sin storage que cambie el
       comportamiento) si querés que los compromisos contra él sean confiables.

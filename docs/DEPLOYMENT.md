@@ -6,8 +6,10 @@
 > endurecido está en
 > [`POLICY_BOUNTY_DEPLOYMENT.md`](./POLICY_BOUNTY_DEPLOYMENT.md).
 
-Script: [`script/Deploy.s.sol`](../script/Deploy.s.sol). Despliega `DissentCore` y
-`AlnitakRiverRecomputer` (ninguno tiene argumentos de constructor).
+El `script/Deploy.s.sol` actual ya prepara la arquitectura nueva con registro y
+**no reproduce** este despliegue histórico. Las direcciones, transacciones y
+comandos que siguen documentan lo ejecutado el 14-09-2026; no son instrucciones
+para desplegar el código actual.
 
 Tras crear los contratos, el script corre `require`s
 (`MIN_WINDOW == 1 hours`, `escrowed == 0`, `scale == 1e18`,

@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RecomputerRegistry} from "../src/RecomputerRegistry.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 import {
     MockRecomputer,
     RejectingRecomputer,
@@ -12,9 +14,10 @@ import {
     RejectingAgent
 } from "./mocks/MockRecomputer.sol";
 
-contract DissentCoreTest is Test {
+contract DissentCoreTest is Test, RegistryTestSupport {
     DissentCore core;
     MockRecomputer rc;
+    bytes32 policyId;
 
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
@@ -31,8 +34,9 @@ contract DissentCoreTest is Test {
     int256 constant THRESHOLD = 100;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         rc = new MockRecomputer();
+        policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -52,7 +56,8 @@ contract DissentCoreTest is Test {
     function _commit() internal returns (bytes32 id) {
         vm.prank(agent);
         id = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -89,7 +94,8 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.BaseDoesNotSatisfyThreshold.selector, int256(50), THRESHOLD));
         core.commit{value: REWARD}(
-            address(rc), _inputs(50), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(50), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -98,7 +104,8 @@ contract DissentCoreTest is Test {
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.CommitmentExists.selector, id));
         core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
     }
 
@@ -109,7 +116,8 @@ contract DissentCoreTest is Test {
             vm.prank(agent);
             vm.expectRevert(abi.encodeWithSelector(DissentCore.WindowTooShort.selector, cortas[i], minimo));
             core.commit{value: REWARD}(
-                address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, cortas[i], RGL, VGL, MEL, bytes32(0)
+            policyId,
+                _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", cortas[i], bytes32(0)
             );
         }
     }
@@ -123,7 +131,8 @@ contract DissentCoreTest is Test {
         uint64 revelar = core.REVEAL_WINDOW_BLOCKS();
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, minimo, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", minimo, bytes32(0)
         );
         uint64 fin = core.getCommitment(id).windowEnds;
         assertEq(fin, uint64(block.timestamp) + minimo);
@@ -152,20 +161,19 @@ contract DissentCoreTest is Test {
 
     function test_commit_rechaza_recomputer_que_revierte() public {
         RevertingRecomputer bad = new RevertingRecomputer();
+        bytes32 badPolicy = _policy(address(bad), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent);
         vm.expectRevert(DissentCore.RecomputerReverted.selector);
         core.commit{value: REWARD}(
-            address(bad), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            badPolicy,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", WINDOW, bytes32(0)
         );
     }
 
     function test_rechaza_un_recomputer_sin_escala() public {
         ZeroScaleRecomputer zs = new ZeroScaleRecomputer();
-        vm.prank(agent);
-        vm.expectRevert(DissentCore.ZeroScale.selector);
-        core.commit{value: REWARD}(
-            address(zs), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
-        );
+        vm.expectRevert(RecomputerRegistry.ZeroScale.selector);
+        policyRegistry.registerPolicy(address(zs), DEPOSIT, RGL, VGL, MEL);
     }
 
     function test_el_evento_lleva_la_escala() public {
@@ -175,12 +183,12 @@ contract DissentCoreTest is Test {
         bool visto;
         for (uint256 i = 0; i < logs.length; i++) {
             if (logs[i].topics[0] != keccak256(
-                "Committed(bytes32,address,address,bytes32,bytes32,int256,uint8,int256,uint256,uint128,uint128,uint64,uint32,bytes32,string)"
+                "Committed(bytes32,address,address,bytes32,bytes32,bytes32,bytes32,int256,uint8,int256,uint256,uint128,uint128,uint64,uint32,bytes32,string)"
             )) continue;
             assertEq(logs[i].topics[1], id);
-            (,,,, int256 baseValue, uint256 sc,,,,,) = abi.decode(
+            (,,,,,, int256 baseValue, uint256 sc,,,,,) = abi.decode(
                 logs[i].data,
-                (bytes32, bytes32, int256, uint8, int256, uint256, uint128, uint128, uint64, uint32, bytes32)
+                (bytes32, bytes32, bytes32, bytes32, int256, uint8, int256, uint256, uint128, uint128, uint64, uint32, bytes32)
             );
             assertEq(baseValue, BASE);
             assertEq(sc, rc.scale(), "el evento tiene que bastarse solo");
@@ -192,13 +200,15 @@ contract DissentCoreTest is Test {
     function test_la_accion_no_entra_en_la_identidad() public {
         vm.prank(agent);
         bytes32 id1 = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32(0)
         );
         // mismo todo, otra accion: mismo id -> tiene que revertir por duplicado
         vm.prank(agent);
         vm.expectRevert(abi.encodeWithSelector(DissentCore.CommitmentExists.selector, id1));
         core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "fold", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "fold", WINDOW, bytes32(0)
         );
     }
 
@@ -289,9 +299,11 @@ contract DissentCoreTest is Test {
     ///      DEVUELVE el deposito al retador, y el compromiso sigue Open.
     function test_evidencia_rechazada_devuelve_el_deposito_y_no_paga_al_agente() public {
         RejectingRecomputer rr = new RejectingRecomputer();
+        bytes32 rrPolicy = _policy(address(rr), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            rrPolicy,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", WINDOW, bytes32(0)
         );
         bytes memory ev = abi.encode(int256(50));
         vm.prank(alice);
@@ -383,9 +395,11 @@ contract DissentCoreTest is Test {
 
     function test_el_recomputer_no_puede_reentrar_escribiendo() public {
         ReentrantRecomputer rr = new ReentrantRecomputer(address(core));
+        bytes32 rrPolicy = _policy(address(rr), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rr), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32(0)
+            rrPolicy,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "x", WINDOW, bytes32(0)
         );
         assertTrue(id != bytes32(0), "el commit paso: el STATICCALL impidio la escritura");
     }
@@ -395,16 +409,12 @@ contract DissentCoreTest is Test {
         vm.deal(address(ra), 10 ether);
         bytes memory data = abi.encodeWithSelector(
             DissentCore.commit.selector,
-            address(rc),
+            policyId,
             _inputs(BASE),
             THRESHOLD,
             DissentCore.Comparator.AtLeast,
             "x",
-            DEPOSIT,
             WINDOW,
-            RGL,
-            VGL,
-            MEL,
             bytes32(0)
         );
         bytes memory ret = ra.commitOn{value: REWARD}(address(core), data);
@@ -431,7 +441,8 @@ contract DissentCoreTest is Test {
         bytes32 id1 = _commit();
         vm.prank(agent);
         bytes32 id2 = core.commit{value: REWARD}(
-            address(rc), _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", DEPOSIT, WINDOW, RGL, VGL, MEL, bytes32("x")
+            policyId,
+            _inputs(BASE), THRESHOLD, DissentCore.Comparator.AtLeast, "call", WINDOW, bytes32("x")
         );
         _reveal(id1, alice, 50, "a");
         _reveal(id2, bob, 150, "b");

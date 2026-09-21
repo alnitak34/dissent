@@ -1,5 +1,11 @@
 # Checklist de despliegue — Policy Bounty endurecido
 
+> **Registro histórico (2026-09-16).** El `script/DeployPolicyBounty.s.sol`
+> actual ya despliega también `RecomputerRegistry` y requiere
+> `DISSENT_CURATOR`; por tanto no reproduce los comandos de este documento. Las
+> instrucciones siguientes registran el despliegue anterior, no autorizan ni
+> describen un despliegue nuevo.
+
 Este documento prepara el despliegue conjunto de un `DissentCore` nuevo y
 `AlnitakPolicyBountyRecomputer` en Monad Testnet. No reutiliza el núcleo
 desplegado el 2026-09-14: ese contrato conserva la política anterior de

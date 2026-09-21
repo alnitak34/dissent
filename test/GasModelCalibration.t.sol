@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
 import {MockRecomputer} from "./mocks/MockRecomputer.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @title GasModelCalibration — mediciones REPRODUCIBLES que justifican las
 ///        constantes del modelo de gas de DissentCore.
@@ -61,16 +62,18 @@ contract MinimalAdapter {
     }
 }
 
-contract GasModelCalibrationTest is Test {
+contract GasModelCalibrationTest is Test, RegistryTestSupport {
     DissentCore core;
     MockRecomputer mock;
     MinimalAdapter mAdapter;
     MinimalAdapter mReverter;
     address agent = makeAddr("agent");
+    bytes32 policyId;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         mock = new MockRecomputer();
+        policyId = _policy(address(mock), 0.1 ether, 1_000_000, 300_000, 64);
         // creados en setUp (tx previa) para que el primer staticcall del test sea
         // FRIO de verdad; si se crean en el mismo test, el CREATE calienta la dir.
         mAdapter = new MinimalAdapter(false);
@@ -160,8 +163,7 @@ contract GasModelCalibrationTest is Test {
         // cubre ese total + margen.
         vm.prank(agent, agent);
         bytes32 id = core.commit{value: 1 ether}(
-            address(mock), abi.encode(int256(200)), 100, DissentCore.Comparator.AtLeast, "c",
-            0.1 ether, 1 hours, 1_000_000, 300_000, 64, bytes32(0)
+            policyId, abi.encode(int256(200)), 100, DissentCore.Comparator.AtLeast, "c", 1 hours, bytes32(0)
         );
         bytes32 sealed_ = keccak256(abi.encode(abi.encode(int256(50)), bytes32("s"), agent));
         vm.prank(agent, agent);

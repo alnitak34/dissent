@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice Los bytes LITERALES que escupio bridge/armar_commit.py, sin reconstruir.
 ///
@@ -21,9 +22,10 @@ import {DissentCore} from "../src/DissentCore.sol";
 /// calle -> presion `bet/big`. Cualquiera puede bajarla, sin credenciales, en
 /// https://arena.dev.fun/api/arena.getTexasReplay?input={"json":{"tableId":"cmtr0ktvzxa5q15he4ekev8ub"}}
 /// y comprobar con bridge/verificar.py que estos bytes son esa mano.
-contract ManoRealTest is Test {
+contract ManoRealTest is Test, RegistryTestSupport {
     AlnitakRiverRecomputer rc;
     DissentCore core;
+    bytes32 policyId;
 
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
@@ -56,7 +58,8 @@ contract ManoRealTest is Test {
 
     function setUp() public {
         rc = new AlnitakRiverRecomputer();
-        core = new DissentCore();
+        core = _deployRegistryCore();
+        policyId = _policy(address(rc), 0.1 ether, 20_000_000, 100_000, 32);
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
         vm.deal(bob, 100 ether);
@@ -136,16 +139,12 @@ contract ManoRealTest is Test {
     function test_commit_de_la_mano_real() public {
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc),
+            policyId,
             INPUTS,
             UMBRAL,
             DissentCore.Comparator.AtLeast,
             "river call QdAd vs 2s 2c Tc Qc 9d @ cmtr0ktvzxa5q15he4ekev8ub#29",
-            0.1 ether,
             1 days,
-            20_000_000,
-            100_000,
-            32,
             bytes32(0)
         );
         DissentCore.Commitment memory c = core.getCommitment(id);
@@ -161,7 +160,7 @@ contract ManoRealTest is Test {
     function test_overbet_tumba_el_compromiso() public {
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
+            policyId, INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 1 days, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
         vm.prank(alice);
@@ -179,7 +178,7 @@ contract ManoRealTest is Test {
     function test_medium_no_tumba_el_compromiso() public {
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc), INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
+            policyId, INPUTS, UMBRAL, DissentCore.Comparator.AtLeast, "call", 1 days, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(0));
         vm.prank(bob);

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Regression tests for the policy-bounty ABI bridge."""
 
+import argparse
 import json
 import os
 import sys
@@ -8,6 +9,7 @@ import unittest
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+POLICY_ID = "0x" + "22" * 32
 sys.path.insert(0, HERE)
 import armar_policy_bounty as bridge  # noqa: E402
 import policy_spec  # noqa: E402
@@ -52,13 +54,18 @@ class TestPolicyBountyBridge(unittest.TestCase):
         self.assertEqual(int.from_bytes(raw[128:160], "big"), 3)
 
     def test_output_is_ready_for_current_core_interface(self):
-        output = bridge.build(self.case, self.spec)
+        output = bridge.build(self.case, self.spec, POLICY_ID)
         self.assertEqual(output["inputsLength"], 96)
         self.assertEqual(output["evidenceLength"], 160)
         self.assertEqual(output["commit"]["threshold"], 0)
         self.assertEqual(output["commit"]["comparator"], "AtMost")
-        self.assertEqual(output["commit"]["maxEvidenceLen"], 160)
+        self.assertEqual(output["commit"]["policyId"], POLICY_ID)
+        self.assertEqual(output["commit"]["registeredPolicyExpected"]["maxEvidenceLen"], 160)
         self.assertTrue(output["verdict"]["violation"])
+
+    def test_policy_id_invalido_se_rechaza(self):
+        with self.assertRaises(argparse.ArgumentTypeError):
+            bridge.policy_id_hex("0x1234")
 
 
 if __name__ == "__main__":

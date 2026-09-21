@@ -4,10 +4,12 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {AlnitakPolicyBountyRecomputer} from "../src/adapters/AlnitakPolicyBountyRecomputer.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
-contract AlnitakPolicyBountyRecomputerTest is Test {
+contract AlnitakPolicyBountyRecomputerTest is Test, RegistryTestSupport {
     AlnitakPolicyBountyRecomputer internal rc;
     DissentCore internal core;
+    bytes32 internal policyId;
     address internal agent = makeAddr("policy-agent");
     address internal challenger = makeAddr("policy-challenger");
 
@@ -16,7 +18,8 @@ contract AlnitakPolicyBountyRecomputerTest is Test {
 
     function setUp() public {
         rc = new AlnitakPolicyBountyRecomputer();
-        core = new DissentCore();
+        core = _deployRegistryCore();
+        policyId = _policy(address(rc), 0.1 ether, 20_000_000, 100_000, 160);
         vm.deal(agent, 100 ether);
         vm.deal(challenger, 100 ether);
     }
@@ -324,16 +327,12 @@ contract AlnitakPolicyBountyRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc),
+            policyId,
             inputs,
             0,
             DissentCore.Comparator.AtMost,
             "Alnitak River Safety Reference v1",
-            deposit,
             1 days,
-            20_000_000,
-            100_000,
-            160,
             bytes32("policy-demo")
         );
         assertEq(core.getCommitment(id).baseValue, 0);
@@ -361,16 +360,12 @@ contract AlnitakPolicyBountyRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc),
+            policyId,
             inputs,
             0,
             DissentCore.Comparator.AtMost,
             "Alnitak River Safety Reference v1",
-            deposit,
             1 days,
-            20_000_000,
-            100_000,
-            160,
             bytes32("dirty-evidence")
         );
 

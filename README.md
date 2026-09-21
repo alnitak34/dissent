@@ -7,24 +7,31 @@ agente pone una recompensa detrás de un límite numérico; challengers buscan u
 contraejemplo dentro del espacio que define el recomputer, y Monad paga si ese
 caso cruza el límite.
 
-- Un agente publica **entradas**, un **umbral** y una **acción declarada**, y
-  escrowea una **recompensa** en MON.
+- Un agente elige una **política registrada**, publica **entradas**, un
+  **umbral** y una **acción declarada**, y escrowea una **recompensa** en MON.
 - El contrato **no acepta del agente ni del retador el número que decide el
   dinero**. Ese valor lo obtiene llamando a un **recomputer** (un contrato que
-  implementa `IRecomputer`) identificado por el compromiso.
+  implementa `IRecomputer`) fijado por la política registrada e identificado
+  por el compromiso.
 - Cualquiera puede **sellar** evidencia y luego **revelarla**. El contrato corre
   el mismo recomputer con esa evidencia y compara contra el umbral.
 - Si con la evidencia el valor **cruza** el umbral, el retador cobra recompensa +
   su depósito. Si no cruza, el depósito va al agente.
 
-**El resultado económico depende del recomputer elegido por el agente.** El
-protocolo garantiza la mecánica (escrow, sellado en dos fases, pagos); la
-**semántica** —qué significa el número y si es honesto— la define el adaptador.
-Ver [Frontera de confianza](#frontera-de-confianza).
+**El resultado económico depende del recomputer aprobado para la política.** El
+registro evita que cada agente introduzca un adaptador arbitrario, pero no
+demuestra que una política aprobada sea correcta. El protocolo garantiza la
+mecánica (escrow, sellado en dos fases, pagos); la **semántica** —qué significa
+el número y si es honesto— la define el adaptador. Ver
+[Frontera de confianza](#frontera-de-confianza).
 
 ## Estado
 
 Hay **dos versiones distintas** en Monad Testnet:
+
+> La arquitectura con `RecomputerRegistry` de esta rama todavía no está
+> desplegada. Las direcciones siguientes son despliegues históricos del núcleo
+> anterior y se conservan como evidencia del replay ya ejecutado.
 
 - **Policy Bounty, despliegue del 16-09-2026:**
   [`DissentCore 0x460f...ce23`](https://testnet.monadvision.com/address/0x460f9F624da9e23c705c610E1263bf3641bCce23)
@@ -64,7 +71,9 @@ siendo trabajo futuro.
 | Archivo | Qué es |
 |---|---|
 | `src/IRecomputer.sol` | La frontera entre el protocolo y el dominio. Una sola función de valor. |
-| `src/DissentCore.sol` | El protocolo. No sabe de póker. Sin owner, sin retiro administrativo del escrow, sin pausa y sin proxy. Los beneficiarios retiran sus propios créditos con `withdrawCredit()`. |
+| `src/IRecomputerRegistry.sol` | La frontera de lectura para resolver una política aprobada. |
+| `src/RecomputerRegistry.sol` | Catálogo curado: fija recomputer, codehash, depósito y límites; solo puede registrar políticas nuevas o activar/desactivar su uso futuro. No custodia MON. |
+| `src/DissentCore.sol` | El protocolo. No sabe de póker. Su constructor fija un registro; no tiene owner, retiro administrativo del escrow, pausa ni proxy. Los beneficiarios retiran sus propios créditos con `withdrawCredit()`. |
 | `src/adapters/AlnitakRiverRecomputer.sol` | Adaptador de póker de ejemplo, port de `_exact_river_mix()` de `strategy.py`. |
 | `src/adapters/AlnitakPolicyBountyRecomputer.sol` | Adaptador de la campaña de política v1; recibe un estado completo como contraejemplo. |
 | `src/adapters/PokerEval.sol` | Evaluador de manos de 7 cartas, usado por ambos adaptadores de póker. |
@@ -93,28 +102,38 @@ que nadie reveló un challenge exitoso antes del cierre.
 
 ## Frontera de confianza
 
-> **El protocolo garantiza la mecánica; el adaptador define la semántica.**
+> **El protocolo garantiza la mecánica; una política registrada define la
+> semántica.**
 
-- El agente **elige** el recomputer. Un adaptador puede devolver siempre `false`,
-  o valores favorables al agente, sin que el núcleo lo note.
+- El agente solo puede crear compromisos contra un `policyId` activo. No elige
+  directamente recomputer, depósito ni límites de gas/evidencia.
+- El `curator` del registro decide qué políticas pueden usarse en commits nuevos.
+  Puede aprobar una política defectuosa o maliciosa; por tanto es una frontera
+  explícita de confianza y no un oráculo de verdad. No puede retirar escrow ni
+  alterar los campos de una política ya registrada.
+- Desactivar una política bloquea commits nuevos, pero no cambia compromisos
+  existentes: el núcleo copia sus campos al crearlos.
 - `view` **no** es `pure`: el recomputer puede leer `block.number`,
   `block.timestamp`, `block.basefee`, storage persistente o storage transitorio
   (`TLOAD`), y comportarse distinto según el contexto. `STATICCALL` impide
   escribir con `TSTORE`, pero no impide leer un valor transitorio preparado por
   otra llamada al mismo adaptador durante la misma transacción.
 - `domain()` es una **etiqueta**, no una prueba de honestidad.
-- Un **proxy** o un adaptador con storage mutable puede **cambiar de
-  comportamiento** después de que se creen compromisos contra él.
+- El registro fija el `EXTCODEHASH` del recomputer y el núcleo lo comprueba al
+  crear el compromiso y otra vez antes del reveal. Esto detecta un cambio del bytecode de esa dirección,
+  pero **no** inmoviliza la implementación detrás de un proxy ni el storage que
+  pueda alterar su comportamiento.
 - Los resultados **valen tanto como el adaptador**. Dissent **no es un oráculo de
   verdad**.
-- Un agente malicioso todavía puede elegir un adaptador que falle durante el
-  challenge para evitar una refutación pagable. La campaña queda públicamente
+- Una política aprobada todavía puede contener un adaptador que falle durante
+  el challenge y evite una refutación pagable. La campaña queda públicamente
   `Faulted`, el retador recupera su depósito y la recompensa vuelve al agente;
   el retador sigue soportando el gas. El MVP no tiene árbitro ni gobernanza para
   decidir quién causó un fallo técnico.
-- **Para producción**, el consumidor debe exigir adaptadores **auditados,
-  inmutables, con fuente verificada y versión reconocible** (`domain()`), y tratar
-  un adaptador desconocido como no confiable. También debe rechazar adaptadores
+- **Para producción**, el curator y los consumidores deben exigir adaptadores
+  **auditados, inmutables, con fuente verificada y versión reconocible**
+  (`domain()`), y tratar una política desconocida como no confiable. También
+  deben rechazar adaptadores
   cuyo resultado dependa del contexto EVM o de estado transitorio externo a los
   `inputs` y la `evidence` comprometidos.
 
@@ -143,7 +162,7 @@ prioritarias están en
   El depósito **no** entra: la recompensa cubre el gas del retador; su depósito le
   vuelve al ganar.
 
-Política recomendada para el adaptador Alnitak (la que reporta el puente):
+Política registrada recomendada para el adaptador Alnitak (la que reporta el puente):
 `validateGasLimit = 100_000`, `recomputeGasLimit = 20_000_000`,
 `inputs = 352 bytes`, `maxEvidenceLen = 32`:
 
@@ -232,21 +251,24 @@ especializado para que encontrar uno tenga valor.
 ### El puente anterior: de una mano real a los bytes
 
 `bridge/` convierte una decisión concreta de una mesa real en los bytes exactos
-que espera `DissentCore.commit`, y muestra los argumentos de `commit()` en orden.
+que espera `DissentCore.commit`, y muestra sus siete argumentos en orden. Requiere
+el `policyId` de una política ya registrada; no permite elegir el recomputer ni
+sus parámetros desde el compromiso.
 **Solo biblioteca estándar de Python.** `keccak256` y la codificación ABI están a
 mano y comprobados contra `cast`; `python bridge/mano.py` corre ese autochequeo.
 
 ```bash
 # armar los bytes y los argumentos usando la fixture minima del caso
-python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29 --replay bridge/fixtures/alnitak-river-minimal.json
+python bridge/armar_commit.py cmtr0ktvzxa5q15he4ekev8ub 29 --replay bridge/fixtures/alnitak-river-minimal.json --policy-id 0x<POLICY_ID>
 
 # comprobar que unos bytes son esa mano, bajando el replay del endpoint público
 python bridge/verificar.py 0x0000...0e2d cmtr0ktvzxa5q15he4ekev8ub
 ```
 
-`armar_commit.py` imprime `inputs`, `inputsLength`, `inputsHash`, la evidencia que
-espera el adaptador (`abi.encode(uint256 tier)`, 32 bytes), y los límites de gas
-recomendados para Alnitak (`recomputeGasLimit = 20_000_000`,
+`armar_commit.py` imprime `policyId`, `inputs`, `inputsLength`, `inputsHash` y la
+evidencia que espera el adaptador (`abi.encode(uint256 tier)`, 32 bytes). También
+muestra como referencia los parámetros que la política registrada de Alnitak
+debería contener (`recomputeGasLimit = 20_000_000`,
 `validateGasLimit = 100_000`, `maxEvidenceLen = 32`). La **recompensa mínima** que
 muestra es un **cálculo offline orientativo a 100 gwei**: la autoridad es
 `minGasBackedReward(...)` leído del contrato justo antes del commit, y si
@@ -267,7 +289,7 @@ demostración anterior de una mano fija. Ver
 [`docs/POLICY_BOUNTY_LIVE_RUN.md`](docs/POLICY_BOUNTY_LIVE_RUN.md).
 
 ```bash
-python bridge/armar_policy_bounty.py bridge/fixtures/policy-bounty-jhjd.json
+python bridge/armar_policy_bounty.py bridge/fixtures/policy-bounty-jhjd.json --policy-id 0x<POLICY_ID>
 python bridge/buscar_policy_bounty.py bridge/fixtures/policy-bounty-control-4hah.json bridge/fixtures/policy-bounty-jhjd.json
 python bridge/exportar_policy_bounty.py <DIRECTORIO_DE_REPLAYS_S17> <DIRECTORIO_DE_REPLAYS_S18>
 ```

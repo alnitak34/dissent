@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
 import {DissentCore} from "../src/DissentCore.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice El adaptador contra el Python de verdad, y el flujo entero de punta a
 ///         punta con el recalculador real.
@@ -11,9 +12,10 @@ import {DissentCore} from "../src/DissentCore.sol";
 /// Los valores esperados salen de strategy.py (alnitak34/poker-bot, 84dbf79),
 /// recalculados en enteros con la misma aritmetica de punto fijo que usa este
 /// contrato. Estan medidos, no elegidos.
-contract AlnitakRiverRecomputerTest is Test {
+contract AlnitakRiverRecomputerTest is Test, RegistryTestSupport {
     AlnitakRiverRecomputer rc;
     DissentCore core;
+    bytes32 policyId;
 
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
@@ -36,7 +38,8 @@ contract AlnitakRiverRecomputerTest is Test {
 
     function setUp() public {
         rc = new AlnitakRiverRecomputer();
-        core = new DissentCore();
+        core = _deployRegistryCore();
+        policyId = _policy(address(rc), 0.1 ether, 20_000_000, 100_000, 32);
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
     }
@@ -207,7 +210,7 @@ contract AlnitakRiverRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
+            policyId, inp, umbral, DissentCore.Comparator.AtLeast, "call", 1 days, bytes32(0)
         );
         DissentCore.Commitment memory c = core.getCommitment(id);
         assertEq(c.baseValue, base, "el nucleo calculo el base el mismo");
@@ -240,7 +243,7 @@ contract AlnitakRiverRecomputerTest is Test {
 
         vm.prank(agent);
         bytes32 id = core.commit{value: 3 ether}(
-            address(rc), inp, umbral, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32(0)
+            policyId, inp, umbral, DissentCore.Comparator.AtLeast, "call", 1 days, bytes32(0)
         );
         bytes memory ev = abi.encode(uint256(2));
         vm.prank(alice);
@@ -261,7 +264,7 @@ contract AlnitakRiverRecomputerTest is Test {
         uint256 g0 = gasleft();
         vm.prank(agent);
         core.commit{value: 3 ether}(
-            address(rc), inp, 1, DissentCore.Comparator.AtLeast, "call", 0.1 ether, 1 days, 20_000_000, 100_000, 32, bytes32("g")
+            policyId, inp, 1, DissentCore.Comparator.AtLeast, "call", 1 days, bytes32("g")
         );
         console.log("commit de punta a punta con el adaptador real: %s gas", g0 - gasleft());
     }

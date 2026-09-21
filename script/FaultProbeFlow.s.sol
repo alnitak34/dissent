@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DissentCore} from "../src/DissentCore.sol";
+import {ILegacyDissentCore} from "./interfaces/ILegacyDissentCore.sol";
 import {FaultProbeRecomputer} from "./DeployFaultProbe.s.sol";
 
 /// @notice Flujo de prueba para Monad Testnet. Cada fase transmite COMO MAXIMO
@@ -18,10 +18,10 @@ abstract contract FaultProbeBase is Script {
     uint32 internal constant V = 100_000;
     uint32 internal constant MAX_EV = 32;
 
-    function _core() internal view returns (DissentCore core) {
+    function _core() internal view returns (ILegacyDissentCore core) {
         require(block.chainid == 10143, "solo Monad Testnet");
         require(CORE.code.length != 0, "core ausente");
-        core = DissentCore(CORE);
+        core = ILegacyDissentCore(CORE);
     }
 
     function _probe() internal view returns (FaultProbeRecomputer probe) {
@@ -46,12 +46,12 @@ abstract contract FaultProbeBase is Script {
         require(actual == expected, "cuenta de firma incorrecta");
     }
 
-    function _commitment(DissentCore core, bytes32 id, FaultProbeRecomputer probe) internal view {
-        DissentCore.Commitment memory c = core.getCommitment(id);
-        require(c.status == DissentCore.Status.Open, "campana no abierta");
+    function _commitment(ILegacyDissentCore core, bytes32 id, FaultProbeRecomputer probe) internal view {
+        ILegacyDissentCore.Commitment memory c = core.getCommitment(id);
+        require(c.status == ILegacyDissentCore.Status.Open, "campana no abierta");
         require(c.agent == AGENT && c.recomputer == address(probe), "campana ajena");
         require(c.inputsHash == keccak256(_inputs()), "inputs ajenos");
-        require(c.threshold == 100 && c.comparator == DissentCore.Comparator.AtLeast, "regla ajena");
+        require(c.threshold == 100 && c.comparator == ILegacyDissentCore.Comparator.AtLeast, "regla ajena");
         require(c.actionHash == keccak256(bytes("FAULT_PROBE_TESTNET_ONLY")), "accion ajena");
         require(c.reward == REWARD && c.deposit == DEPOSIT, "importes ajenos");
         require(c.recomputeGasLimit == R && c.validateGasLimit == V && c.maxEvidenceLen == MAX_EV, "gas ajeno");
@@ -60,7 +60,7 @@ abstract contract FaultProbeBase is Script {
 
 contract FaultProbeCommit is FaultProbeBase {
     function run() external returns (bytes32 id) {
-        DissentCore core = _core();
+        ILegacyDissentCore core = _core();
         FaultProbeRecomputer probe = _probe();
         bytes32 salt = vm.envBytes32("DISSENT_FAULT_AGENT_SALT");
         require(salt != bytes32(0), "salt vacio");
@@ -74,7 +74,7 @@ contract FaultProbeCommit is FaultProbeBase {
             address(probe),
             inputs,
             100,
-            DissentCore.Comparator.AtLeast,
+            ILegacyDissentCore.Comparator.AtLeast,
             "FAULT_PROBE_TESTNET_ONLY",
             DEPOSIT,
             1 hours,
@@ -92,7 +92,7 @@ contract FaultProbeCommit is FaultProbeBase {
 
 contract FaultProbeSeal is FaultProbeBase {
     function run() external {
-        DissentCore core = _core();
+        ILegacyDissentCore core = _core();
         FaultProbeRecomputer probe = _probe();
         bytes32 id = vm.envBytes32("DISSENT_FAULT_COMMITMENT_ID");
         bytes32 salt = vm.envBytes32("DISSENT_FAULT_CHALLENGER_SALT");
@@ -109,7 +109,7 @@ contract FaultProbeSeal is FaultProbeBase {
 
 contract FaultProbeReveal is FaultProbeBase {
     function run() external {
-        DissentCore core = _core();
+        ILegacyDissentCore core = _core();
         FaultProbeRecomputer probe = _probe();
         bytes32 id = vm.envBytes32("DISSENT_FAULT_COMMITMENT_ID");
         bytes32 salt = vm.envBytes32("DISSENT_FAULT_CHALLENGER_SALT");
@@ -125,6 +125,6 @@ contract FaultProbeReveal is FaultProbeBase {
         _sender(CHALLENGER);
         core.challengeReveal(id, _inputs(), evidence, salt);
         vm.stopBroadcast();
-        require(core.getCommitment(id).status == DissentCore.Status.Faulted, "no termino Faulted");
+        require(core.getCommitment(id).status == ILegacyDissentCore.Status.Faulted, "no termino Faulted");
     }
 }

@@ -168,13 +168,14 @@ integración live**.
 
 ### "¿Quién confía en la fórmula?"
 
-Nadie tiene que aceptar una fórmula secreta de Dissent. En el contrato actual,
-**el agente propone la dirección del recomputer** al crear el compromiso; la
-aplicación que vaya a confiar en el resultado debe revisarla y aceptarla por su
-cuenta antes de usar ese compromiso. Dissent guarda esa dirección, pero no
-comprueba que el código sea inmutable ni vincula su `codehash`: un proxy o un
-adaptador con estado puede cambiar de comportamiento. La calidad y estabilidad
-de la regla siguen siendo responsabilidad de quien la integra y deben auditarse.
+Nadie tiene que aceptar una fórmula secreta de Dissent. En la arquitectura en
+revisión, **el agente solo puede usar un `policyId` aprobado**; el registro fija
+la dirección, el `EXTCODEHASH`, el depósito y los límites. La aplicación que vaya
+a confiar en el resultado todavía debe revisar esa política: el codehash de una
+dirección no inmoviliza la implementación detrás de un proxy ni su storage. La
+calidad y estabilidad de la regla siguen siendo responsabilidad del curator y
+de quien la integra, y deben auditarse. Esta versión con registro aún no está
+desplegada; el replay público corresponde al núcleo anterior.
 
 ### "¿Por qué pagaría por esto?"
 
@@ -217,7 +218,7 @@ el `VerdictLedger` pasa a mostrar `HIGH RISK`. Pero solo la cuenta `oracle` pued
 publicar ese nuevo veredicto y `challenge(token)` no recibe evidencia del
 challenger. Por tanto, el pago depende de un cambio posterior del propio oráculo.
 
-Dissent fija desde el inicio qué recomputer, política, dominio y umbral adjudican
+Dissent fija desde el inicio qué policyId, recomputer, política, dominio y umbral adjudican
 la disputa. El challenger aporta un witness y puede cobrar aunque el agente nunca
 cambie su salida. Esa independencia es la diferencia; no "tener stake".
 

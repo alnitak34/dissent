@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DissentCore} from "../src/DissentCore.sol";
+import {ILegacyDissentCore} from "./interfaces/ILegacyDissentCore.sol";
 import {AlnitakPolicyBountyRecomputer} from "../src/adapters/AlnitakPolicyBountyRecomputer.sol";
 
 /// @notice Fases separadas para probar Policy Bounty sobre el despliegue
@@ -62,13 +62,13 @@ abstract contract PolicyBountyBase is Script {
         );
     }
 
-    function _requireCommitment(DissentCore.Commitment memory commitment, bytes memory inputs) internal pure {
-        require(commitment.status == DissentCore.Status.Open, "commitment no esta Open");
+    function _requireCommitment(ILegacyDissentCore.Commitment memory commitment, bytes memory inputs) internal pure {
+        require(commitment.status == ILegacyDissentCore.Status.Open, "commitment no esta Open");
         require(commitment.agent == AGENT, "agent inesperado");
         require(commitment.recomputer == RECOMPUTER, "recomputer inesperado");
         require(commitment.inputsHash == keccak256(inputs), "inputs inesperados");
         require(commitment.threshold == THRESHOLD, "threshold inesperado");
-        require(commitment.comparator == DissentCore.Comparator.AtMost, "comparator inesperado");
+        require(commitment.comparator == ILegacyDissentCore.Comparator.AtMost, "comparator inesperado");
         require(commitment.reward == REWARD, "reward inesperada");
         require(commitment.deposit == DEPOSIT, "deposit inesperado");
         require(commitment.recomputeGasLimit == RECOMPUTE_GAS_LIMIT, "R inesperado");
@@ -81,7 +81,7 @@ abstract contract PolicyBountyBase is Script {
 contract PolicyBountyCommit is PolicyBountyBase {
     function run() external returns (bytes32 id) {
         _requireDeployment();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes memory inputs = _inputs();
         bytes32 agentSalt = vm.envBytes32("DISSENT_AGENT_SALT");
         require(agentSalt != bytes32(0), "agent salt vacio");
@@ -98,7 +98,7 @@ contract PolicyBountyCommit is PolicyBountyBase {
             RECOMPUTER,
             inputs,
             THRESHOLD,
-            DissentCore.Comparator.AtMost,
+            ILegacyDissentCore.Comparator.AtMost,
             ACTION,
             DEPOSIT,
             WINDOW,
@@ -119,7 +119,7 @@ contract PolicyBountyCommit is PolicyBountyBase {
 contract PolicyBountyChallengeCommit is PolicyBountyBase {
     function run() external returns (bytes32 sealedHash) {
         _requireDeployment();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         AlnitakPolicyBountyRecomputer recomputer = AlnitakPolicyBountyRecomputer(RECOMPUTER);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 challengerSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
@@ -146,7 +146,7 @@ contract PolicyBountyChallengeCommit is PolicyBountyBase {
 contract PolicyBountyChallengeReveal is PolicyBountyBase {
     function run() external {
         _requireDeployment();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         AlnitakPolicyBountyRecomputer recomputer = AlnitakPolicyBountyRecomputer(RECOMPUTER);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 challengerSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
@@ -179,10 +179,10 @@ contract PolicyBountyChallengeReveal is PolicyBountyBase {
 contract PolicyBountyWithdraw is PolicyBountyBase {
     function run() external {
         _requireDeployment();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
-        DissentCore.Commitment memory commitment = core.getCommitment(id);
-        require(commitment.status == DissentCore.Status.Challenged, "commitment no fue refutado");
+        ILegacyDissentCore.Commitment memory commitment = core.getCommitment(id);
+        require(commitment.status == ILegacyDissentCore.Status.Challenged, "commitment no fue refutado");
         require(core.credits(CHALLENGER) == REWARD + DEPOSIT, "credito challenger inesperado");
 
         vm.startBroadcast();

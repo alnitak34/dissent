@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DissentCore} from "../src/DissentCore.sol";
+import {ILegacyDissentCore} from "./interfaces/ILegacyDissentCore.sol";
 import {AlnitakRiverRecomputer} from "../src/adapters/AlnitakRiverRecomputer.sol";
 
 /// @notice Operaciones separadas para la primera demostracion real de Dissent.
@@ -55,7 +55,7 @@ abstract contract DemoBase is Script {
 contract DemoCommit is DemoBase {
     function run() external returns (bytes32 id) {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes memory inputs = _inputs();
         uint256 minimum =
             core.minGasBackedReward(VALIDATE_GAS_LIMIT, RECOMPUTE_GAS_LIMIT, inputs.length, MAX_EVIDENCE_LEN);
@@ -67,7 +67,7 @@ contract DemoCommit is DemoBase {
             RECOMPUTER,
             inputs,
             THRESHOLD,
-            DissentCore.Comparator.AtLeast,
+            ILegacyDissentCore.Comparator.AtLeast,
             "river call QdAd vs 2s 2c Tc Qc 9d @ cmtr0ktvzxa5q15he4ekev8ub#29",
             DEPOSIT,
             WINDOW,
@@ -86,13 +86,13 @@ contract DemoCommit is DemoBase {
 contract DemoChallengeCommit is DemoBase {
     function run() external returns (bytes32 sealedHash) {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 secretSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
         require(secretSalt != bytes32(0), "salt secreto vacio");
 
-        DissentCore.Commitment memory commitment = core.getCommitment(id);
-        require(commitment.status == DissentCore.Status.Open, "commitment no esta Open");
+        ILegacyDissentCore.Commitment memory commitment = core.getCommitment(id);
+        require(commitment.status == ILegacyDissentCore.Status.Open, "commitment no esta Open");
         require(commitment.agent == AGENT, "agent inesperado");
         require(commitment.recomputer == RECOMPUTER, "recomputer inesperado");
         require(commitment.inputsHash == keccak256(_inputs()), "inputs inesperados");
@@ -113,7 +113,7 @@ contract DemoChallengeCommit is DemoBase {
 contract DemoChallengeReveal is DemoBase {
     function run() external {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         AlnitakRiverRecomputer recomputer = AlnitakRiverRecomputer(RECOMPUTER);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
         bytes32 secretSalt = vm.envBytes32("DISSENT_CHALLENGER_SALT");
@@ -146,7 +146,7 @@ contract DemoChallengeReveal is DemoBase {
 contract DemoWithdraw is DemoBase {
     function run() external {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         require(core.credits(CHALLENGER) != 0, "challenger sin credito");
 
         vm.startBroadcast();
@@ -161,10 +161,10 @@ contract DemoWithdraw is DemoBase {
 contract DemoSweepExpired is DemoBase {
     function run() external {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
 
-        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        ILegacyDissentCore.Commitment memory commitment = core.getCommitment(id);
         require(commitment.agent == AGENT, "agent inesperado");
         (, uint64 sealBlock,, bool settled) = core.seals(id, CHALLENGER);
         require(sealBlock != 0 && !settled, "sello ausente o ya liquidado");
@@ -185,12 +185,12 @@ contract DemoSweepExpired is DemoBase {
 contract DemoReclaim is DemoBase {
     function run() external {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
 
-        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        ILegacyDissentCore.Commitment memory commitment = core.getCommitment(id);
         require(commitment.agent == AGENT, "agent inesperado");
-        require(commitment.status == DissentCore.Status.Open, "commitment no esta Open");
+        require(commitment.status == ILegacyDissentCore.Status.Open, "commitment no esta Open");
         require(block.timestamp >= commitment.windowEnds, "ventana para sellar abierta");
         if (commitment.latestSealBlock != 0) {
             require(
@@ -210,7 +210,7 @@ contract DemoReclaim is DemoBase {
 contract DemoWithdrawAgent is DemoBase {
     function run() external {
         _requireNetworkAndCode();
-        DissentCore core = DissentCore(CORE);
+        ILegacyDissentCore core = ILegacyDissentCore(CORE);
         require(core.credits(AGENT) != 0, "agent sin credito");
 
         vm.startBroadcast();

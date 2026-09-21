@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {DissentCore} from "../src/DissentCore.sol";
 import {IRecomputer} from "../src/IRecomputer.sol";
+import {RegistryTestSupport} from "./helpers/RegistryTestSupport.sol";
 
 /// @notice REGRESION DE SEGURIDAD — ataques contextuales de validateEvidence, ahora
 ///         CERRADOS por la politica AdapterFault / ChallengeRejected.
@@ -61,7 +62,7 @@ contract EvidenceFalseVulnRecomputer is IRecomputer {
     }
 }
 
-contract EvidenceFalseRegresionTest is Test {
+contract EvidenceFalseRegresionTest is Test, RegistryTestSupport {
     DissentCore core;
     address agent = makeAddr("agent");
     address alice = makeAddr("alice");
@@ -80,7 +81,7 @@ contract EvidenceFalseRegresionTest is Test {
     uint32 constant MEL = 64;
 
     function setUp() public {
-        core = new DissentCore();
+        core = _deployRegistryCore();
         vm.deal(agent, 100 ether);
         vm.deal(alice, 100 ether);
     }
@@ -97,18 +98,15 @@ contract EvidenceFalseRegresionTest is Test {
         vm.warp(101); // impar: el modo Timestamp rechaza de forma canonica
         vm.prevrandao(uint256(9)); // distinto de 7: PrevRandao tambien rechaza
 
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent, agent);
         id = core.commit{value: REWARD}(
-            address(rc),
+            policyId,
             abi.encode(BASE),
             THRESHOLD,
             DissentCore.Comparator.AtLeast,
             "call",
-            DEPOSIT,
             WINDOW,
-            RGL,
-            VGL,
-            MEL,
             bytes32(0)
         );
 
@@ -166,18 +164,15 @@ contract EvidenceFalseRegresionTest is Test {
             new EvidenceFalseVulnRecomputer(EvidenceFalseVulnRecomputer.Mode.AlwaysFalse, agent, 1_000_000);
         vm.roll(100);
 
+        bytes32 policyId = _policy(address(rc), DEPOSIT, RGL, VGL, MEL);
         vm.prank(agent, agent);
         bytes32 id = core.commit{value: REWARD}(
-            address(rc),
+            policyId,
             abi.encode(BASE),
             THRESHOLD,
             DissentCore.Comparator.AtLeast,
             "call",
-            DEPOSIT,
             WINDOW,
-            RGL,
-            VGL,
-            MEL,
             bytes32(0)
         );
 
