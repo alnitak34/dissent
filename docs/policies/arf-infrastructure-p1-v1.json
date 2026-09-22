@@ -1,0 +1,45 @@
+{
+  "schema": "dissent.policy.v1",
+  "name": "ARF Public Reference Infrastructure P1",
+  "source": {
+    "repository": "https://github.com/petter2025us/arf-pattern-examples",
+    "commit": "b0282d789da01a9c3b94d9684d7945db024ebba8",
+    "license": "Apache-2.0",
+    "policyId": "infrastructure.change",
+    "policyVersion": "1.0.0",
+    "propertyId": "P1"
+  },
+  "claim": {
+    "antecedent": "environment == production && blastRadius > 5",
+    "consequent": "outcome != APPROVE",
+    "productionBlastRadiusCeiling": 5
+  },
+  "abiDomain": {
+    "strings": "UTF-8 values of at most 32 bytes, right-padded as bytes32",
+    "blastRadius": "uint256, restricted by the antecedent to values greater than 5",
+    "reversibility": {
+      "0": "missing",
+      "1": "REVERSIBLE",
+      "2": "COMPENSABLE",
+      "3": "IRREVERSIBLE"
+    },
+    "approvals": {
+      "shape": "fixed array of two {approver, at} objects plus approvalCount",
+      "maximumCount": 2,
+      "fields": "non-empty UTF-8 values of at most 32 bytes"
+    },
+    "changeWindowOpen": "0=false, 1=true"
+  },
+  "differencesFromPython": [
+    "Python integers above uint256 max are outside this campaign",
+    "Strings longer than 32 UTF-8 bytes are outside this campaign",
+    "Reversibility values outside missing/REVERSIBLE/COMPENSABLE/IRREVERSIBLE are outside this campaign",
+    "Approval lists longer than two objects are outside this campaign",
+    "Only outcome parity is tested; Decision reasons and audit hashes are outside this campaign"
+  ],
+  "emptyEvidenceValue": 0,
+  "counterexampleValue": {
+    "violates": 1,
+    "doesNotViolate": 0
+  }
+}
