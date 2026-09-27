@@ -57,6 +57,10 @@ abstract contract PolicyBountyMainnetBase is Script {
         address registryAddress = _registryAddress();
         address recomputerAddress = _recomputerAddress();
         bytes32 policyId = _policyId();
+        address agent = _agent();
+        address challenger = _challenger();
+
+        _requireParticipants(agent, challenger);
 
         require(coreAddress.code.length != 0, "DissentCore not deployed");
         require(registryAddress.code.length != 0, "RecomputerRegistry not deployed");
@@ -84,6 +88,12 @@ abstract contract PolicyBountyMainnetBase is Script {
         require(recomputer.domain() == bytes32("alnitak.river.safety.v1"), "unexpected domain");
     }
 
+    function _requireParticipants(address agent, address challenger) internal pure {
+        require(agent != address(0), "agent is empty");
+        require(challenger != address(0), "challenger is empty");
+        require(agent != challenger, "agent and challenger must differ");
+    }
+
     function _requireBroadcastSender(address expected) internal view {
         // Only the broadcast sender matters here; caller mode and tx.origin do not affect authorization.
         // forge-lint: disable-next-line(unused-return)
@@ -109,6 +119,10 @@ abstract contract PolicyBountyMainnetBase is Script {
 
     function _requireCommitment(DissentCore.Commitment memory commitment, bytes memory inputs) internal view {
         require(commitment.status == DissentCore.Status.Open, "commitment is not Open");
+        _requireCommitmentIdentity(commitment, inputs);
+    }
+
+    function _requireCommitmentIdentity(DissentCore.Commitment memory commitment, bytes memory inputs) internal view {
         require(commitment.agent == _agent(), "unexpected agent");
         require(commitment.recomputer == _recomputerAddress(), "unexpected recomputer");
         require(commitment.policyId == _policyId(), "unexpected policy id");
@@ -122,6 +136,29 @@ abstract contract PolicyBountyMainnetBase is Script {
         require(commitment.validateGasLimit == VALIDATE_GAS_LIMIT, "unexpected validate limit");
         require(commitment.maxEvidenceLen == MAX_EVIDENCE_LEN, "unexpected evidence limit");
         require(commitment.actionHash == keccak256(bytes(ACTION)), "unexpected action");
+    }
+
+    function _requireChallengeCommitState(DissentCore core, bytes32 id, bytes memory inputs) internal view {
+        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        _requireCommitment(commitment, inputs);
+        require(block.timestamp < commitment.windowEnds, "commitment window closed");
+
+        DissentCore.Seal memory seal = core.getSeal(id, _challenger());
+        require(seal.blockNumber == 0 || seal.settled, "challenger already has live seal");
+    }
+
+    function _requireWithdrawState(DissentCore core, bytes32 id, bytes memory inputs)
+        internal
+        view
+        returns (uint256 credit)
+    {
+        DissentCore.Commitment memory commitment = core.getCommitment(id);
+        _requireCommitmentIdentity(commitment, inputs);
+        require(commitment.status == DissentCore.Status.Challenged, "commitment was not challenged");
+
+        uint256 expected = _reward() + DEPOSIT;
+        credit = core.credits(_challenger());
+        require(credit >= expected, "challenger credit below expected");
     }
 }
 
@@ -168,7 +205,7 @@ contract PolicyBountyMainnetChallengeCommit is PolicyBountyMainnetBase {
 
         bytes memory inputs = _inputs();
         bytes memory evidence = _evidence();
-        _requireCommitment(core.getCommitment(id), inputs);
+        _requireChallengeCommitState(core, id, inputs);
         (bool valid, bytes32 reason) = recomputer.validateEvidence(inputs, evidence);
         require(valid && reason == bytes32(0), "counterexample rejected");
         require(recomputer.recompute(inputs, evidence) == 1, "evidence does not violate policy");
@@ -224,9 +261,9 @@ contract PolicyBountyMainnetWithdraw is PolicyBountyMainnetBase {
         _requireDeployment();
         DissentCore core = DissentCore(_coreAddress());
         bytes32 id = vm.envBytes32("DISSENT_COMMITMENT_ID");
-        DissentCore.Commitment memory commitment = core.getCommitment(id);
-        require(commitment.status == DissentCore.Status.Challenged, "commitment was not challenged");
-        require(core.credits(_challenger()) == _reward() + DEPOSIT, "unexpected challenger credit");
+        uint256 credit = _requireWithdrawState(core, id, _inputs());
+
+        console.log("challenger credit to withdraw", credit);
 
         vm.startBroadcast();
         _requireBroadcastSender(_challenger());

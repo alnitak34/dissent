@@ -71,7 +71,11 @@ DISSENT_COMMITMENT_ID
 `PolicyBountyMainnetFlow.s.sol` separates commit, challenge commit, challenge
 reveal and withdrawal. Each run can produce at most one transaction and checks
 the registry policy, immutable code hash, expected signer and recorded state
-before broadcasting.
+before broadcasting. The challenge-commit phase also rejects a closed
+commitment window or an existing live seal locally, before Foundry can submit a
+transaction. Withdrawal accepts an accumulated challenger credit only when it
+is at least the reward plus this campaign's deposit, and logs the full amount
+that `withdrawCredit()` will transfer.
 
 ## Preflight sequence
 
