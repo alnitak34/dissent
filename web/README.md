@@ -1,17 +1,17 @@
 # Dissent web demo
 
 Interfaz estática y de solo lectura para la ejecución de **Policy Bounty**
-con un recomputer activo en `RecomputerRegistry` sobre Monad Testnet.
+con un recomputer activo en `RecomputerRegistry` sobre Monad Mainnet.
 No usa wallet, claves, backend ni dependencias JavaScript.
 
-La página consulta directamente `https://testnet-rpc.monad.xyz` y comprueba:
+La página consulta directamente `https://rpc.monad.xyz` y comprueba:
 
 - los cuatro recibos de la demo (`status = 1`, bloque y contrato esperados):
   commitment, sello, reveal y retiro;
 - el evento `ChallengeSucceeded` emitido por el core para este commitment y
-  challenger, con `newValue = 1`, `threshold = 0` y payout de 3,1 test MON;
+  challenger, con `newValue = 1`, `threshold = 0` y payout de 3,1 MON;
 - que el commitment terminó `Challenged`;
-- el evento `Withdrawn` exacto del challenger por 3,1 test MON.
+- el evento `Withdrawn` exacto del challenger por 3,1 MON.
 
 La verificación es local a esta campaña. No exige que los créditos o el escrow
 globales del contrato sigan en cero: otras campañas pueden cambiar esos saldos
@@ -25,6 +25,13 @@ enlace directo a MonadVision; los cuatro recibos completos están en una secció
 desplegable. Una lectura fallida no se muestra como prueba confirmada. El caso
 anterior de equity está documentado separadamente en `docs/LIVE_DEMO.md`;
 no se mezclan sus porcentajes ni sus transacciones con esta campaña.
+
+El replay también muestra el resultado económico completo: las cuatro
+transacciones Mainnet costaron `3.138113844 MON` en gas. El challenger pagó
+`3.088395576 MON`, recibió la recompensa de `3 MON` y recuperó su depósito de
+`0.1 MON`; por tanto terminó `0.088395576 MON` por debajo de su saldo inicial.
+Es una medición de este recorrido, no una tarifa futura ni una garantía de
+rentabilidad.
 
 Servir localmente desde la raíz del repo:
 

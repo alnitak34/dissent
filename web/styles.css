@@ -447,6 +447,7 @@ footer { border-top: 2px solid var(--ink); }
   .fit-grid h3 { margin-top: 34px; }
   .replay-control { grid-template-columns: 1fr; }
   .replay-control .button { width: 100%; margin-top: 8px; }
+  .case-summary .case-limit { font-size: 14px; line-height: 1.55; }
   .payout-rail { grid-template-columns: 1fr; gap: 16px; }
   .payout-token { justify-self: center; transform: rotate(90deg) translateX(-8px); }
   .payout-rail[data-stage="resolved"] .payout-token { transform: rotate(90deg) translateX(12px); }

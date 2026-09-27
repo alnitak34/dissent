@@ -1,21 +1,21 @@
 import { hasSuccessfulChallenge, hasWithdrawal } from "./proof.mjs";
 
-const RPC_URL = "https://testnet-rpc.monad.xyz";
-const EXPLORER = "https://testnet.monadvision.com";
-const CORE = "0x686164f708b87d1A63bEE8Aa3130298246690a87";
-const REGISTRY = "0xD92a8aa9C28168484abB6D03eC261DD1FC1b0B9b";
-const RECOMPUTER = "0xaC87125846C19A978B3D847a9E49Dd7744aa6880";
+const RPC_URL = "https://rpc.monad.xyz";
+const EXPLORER = "https://monadvision.com";
+const CORE = "0x9D673a8B5EfE76D42593b45972Fa0426648967E1";
+const REGISTRY = "0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38";
+const RECOMPUTER = "0x6dCD184c9c0db42FCD0De731F9a2855b38916758";
 const CHALLENGER = "0x00cf6ceC697E3DCB88a5972Ef083B423dfC00A02";
-const COMMITMENT = "0x84f00753bfca460938625e9e0c84d0f856065ac9722f5ac3146ac7e71342389d";
+const COMMITMENT = "0xdd6e1e25ce02dd6cad370597156da960921d4eb671d50022ab0083f31391cccb";
 const CHALLENGE_SUCCEEDED = "0x91c1883709a1e9edb879e595583d9d3b74a04df0fbaf5b3eb92587fadfc17e78";
 const WITHDRAWN = "0x7084f5476618d8e60b11ef0d7d3f06914655adb8793e28ff7f018d4c76d505d5";
 const PAYOUT = 3100000000000000000n;
 
 const transactions = [
-  { name: "Commit", detail: "Agent locks 3 test MON", hash: "0xccb717d253b65ac2ee77b892151dce3742408267fcc789fcf083b3e051220695", block: 64489596 },
-  { name: "Seal", detail: "Challenger locks 0.1 test MON with hidden evidence", hash: "0x61fc21a587b7b0f0cdf7012ac033084f724766ff1a9b490c51454bfcaf2bd898", block: 64490792 },
-  { name: "Reveal", detail: "Violation 1 exceeds threshold 0", hash: "0xa24eb7ed7aa64cf02bc6427db0b797216524098323a407b85d343436e0519c9a", block: 64494728 },
-  { name: "Challenger withdraws", detail: "3.1 test MON credit collected", hash: "0x8fd736181047468ec05ff92522c5ecd143d3b0016b4b5d7c9545841d3044010d", block: 64496394 },
+  { name: "Commit", detail: "Agent locks 3 MON", hash: "0x59c55bd184635cae41d2f00a56b90b5f5da07e12edef60f2642d727f0c476dd0", block: 108439200 },
+  { name: "Seal", detail: "Challenger locks 0.1 MON with hidden evidence", hash: "0x17e815f3f6ac6781e7981665ca741e92847a4a301771100dae15269b22321cf0", block: 108440776 },
+  { name: "Reveal", detail: "Violation 1 exceeds threshold 0", hash: "0xbc121f84234ec22fc8aace845333e3b4e169c2f55776fa55f967d70317a4f529", block: 108441453 },
+  { name: "Challenger withdraws", detail: "3.1 MON credit collected", hash: "0xf2378b1d2b3bb6420c0894c6d760576c35adb393bc71d0fce69852a4ddf8e336", block: 108442607 },
 ];
 
 const selectors = {
@@ -67,7 +67,7 @@ async function readProof() {
   refresh.disabled = true;
   verdict.dataset.state = "loading";
   verdict.querySelector(".verdict-icon").textContent = "···";
-  verdict.querySelector(".label").textContent = "Reading Monad Testnet";
+  verdict.querySelector(".label").textContent = "Reading Monad Mainnet";
   verdict.querySelector("h3").textContent = "Checking the proof directly from the chain";
   document.querySelector("#verdict-detail").textContent = "Four receipts, the ChallengeSucceeded event, the challenger withdrawal and the commitment state are being checked.";
 
@@ -107,7 +107,7 @@ async function readProof() {
     verdict.querySelector(".verdict-icon").textContent = "✓";
     verdict.querySelector(".label").textContent = "Live onchain state";
     verdict.querySelector("h3").textContent = "Claim refuted · payout withdrawn";
-    document.querySelector("#verdict-detail").textContent = "Four receipts, the 1 > 0 payout event and the 3.1 test MON withdrawal confirmed. Commitment status: Challenged.";
+    document.querySelector("#verdict-detail").textContent = "Four receipts, the 1 > 0 payout event and the 3.1 MON withdrawal confirmed on Mainnet. Commitment status: Challenged.";
   } catch (error) {
     verdict.dataset.state = "error";
     verdict.querySelector(".verdict-icon").textContent = "!";

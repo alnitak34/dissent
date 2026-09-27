@@ -27,10 +27,23 @@ el número y si es honesto— la define el adaptador. Ver
 
 ## Estado
 
-Hay una versión vigente con registro y dos despliegues históricos en Monad
-Testnet:
+La versión vigente con registro está desplegada y ejecutada en Monad Mainnet.
+También se conservan dos despliegues históricos en Monad Testnet:
 
-- **Versión vigente con `RecomputerRegistry`:**
+- **Versión vigente en Monad Mainnet:**
+  [`DissentCore 0x9D67...67E1`](https://monadvision.com/address/0x9D673a8B5EfE76D42593b45972Fa0426648967E1),
+  [`RecomputerRegistry 0x2a26...8E38`](https://monadvision.com/address/0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38)
+  y [`AlnitakPolicyBountyRecomputer 0x6dCD...6758`](https://monadvision.com/address/0x6dCD184c9c0db42FCD0De731F9a2855b38916758).
+  La política activa es
+  `0xd98b72f99b52f0ac912f4a6278b95ba01a1d045bf1840f58b8a77708ca61abbc`.
+  El 27-09-2026 completó `commit → seal → reveal → withdraw`: el valor pasó de
+  `0` a `1`, el commitment terminó `Challenged` y el challenger retiró `3.1 MON`.
+  Los cuatro recibos, estados finales y costes están en
+  [`docs/MAINNET_LIVE_RUN.md`](docs/MAINNET_LIVE_RUN.md). El recorrido funcionó,
+  pero el challenger terminó `0.088395576 MON` por debajo de su saldo inicial
+  después del gas; no se presenta como rentabilidad garantizada.
+
+- **Versión histórica en Testnet con `RecomputerRegistry`:**
   [`DissentCore 0x6861...0a87`](https://testnet.monadvision.com/address/0x686164f708b87d1A63bEE8Aa3130298246690a87),
   [`RecomputerRegistry 0xD92a...0B9b`](https://testnet.monadvision.com/address/0xD92a8aa9C28168484abB6D03eC261DD1FC1b0B9b)
   y [`AlnitakPolicyBountyRecomputer 0xaC87...6880`](https://testnet.monadvision.com/address/0xaC87125846C19A978B3D847a9E49Dd7744aa6880).
@@ -63,8 +76,8 @@ esto no valida todos los posibles fallos. Las fuentes de los tres contratos de
 la versión vigente obtuvieron `Status: match` en Sourcify. La verificación de
 fuente **no es una auditoría externa**; esta sigue pendiente. La rama de
 seguridad se fusionó a `master` el 20-09-2026 mediante el PR #1 (merge commit
-`5cd68f4`), y la página pública en Vercel muestra el replay verificable de Policy
-Bounty.
+`5cd68f4`). La página pública en Vercel sigue mostrando el replay Testnet hasta
+que esta actualización Mainnet sea revisada y desplegada.
 
 Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
 lectura que comprueba la ejecución de Policy Bounty contra el RPC público. La
@@ -312,9 +325,9 @@ por tanto demuestra el recorrido técnico, **no** una búsqueda amplia o difíci
 ## Interfaz de la demo
 
 `web/` presenta la ejecución vigente de Policy Bounty con registro. Al completar
-el replay consulta Monad Testnet. No usa backend, wallet ni dependencias de
+el replay consulta Monad Mainnet. No usa backend, wallet ni dependencias de
 JavaScript. Verifica cuatro recibos, el evento de refutación, el estado
-`Challenged` y el retiro de 3,1 test MON por el challenger. La demo anterior de
+`Challenged` y el retiro de 3,1 MON por el challenger. La demo anterior de
 una mano fija permanece documentada en
 [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md), pero ya no es el caso principal de la web.
 

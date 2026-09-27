@@ -1,15 +1,16 @@
 # Monad Mainnet deployment record — Dissent
 
-Status: **deployment complete and source-verified on 2026-09-27**. The three
-contracts and the policy registration are live on Monad Mainnet. This record
-does **not** claim a complete Mainnet challenge cycle: commitment, seal, reveal,
-settlement and withdrawal remain pending and require separate approvals.
+Status: **deployment, source verification and one complete challenge cycle
+confirmed on 2026-09-27**. The three contracts and policy registration are live
+on Monad Mainnet. Commitment, seal, reveal, settlement and withdrawal were
+executed afterward and are recorded in [`MAINNET_LIVE_RUN.md`](MAINNET_LIVE_RUN.md).
 
 ## Current architecture
 
 Mainnet is a new deployment, not a migration. The verified Testnet contracts
-and public replay remain unchanged. The current release requires three
-contracts and one policy-registration transaction:
+remain as historical evidence. The reviewed web update points to the completed
+Mainnet cycle; Vercel changes only after deployment. The current release
+requires three contracts and one policy-registration transaction:
 
 1. `AlnitakPolicyBountyRecomputer`
 2. `RecomputerRegistry`
@@ -162,6 +163,19 @@ All four receipts returned `status = 1`:
 Post-deploy reads confirmed the registry link, active policy, curator, policy
 limits, `MIN_WINDOW = 3600`, `MONAD_TX_GAS_LIMIT = 30,000,000`,
 `REFERENCE_GAS_PRICE = 100 gwei` and `escrowed = 0`.
+
+## Mainnet challenge cycle — 2026-09-27
+
+The separately approved challenge flow also completed with four `status = 1`
+receipts. The commitment finished `Challenged`, the challenger withdrew the
+`3.1 MON` credit, and final reads returned `credits = 0`, `escrowed = 0` and a
+zero core balance. Full hashes, blocks, gas, balances and the measured economic
+shortfall are in [`MAINNET_LIVE_RUN.md`](MAINNET_LIVE_RUN.md).
+
+The operational reveal declared the full 30M gas limit and cost `3.06 MON` at
+the effective `102 gwei` price. The challenger spent `3.088395576 MON` across
+seal, reveal and withdrawal, so the `3 MON` bounty did not fully reimburse this
+specific route. This finding must remain visible in the public replay.
 
 ## Source verification
 

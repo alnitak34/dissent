@@ -75,9 +75,10 @@ that fees are charged from the declared gas limit rather than gas used.
 - Repository: **[ADD URL AND JUDGE ACCESS DECISION]**
 - Track: Trust, Identity & AI Infrastructure
 - Verified deployments: Monad Testnet and Monad Mainnet
-- Complete recorded financial cycle: Monad Testnet only
-- Testnet evidence and receipts: see `docs/POLICY_BOUNTY_DEPLOYMENT.md` and the
-  public demo.
+- Complete recorded financial cycles: Monad Testnet and Monad Mainnet
+- Mainnet evidence and receipts: see `docs/MAINNET_LIVE_RUN.md`. The web code
+  targets these receipts; the public Vercel URL remains unchanged until this
+  reviewed update is deployed.
 - Source verification, contract addresses and transaction receipts must be
   linked directly in the final submission.
 
@@ -88,11 +89,11 @@ that fees are charged from the declared gas limit rather than gas used.
 | Project identity | `Dissent`; logo at `web/assets/dissent-mark-1024.png` | Ready |
 | One-line description | Draft above | Ready for final language review |
 | Long description | Draft above | Ready for final language review |
-| Live product | <https://dissent-henna.vercel.app/> | Working; merge the approved visual PR before final capture |
+| Live product | <https://dissent-henna.vercel.app/> | Working; deploy and re-audit the Mainnet replay update before final capture |
 | Code link | <https://github.com/alnitak34/dissent> | Repository-access decision pending; judges must be able to verify the work |
 | Technical demo | No final video URL recorded | Record and upload |
 | Pitch video | No final video URL recorded | Record and upload |
-| Onchain evidence | Recorded Testnet settlement; verified Mainnet deployment and policy registration | Complete the Mainnet financial cycle before presenting it as settlement evidence |
+| Onchain evidence | Complete Mainnet commit, seal, successful reveal and withdrawal; source-verified deployment | Ready after final link audit |
 
 ## Evidence to show, not merely claim
 
@@ -102,8 +103,8 @@ that fees are charged from the declared gas limit rather than gas used.
   `AlnitakPolicyBountyRecomputer 0xaC87125846C19A978B3D847a9E49Dd7744aa6880`.
 - Active policy ID:
   `0xd50b859dbdf6d6fcd167fefb8626bc64bd44683881f58098c24612a720e09cef`.
-- The public replay reads the recorded receipts and final state from Monad
-  Testnet rather than simulating an outcome locally.
+- The replay code reads the four recorded Mainnet receipts and final commitment
+  state rather than simulating an outcome locally.
 - A separate Testnet transaction exercised the non-payable technical-fault
   classification. This is one concrete path, not proof that every EVM failure
   has been audited.
@@ -114,36 +115,28 @@ that fees are charged from the declared gas limit rather than gas used.
   `AlnitakPolicyBountyRecomputer 0x6dCD184c9c0db42FCD0De731F9a2855b38916758`.
 - Mainnet policy ID:
   `0xd98b72f99b52f0ac912f4a6278b95ba01a1d045bf1840f58b8a77708ca61abbc`.
-- The three Mainnet source submissions returned `Status: match`; the Mainnet
-  challenge settlement and withdrawal have not yet been executed.
+- The three Mainnet source submissions returned `Status: match`. The complete
+  Mainnet challenge and withdrawal are recorded in `docs/MAINNET_LIVE_RUN.md`.
 
 ## Mainnet statement
 
 ### Current accurate statement
 
-Dissent's three-contract architecture and policy registration are deployed and
-source-verified on Monad Mainnet. Post-deploy reads confirmed the active policy,
-registry linkage and core invariants. The complete financial challenge cycle is
-still evidenced on Monad Testnet; no Mainnet settlement or withdrawal is
-claimed yet.
-
-### B. Only after a complete verified mainnet cycle
-
 Dissent is deployed on Monad Mainnet. The three contracts, policy registration,
 challenge settlement and withdrawal are linked below and their final state has
-been read back from chain.
+been read back from chain. The challenger received the `3.1 MON` credit, then
+withdrew it; final reads returned zero credit, zero escrow and zero core balance.
+The route was technically successful but economically negative for the
+challenger by `0.088395576 MON` after gas.
 
 - DissentCore: `0x9D673a8B5EfE76D42593b45972Fa0426648967E1`
 - RecomputerRegistry: `0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38`
 - Policy recomputer: `0x6dCD184c9c0db42FCD0De731F9a2855b38916758`
 - Policy registration: `0x43bf368d0ddc5243c277c3c1e14bbf208dc4f57e98c731c14484a4cb6fab49a9`
-- Agent commitment: **[MAINNET TX]**
-- Challenge seal: **[MAINNET TX]**
-- Challenge reveal: **[MAINNET TX]**
-- Withdrawal: **[MAINNET TX]**
-
-Do not use version B after contract deployment alone. It requires verified
-source, invariant reads and the complete financial flow.
+- Agent commitment: `0x59c55bd184635cae41d2f00a56b90b5f5da07e12edef60f2642d727f0c476dd0`
+- Challenge seal: `0x17e815f3f6ac6781e7981665ca741e92847a4a301771100dae15269b22321cf0`
+- Challenge reveal: `0xbc121f84234ec22fc8aace845333e3b4e169c2f55776fa55f967d70317a4f529`
+- Withdrawal: `0xf2378b1d2b3bb6420c0894c6d760576c35adb393bc71d0fce69852a4ddf8e336`
 
 ## Mainnet decision gate
 
@@ -226,19 +219,17 @@ Draft spoken script:
 
 - **[FINAL PUBLIC REPOSITORY OR JUDGE ACCESS PATH]**
 - **[FINAL VIDEO URL]**
-- **[FINAL MAINNET OR TESTNET RECEIPT SET]**
+- Mainnet receipt set: `docs/MAINNET_LIVE_RUN.md`
 - **[SCREENSHOTS / COVER IMAGE]**
 - Final portal copy checked against the fields exposed when submissions open.
 
 ## Remaining blockers, in order
 
-1. Complete and independently read back the Mainnet commitment, seal, reveal,
-   settlement and withdrawal before replacing the complete Testnet evidence.
-2. Merge only the reviewed visual PR and perform the final mobile/desktop truth
+1. Deploy the reviewed Mainnet replay and perform the final mobile/desktop truth
    audit of the public site.
-3. Decide how judges will access the code; open source is encouraged by Monad,
+2. Decide how judges will access the code; open source is encouraged by Monad,
    but verification access is the requirement stated on the official page.
-4. Record and upload the technical demo.
-5. Record and upload the founder/problem pitch.
-6. Replace every placeholder and perform a final factual audit before entering
+3. Record and upload the technical demo.
+4. Record and upload the founder/problem pitch.
+5. Replace every placeholder and perform a final factual audit before entering
    text in the portal.

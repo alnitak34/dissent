@@ -9,7 +9,7 @@
     />
     <title>Dissent — Counterexample bounties for agent policies</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260927-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260927-mainnet" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -23,7 +23,7 @@
       </a>
       <div class="network">
         <img src="./assets/monad-mark.svg" alt="" />
-        <span>Recorded on Monad Testnet</span>
+        <span>Recorded on Monad Mainnet</span>
       </div>
     </header>
 
@@ -37,7 +37,7 @@
             Monad reruns the committed policy and pays when the boundary
             breaks. The recorded case uses poker; DissentCore does not.
           </p>
-          <div class="hero-outcome" aria-label="Recorded testnet outcome">
+          <div class="hero-outcome" aria-label="Recorded mainnet outcome">
             <span>RECORDED OUTCOME</span>
             <strong>COUNTEREXAMPLE ACCEPTED</strong>
             <b>1 &gt; 0</b>
@@ -52,7 +52,7 @@
         <aside class="hero-claim" aria-label="Preview of the Alnitak policy challenge">
           <span class="case-stamp" aria-hidden="true">RECORDED<br />CASE</span>
           <div class="claim-window-top">
-            <span>CASE 01 / ALNITAK V1</span><span>MONAD TESTNET</span>
+            <span>CASE 01 / ALNITAK V1</span><span>MONAD MAINNET</span>
           </div>
           <p class="hero-card-title">One rule. One sealed counterexample.</p>
           <div class="hero-test">
@@ -75,8 +75,8 @@
       </section>
 
       <section class="proof-shell" id="proof">
-        <div class="completed-result" aria-label="Completed testnet result">
-          <span>COMPLETED TESTNET RESULT</span>
+        <div class="completed-result" aria-label="Completed mainnet result">
+          <span>COMPLETED MAINNET RESULT</span>
           <strong>
             A challenger found an allowed hand where Alnitak's call fell below
             the rule's required safety margin.
@@ -91,13 +91,13 @@
           <p>
             Monad's execution budget lets the deterministic recomputation and
             settlement happen onchain, while the bounty, result and payout stay
-            publicly inspectable. This is a working testnet settlement, not a
-            claim of external adoption or a mainnet launch.
+            publicly inspectable. This is a completed Mainnet settlement, not
+            a claim of external adoption or an external security audit.
           </p>
         </div>
         <div class="proof-heading">
           <div>
-            <p class="eyebrow">First live case · Alnitak's river policy</p>
+            <p class="eyebrow">First Mainnet case · Alnitak's river policy</p>
             <h2>Can one real hand break the agent's rule?</h2>
           </div>
           <button id="reset-replay" class="refresh" type="button">
@@ -138,7 +138,7 @@
         <div class="replay-control">
           <p id="replay-copy">The challenger commits a hash of the evidence and locks a deposit. The scenario remains hidden until reveal.</p>
           <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
-          <small>This replays a completed testnet case. Verify its receipts at the end.</small>
+          <small>This replays a completed Mainnet case. Verify its receipts at the end.</small>
         </div>
 
         <div class="case-summary replay-summary" hidden>
@@ -148,15 +148,16 @@
             already specified by the recomputer, that call fell below the promised
             safety margin.</strong>
             The recomputer returned violation <code>1</code> against the allowed maximum
-            <code>0</code>. Dissent credited the 3.00 test MON bounty plus the returned
-            0.10 test MON deposit. The challenger then withdrew the full 3.10 test MON credit.
+            <code>0</code>. Dissent credited the 3.00 MON bounty plus the returned
+            0.10 MON deposit. The challenger then withdrew the full 3.10 MON credit.
           </p>
           <p class="case-limit">
             This tests a specific historical v1 rule, not all of Alnitak. The policy
             was developed after observing part of the history; prospective validation
-            and external audit remain pending. The four replay transactions cost
-            2.460526921375119108 test MON in gas; a 3.1 MON credit is not a
-            3.1 MON net profit.
+            and external audit remain pending. The four Mainnet transactions cost
+            3.138113844 MON in gas. The challenger spent 3.088395576 MON in gas,
+            received the 3.00 MON bounty and recovered its 0.10 MON deposit, so
+            this execution ended 0.088395576 MON below its starting balance.
           </p>
         </div>
 
@@ -164,7 +165,7 @@
           <div class="verdict" id="verdict" data-state="loading" aria-live="polite">
             <span class="verdict-icon" aria-hidden="true">···</span>
             <div>
-              <p class="label">Reading Monad Testnet</p>
+              <p class="label">Reading Monad Mainnet</p>
               <h3>Checking the proof directly from the chain</h3>
               <p id="verdict-detail">Four receipts, the success event, the withdrawal and the final contract state are being checked.</p>
             </div>
@@ -178,7 +179,7 @@
           </div>
 
           <details class="receipt-details">
-            <summary>Inspect all four testnet transactions</summary>
+            <summary>Inspect all four Mainnet transactions</summary>
             <p>The full sequence includes the commitment, evidence seal, successful reveal and challenger withdrawal.</p>
             <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
           </details>
@@ -190,7 +191,7 @@
               <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
               <div><dt>RecomputerRegistry</dt><dd id="registry-address"></dd></div>
               <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
-              <div><dt>RPC</dt><dd>testnet-rpc.monad.xyz</dd></div>
+              <div><dt>RPC</dt><dd>rpc.monad.xyz</dd></div>
             </dl>
           </details>
 
@@ -265,7 +266,7 @@
               bounty in one public onchain flow.
             </p>
             <p class="monad-proof">
-              On testnet, the complete path is recorded: commit, sealed
+              On Mainnet, the complete path is recorded: commit, sealed
               evidence, deterministic recomputation and withdrawal.
             </p>
           </div>
@@ -301,7 +302,7 @@
           Dissent is not an oracle of truth. The registry fixes the approved
           recomputer, its code hash, deposit and execution bounds. That prevents
           silent code replacement; it does not prove the domain rule is correct.
-          The testnet recomputer has not undergone an external audit.
+          The Mainnet recomputer has not undergone an external audit.
         </p>
         <div class="closing-lockup">
           <strong>DISSENT</strong>
@@ -320,6 +321,6 @@
       <p>No admin · no proxy · pull-based payouts</p>
     </footer>
 
-    <script src="./app.js" type="module"></script>
+    <script src="./app.js?v=20260927-mainnet" type="module"></script>
   </body>
 </html>
