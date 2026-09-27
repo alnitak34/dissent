@@ -72,13 +72,13 @@ that fees are charged from the declared gas limit rather than gas used.
 ## Working product and evidence
 
 - Public demo: <https://dissent-henna.vercel.app/>
-- Repository: **[ADD URL AND JUDGE ACCESS DECISION]**
+- Repository: <https://github.com/alnitak34/dissent> — currently private; it
+  must be made public before submission.
 - Track: Trust, Identity & AI Infrastructure
 - Verified deployments: Monad Testnet and Monad Mainnet
 - Complete recorded financial cycles: Monad Testnet and Monad Mainnet
-- Mainnet evidence and receipts: see `docs/MAINNET_LIVE_RUN.md`. The web code
-  targets these receipts; the public Vercel URL remains unchanged until this
-  reviewed update is deployed.
+- Mainnet evidence and receipts: see `docs/MAINNET_LIVE_RUN.md`. The public web
+  deployment presents these receipts and reads their final state from Monad.
 - Source verification, contract addresses and transaction receipts must be
   linked directly in the final submission.
 
@@ -89,10 +89,9 @@ that fees are charged from the declared gas limit rather than gas used.
 | Project identity | `Dissent`; logo at `web/assets/dissent-mark-1024.png` | Ready |
 | One-line description | Draft above | Ready for final language review |
 | Long description | Draft above | Ready for final language review |
-| Live product | <https://dissent-henna.vercel.app/> | Working; deploy and re-audit the Mainnet replay update before final capture |
-| Code link | <https://github.com/alnitak34/dissent> | Repository-access decision pending; judges must be able to verify the work |
-| Technical demo | No final video URL recorded | Record and upload |
-| Pitch video | No final video URL recorded | Record and upload |
+| Live product | <https://dissent-henna.vercel.app/> | Working Mainnet replay; run the final mobile/desktop factual audit before capture |
+| Code link | <https://github.com/alnitak34/dissent> | Private; make public before submission and keep public as required by the rules |
+| Public video | No final video URL recorded | Record and upload one video, maximum 3 minutes |
 | Onchain evidence | Complete Mainnet commit, seal, successful reveal and withdrawal; source-verified deployment | Ready after final link audit |
 
 ## Evidence to show, not merely claim
@@ -161,7 +160,7 @@ The current dry-run in `docs/MAINNET_PREPARATION.md` is a snapshot, not a price
 quote. Monad charges `gas_limit * price_per_gas`; it must be repeated immediately
 before a financial decision.
 
-## Technical demo — target maximum 3 minutes
+## Public submission video — maximum 3 minutes
 
 1. **Problem.** “Agents test the states they expect. Dissent funds the search
    for the state they missed.”
@@ -178,9 +177,7 @@ before a financial decision.
 7. **Boundary.** Poker is the first adapter; every other domain needs its own
    deterministic, reviewed recomputer.
 
-## Pitch video — target maximum 2 minutes
-
-Draft spoken script:
+Draft spoken script for that same video:
 
 > Hi, I’m Julieth, and I build under the name Alnitak. While operating my poker
 > agent, I found a decision that looked justified under its original model but
@@ -217,7 +214,7 @@ Draft spoken script:
 
 ## Submission assets still required
 
-- **[FINAL PUBLIC REPOSITORY OR JUDGE ACCESS PATH]**
+- Public repository: <https://github.com/alnitak34/dissent> (currently private)
 - **[FINAL VIDEO URL]**
 - Mainnet receipt set: `docs/MAINNET_LIVE_RUN.md`
 - **[SCREENSHOTS / COVER IMAGE]**
@@ -225,11 +222,8 @@ Draft spoken script:
 
 ## Remaining blockers, in order
 
-1. Deploy the reviewed Mainnet replay and perform the final mobile/desktop truth
-   audit of the public site.
-2. Decide how judges will access the code; open source is encouraged by Monad,
-   but verification access is the requirement stated on the official page.
-3. Record and upload the technical demo.
-4. Record and upload the founder/problem pitch.
-5. Replace every placeholder and perform a final factual audit before entering
-   text in the portal.
+1. Record and upload the single public video of no more than 3 minutes.
+2. Make the repository public before submission and keep it public as required
+   by the rules.
+3. Replace every remaining placeholder and perform a final factual and link
+   audit before entering text in the portal.

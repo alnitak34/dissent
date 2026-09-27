@@ -76,8 +76,8 @@ esto no valida todos los posibles fallos. Las fuentes de los tres contratos de
 la versión vigente obtuvieron `Status: match` en Sourcify. La verificación de
 fuente **no es una auditoría externa**; esta sigue pendiente. La rama de
 seguridad se fusionó a `master` el 20-09-2026 mediante el PR #1 (merge commit
-`5cd68f4`). La página pública en Vercel sigue mostrando el replay Testnet hasta
-que esta actualización Mainnet sea revisada y desplegada.
+`5cd68f4`). La página pública en Vercel reproduce el ciclo Mainnet y comprueba
+sus recibos y estado final mediante consultas de solo lectura.
 
 Hay dos adaptadores de póker, puentes en Python y una interfaz web de solo
 lectura que comprueba la ejecución de Policy Bounty contra el RPC público. La
@@ -98,6 +98,23 @@ siendo trabajo futuro.
 
 `src/` fuera de `adapters/` es solo el protocolo y la frontera: nada de un
 dominio concreto vive ahí.
+
+## Arquitectura y stack
+
+Dissent tiene cuatro capas:
+
+1. `DissentCore` custodia los fondos y liquida los desafíos.
+2. `RecomputerRegistry` fija las políticas permitidas y sus límites.
+3. Los recomputers implementan la regla determinista de cada dominio.
+4. El bridge prepara entradas y evidencia; la web reproduce y verifica recibos
+   sin custodiar claves ni enviar transacciones.
+
+Stack verificado en este repositorio:
+
+- Solidity 0.8.24, Foundry y `forge-std` para contratos, scripts y pruebas.
+- Python, usando solo su biblioteca estándar, para el bridge y el corpus.
+- HTML, CSS y JavaScript nativo para la web estática; el servidor Node local
+  también usa solo módulos incorporados.
 
 ## Tabla de resultados de un challenge
 
@@ -337,6 +354,26 @@ node web/serve.mjs
 
 Abrir `http://127.0.0.1:4173`. Instrucciones y alcance exacto:
 [`web/README.md`](web/README.md).
+
+## Origen, licencia y herramientas de IA
+
+El historial de este repositorio comienza el 12-09-2026. El protocolo Dissent,
+el registro, los flujos de bounty, el bridge y la experiencia web se
+construyeron dentro de ese historial.
+
+La política de póker y ciertos replays históricos proceden de trabajo
+preexistente de Alnitak, incluido `strategy.py` en el commit `84dbf79` de
+`alnitak34/poker-bot`. Se usan como primer dominio de prueba; no forman parte de
+la lógica genérica de `DissentCore`.
+
+El código propio de este repositorio se publica bajo la [licencia MIT](LICENSE).
+Las dependencias y materiales externos conservan sus términos y atribuciones,
+documentados en [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+OpenAI Codex y Anthropic Claude se utilizaron como asistentes para
+implementación, revisión, diseño de pruebas adversariales, documentación e
+iteración de la interfaz. Sus respuestas no se presentan como evidencia: las
+afirmaciones técnicas se respaldan con código, pruebas, CI y recibos onchain.
 
 ## Correr todo
 
