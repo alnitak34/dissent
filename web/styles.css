@@ -8,6 +8,7 @@
   --line: #b8ae9c;
   --acid: #d8ff2f;
   --violet: #6846e8;
+  --monad: #836ef9;
   --red: #c9382c;
   --green: #17864c;
   --max: 1180px;
@@ -156,7 +157,7 @@ h2 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -.045em; line-height: 1.
 .payout-rail > div { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
 .payout-rail > div:last-child { text-align: right; }
 .payout-rail span { color: var(--muted); }
-.payout-token { position: relative; z-index: 1; justify-self: center; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--acid); color: #111 !important; font-size: 9px; font-weight: 950; box-shadow: 0 0 24px rgba(217, 255, 67, .25); transform: translateX(-30px); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+.payout-token { position: relative; z-index: 1; justify-self: center; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--monad); color: #fff !important; font-size: 9px; font-weight: 950; box-shadow: 0 0 24px rgba(131, 110, 249, .35); transform: translateX(-30px); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
 .payout-rail[data-stage="resolved"] .payout-token { transform: translateX(30px); }
 .payout-rail[data-stage="resolved"] > div:first-child strong { color: var(--red); }
 .payout-rail[data-stage="resolved"] > div:last-child strong { color: var(--green); }
