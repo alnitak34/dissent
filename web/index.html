@@ -9,16 +9,22 @@
     />
     <title>Dissent — Counterexample bounties for agent policies</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260927-2" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
     <header class="topbar">
       <a class="wordmark" href="#top" aria-label="Dissent home">
         <img class="mark" src="./assets/dissent-mark.svg" alt="" />
-        <span>Dissent</span>
+        <span class="wordmark-copy">
+          <strong>DISSENT</strong>
+          <small>COUNTEREXAMPLE BOUNTIES</small>
+        </span>
       </a>
-      <div class="network"><span></span> Recorded on Monad Testnet</div>
+      <div class="network">
+        <img src="./assets/monad-mark.svg" alt="" />
+        <span>Recorded on Monad Testnet</span>
+      </div>
     </header>
 
     <main id="top">
@@ -27,10 +33,9 @@
           <p class="eyebrow">A market for falsifying deterministic agent rules</p>
           <h1>Agents make claims.<br /><em>Dissent funds the objection.</em></h1>
           <p class="lede">
-            Put a bounty behind a rule. Anyone can seal counterevidence.
-            Monad reruns the committed policy and moves the reward when the
-            rule breaks. The first recorded case uses Alnitak's poker agent;
-            the protocol itself does not know poker.
+            Fund a deterministic rule. A challenger seals a counterexample.
+            Monad reruns the committed policy and pays when the boundary
+            breaks. The recorded case uses poker; DissentCore does not.
           </p>
           <div class="hero-outcome" aria-label="Recorded testnet outcome">
             <span>RECORDED OUTCOME</span>
@@ -205,36 +210,21 @@
         </div>
       </section>
 
-      <section class="why">
-        <div>
-          <p class="eyebrow">Beyond this poker hand</p>
-          <h2>The hand is the proof. The protocol is the product.</h2>
-        </div>
-        <div class="why-copy">
-          <p>
-            Other agents also produce numbers that drive actions: risk scores,
-            prices, probabilities or spending limits. A rule that sounds safe
-            may have an allowed case that breaks it. A log records the error;
-            a bounty gives someone a reason to find it.
-          </p>
-          <p>
-            Dissent provides escrow, sealed challenges and settlement on Monad.
-            Each field needs its own deterministic, bounded recomputer to define
-            what counts as a valid counterexample. Risk and pricing examples are
-            possible integrations, not integrations we have built or validated.
-          </p>
-        </div>
-      </section>
-
       <section class="portability" aria-labelledby="portability-title">
         <div class="portability-intro">
-          <p class="eyebrow">Domain-blind core</p>
-          <h2 id="portability-title">Poker lives in one recomputer.<br />DissentCore does not know poker.</h2>
-          <p>
-            The core only binds a rule, calls a four-function recomputer interface,
-            compares one integer with a threshold and settles funds. Every domain
-            must supply its own bounded, deterministic recomputer.
-          </p>
+          <p class="eyebrow">The protocol, not the poker</p>
+          <h2 id="portability-title">One hand proved the mechanism.<br />Every new domain must prove its rule.</h2>
+          <div>
+            <p>
+              DissentCore binds a rule, a threshold and a reward. It does not
+              know cards, risk models or prices. Meaning lives in a bounded,
+              deterministic recomputer registered with the policy.
+            </p>
+            <p>
+              Poker is the completed case. Risk scores, prices and spending
+              limits are possible domains, not integrations we have validated.
+            </p>
+          </div>
         </div>
         <div class="architecture" aria-label="Dissent protocol architecture">
           <article>
@@ -252,7 +242,7 @@
           <article class="adapter-node">
             <span>03</span>
             <strong>Domain recomputer</strong>
-            <small>Poker today · other domains require their own proof</small>
+            <small>Poker today · every other domain needs its own proof</small>
           </article>
         </div>
         <p class="portability-limit">
@@ -261,75 +251,63 @@
         </p>
       </section>
 
+      <section class="monad-thesis" aria-labelledby="monad-title">
+        <div class="monad-kicker">
+          <img src="./assets/monad-mark.svg" alt="Monad" />
+          <span>Why Monad</span>
+        </div>
+        <div class="monad-thesis-grid">
+          <h2 id="monad-title">A challenge should settle where the claim lives.</h2>
+          <div>
+            <p>
+              Monad is built to expand what the EVM can execute. Dissent uses
+              that execution headroom to rerun a bounded policy and settle its
+              bounty in one public onchain flow.
+            </p>
+            <p class="monad-proof">
+              On testnet, the complete path is recorded: commit, sealed
+              evidence, deterministic recomputation and withdrawal.
+            </p>
+          </div>
+        </div>
+        <div class="steps" aria-label="Dissent challenge flow">
+          <article><span>01</span><h3>Commit</h3><p>Bind the rule and fund the reward.</p></article>
+          <article><span>02</span><h3>Seal</h3><p>Hide the counterexample until reveal.</p></article>
+          <article><span>03</span><h3>Recompute</h3><p>Run the registered policy onchain.</p></article>
+          <article><span>04</span><h3>Settle</h3><p>Move the bounty when the boundary breaks.</p></article>
+        </div>
+      </section>
+
       <section class="fit" aria-labelledby="fit-title">
         <div class="fit-heading">
-          <p class="eyebrow">Does your agent fit?</p>
-          <h2 id="fit-title">Five conditions. Miss one and Dissent may be the wrong tool.</h2>
+          <p class="eyebrow">Where Dissent fits</p>
+          <h2 id="fit-title">Measurable boundary. Reproducible break. Enough value to defend.</h2>
         </div>
         <div class="fit-grid">
-          <article><span>01</span><h3>Precise output</h3><p>The agent produces a numerical result or deterministic decision.</p></article>
-          <article><span>02</span><h3>Actionable boundary</h3><p>That result controls an action, limit or allocation with value at risk.</p></article>
-          <article><span>03</span><h3>Searchable break</h3><p>A challenger can search for an allowed state that violates the rule.</p></article>
-          <article><span>04</span><h3>Deterministic check</h3><p>The submitted state can be recomputed with bounded code onchain.</p></article>
-          <article><span>05</span><h3>Economics close</h3><p>The protected value is greater than the cost of finding and proving the break.</p></article>
+          <article><span>01</span><h3>Measurable</h3><p>The agent publishes a precise output and boundary.</p></article>
+          <article><span>02</span><h3>Recomputable</h3><p>A bounded deterministic program can test the evidence.</p></article>
+          <article><span>03</span><h3>Worth challenging</h3><p>The protected value exceeds the cost of finding and proving the break.</p></article>
         </div>
         <p class="fit-note">
-          Dissent is not a universal AI verifier. It does not judge intentions,
-          open-ended language or claims whose inputs cannot be authenticated.
+          Dissent does not judge intentions or open-ended language. Demand from
+          independent users is not yet established.
         </p>
-      </section>
-
-      <section class="economic-gap" aria-labelledby="economic-gap-title">
-        <div class="gap-intro">
-          <p class="eyebrow">The economic gap</p>
-          <h2 id="economic-gap-title">Agents test what they expect.<br />Reward what they missed.</h2>
-          <p>
-            The proposed use is a funded bounty when finding a breaking case is hard,
-            checking it is deterministic, and the underlying decision controls meaningful
-            value. Demand from independent users is not yet established.
-          </p>
-        </div>
-        <div class="gap-options">
-          <article>
-            <span>THE AGENT</span>
-            <h3>Makes a decision</h3>
-            <p>Publishes the boundary, allowed challenge space and a reward.</p>
-          </article>
-          <article>
-            <span>CHALLENGERS</span>
-            <h3>Search for the break</h3>
-            <p>Compete to find an allowed counterexample the agent did not defend.</p>
-          </article>
-          <article class="selected">
-            <span>DISSENT</span>
-            <h3>Checks and pays</h3>
-            <p>The bound recomputer adjudicates the counterexample without a panel or AI judge.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="steps">
-        <article><span>01</span><h3>Commit</h3><p>The agent binds a rule, inputs and threshold and escrows a reward.</p></article>
-        <article><span>02</span><h3>Seal</h3><p>A challenger hides evidence before revealing it.</p></article>
-        <article><span>03</span><h3>Recompute</h3><p>A deterministic recomputer recalculates the value onchain.</p></article>
-        <article><span>04</span><h3>Settle</h3><p>The contract pays according to whether the threshold broke.</p></article>
       </section>
 
       <section class="boundary">
         <p class="eyebrow">Trust boundary</p>
         <h2>The protocol guarantees the mechanism.<br />The recomputer defines the meaning.</h2>
         <p>
-          Dissent is not an oracle of truth. A registry curator approves each
-          policy before agents can use it. The registry entry fixes the
-          recomputer address, runtime code hash, deposit and execution bounds.
-          The core checks the active policy and code hash at commitment, then
-          checks the stored code hash again at reveal. This prevents silent code
-          replacement; it does not prove that the domain rule is correct. This
-          testnet recomputer has not undergone an external audit.
+          Dissent is not an oracle of truth. The registry fixes the approved
+          recomputer, its code hash, deposit and execution bounds. That prevents
+          silent code replacement; it does not prove the domain rule is correct.
+          The testnet recomputer has not undergone an external audit.
         </p>
-        <a href="./docs.html#integration">
-          Build a recomputer →
-        </a>
+        <div class="closing-lockup">
+          <strong>DISSENT</strong>
+          <span>Fund the objection. Verify the break. Settle on Monad.</span>
+          <a href="./docs.html#integration">Build a recomputer →</a>
+        </div>
       </section>
     </main>
 
