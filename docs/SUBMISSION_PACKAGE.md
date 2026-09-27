@@ -74,7 +74,8 @@ that fees are charged from the declared gas limit rather than gas used.
 - Public demo: <https://dissent-henna.vercel.app/>
 - Repository: **[ADD URL AND JUDGE ACCESS DECISION]**
 - Track: Trust, Identity & AI Infrastructure
-- Current verified network: Monad Testnet
+- Verified deployments: Monad Testnet and Monad Mainnet
+- Complete recorded financial cycle: Monad Testnet only
 - Testnet evidence and receipts: see `docs/POLICY_BOUNTY_DEPLOYMENT.md` and the
   public demo.
 - Source verification, contract addresses and transaction receipts must be
@@ -91,7 +92,7 @@ that fees are charged from the declared gas limit rather than gas used.
 | Code link | <https://github.com/alnitak34/dissent> | Repository-access decision pending; judges must be able to verify the work |
 | Technical demo | No final video URL recorded | Record and upload |
 | Pitch video | No final video URL recorded | Record and upload |
-| Onchain evidence | Recorded Testnet settlement and fault classification | Choose the final Testnet or completed Mainnet receipt set |
+| Onchain evidence | Recorded Testnet settlement; verified Mainnet deployment and policy registration | Complete the Mainnet financial cycle before presenting it as settlement evidence |
 
 ## Evidence to show, not merely claim
 
@@ -107,14 +108,24 @@ that fees are charged from the declared gas limit rather than gas used.
   classification. This is one concrete path, not proof that every EVM failure
   has been audited.
 - Local tests and CI are engineering evidence, not an external security audit.
+- Verified Mainnet deployment:
+  `DissentCore 0x9D673a8B5EfE76D42593b45972Fa0426648967E1`,
+  `RecomputerRegistry 0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38`, and
+  `AlnitakPolicyBountyRecomputer 0x6dCD184c9c0db42FCD0De731F9a2855b38916758`.
+- Mainnet policy ID:
+  `0xd98b72f99b52f0ac912f4a6278b95ba01a1d045bf1840f58b8a77708ca61abbc`.
+- The three Mainnet source submissions returned `Status: match`; the Mainnet
+  challenge settlement and withdrawal have not yet been executed.
 
-## Mainnet statement — choose exactly one
+## Mainnet statement
 
-### A. If mainnet has not completed
+### Current accurate statement
 
-Dissent is verified through a complete recorded settlement on Monad Testnet.
-Mainnet deployment has been prepared and dry-run, but has not been broadcast.
-The submission does not claim a mainnet launch.
+Dissent's three-contract architecture and policy registration are deployed and
+source-verified on Monad Mainnet. Post-deploy reads confirmed the active policy,
+registry linkage and core invariants. The complete financial challenge cycle is
+still evidenced on Monad Testnet; no Mainnet settlement or withdrawal is
+claimed yet.
 
 ### B. Only after a complete verified mainnet cycle
 
@@ -122,10 +133,10 @@ Dissent is deployed on Monad Mainnet. The three contracts, policy registration,
 challenge settlement and withdrawal are linked below and their final state has
 been read back from chain.
 
-- DissentCore: **[MAINNET ADDRESS]**
-- RecomputerRegistry: **[MAINNET ADDRESS]**
-- Policy recomputer: **[MAINNET ADDRESS]**
-- Policy registration: **[MAINNET TX]**
+- DissentCore: `0x9D673a8B5EfE76D42593b45972Fa0426648967E1`
+- RecomputerRegistry: `0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38`
+- Policy recomputer: `0x6dCD184c9c0db42FCD0De731F9a2855b38916758`
+- Policy registration: `0x43bf368d0ddc5243c277c3c1e14bbf208dc4f57e98c731c14484a4cb6fab49a9`
 - Agent commitment: **[MAINNET TX]**
 - Challenge seal: **[MAINNET TX]**
 - Challenge reveal: **[MAINNET TX]**
@@ -221,8 +232,8 @@ Draft spoken script:
 
 ## Remaining blockers, in order
 
-1. Decide whether the final evidence remains the complete Testnet run or is
-   replaced by a complete verified Mainnet run.
+1. Complete and independently read back the Mainnet commitment, seal, reveal,
+   settlement and withdrawal before replacing the complete Testnet evidence.
 2. Merge only the reviewed visual PR and perform the final mobile/desktop truth
    audit of the public site.
 3. Decide how judges will access the code; open source is encouraged by Monad,
