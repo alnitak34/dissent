@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Dissent funds counterexample bounties for deterministic agent policies and settles valid breaks on Monad."
+      content="Dissent is a counterexample bounty protocol for deterministic agent rules, with a completed challenge and payout recorded on Monad Mainnet."
     />
-    <title>Dissent — Counterexample bounties for agent policies</title>
+    <meta property="og:title" content="Dissent — Counterexample bounties for agent rules" />
+    <meta property="og:description" content="An agent locked 3 MON behind a measurable rule. A challenger broke it, and Dissent paid 3.10 MON on Monad Mainnet." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./assets/dissent-mark-1024.png" />
+    <meta name="theme-color" content="#171511" />
+    <title>Dissent — Counterexample bounties for agent rules</title>
     <link rel="icon" href="./assets/dissent-mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css?v=20260927-mainnet" />
   </head>
@@ -21,6 +26,12 @@
           <small>COUNTEREXAMPLE BOUNTIES</small>
         </span>
       </a>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <a href="#case">Case</a>
+        <a href="#protocol">Protocol</a>
+        <a href="#contracts">Contracts</a>
+        <a href="./docs.html#integration">Docs</a>
+      </nav>
       <div class="network">
         <img src="./assets/monad-mark.svg" alt="" />
         <span>Recorded on Monad Mainnet</span>
@@ -30,18 +41,18 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">A market for falsifying deterministic agent rules</p>
-          <h1>Agents make claims.<br /><em>Dissent funds the objection.</em></h1>
+          <p class="eyebrow">Counterexample bounty protocol</p>
+          <h1>Agents make rules.<br /><em>Dissent funds the objection.</em></h1>
           <p class="lede">
-            Fund a deterministic rule. A challenger seals a counterexample.
-            Monad reruns the committed policy and pays when the boundary
-            breaks. The recorded case uses poker; DissentCore does not.
+            An agent puts MON behind a measurable rule. A challenger gets paid
+            for proving one permitted case where that committed rule breaks.
+            A deterministic recomputer settles the result onchain.
           </p>
           <div class="hero-outcome" aria-label="Recorded mainnet outcome">
-            <span>RECORDED OUTCOME</span>
-            <strong>COUNTEREXAMPLE ACCEPTED</strong>
-            <b>1 &gt; 0</b>
-            <small>Bounty released · challenger withdrawal confirmed</small>
+            <span>CASE D-001 · MAINNET</span>
+            <strong>A challenger broke the agent's rule.</strong>
+            <b>3.10 MON</b>
+            <small>The contract credited and the challenger withdrew the payout.</small>
           </div>
           <div class="hero-actions">
             <a class="button primary" href="#proof" data-start-replay>Replay the completed challenge</a>
@@ -49,7 +60,7 @@
           </div>
         </div>
 
-        <aside class="hero-claim" aria-label="Preview of the Alnitak policy challenge">
+        <aside class="hero-claim" aria-label="Preview of the Alnitak rule challenge">
           <span class="case-stamp" aria-hidden="true">RECORDED<br />CASE</span>
           <div class="claim-window-top">
             <span>CASE 01 / ALNITAK V1</span><span>MONAD MAINNET</span>
@@ -57,7 +68,7 @@
           <p class="hero-card-title">One rule. One sealed counterexample.</p>
           <div class="hero-test">
             <div class="hero-test-side">
-              <span>THE CLAIM</span>
+              <span>THE RULE</span>
               <strong>0</strong>
               <small>No violation at commit</small>
             </div>
@@ -74,7 +85,8 @@
         </aside>
       </section>
 
-      <section class="proof-shell" id="proof">
+      <section class="proof-shell" id="case">
+        <div id="proof" aria-hidden="true"></div>
         <div class="completed-result" aria-label="Completed mainnet result">
           <span>COMPLETED MAINNET RESULT</span>
           <strong>
@@ -92,12 +104,58 @@
             Monad's execution budget lets the deterministic recomputation and
             settlement happen onchain, while the bounty, result and payout stay
             publicly inspectable. This is a completed Mainnet settlement, not
-            a claim of external adoption or an external security audit.
+            evidence of external adoption or an external security audit. A
+            separate earlier cycle was recorded on Monad Testnet; the receipts
+            in case D-001 below are Mainnet receipts.
           </p>
+        </div>
+
+        <div class="case-file-head">
+          <div>
+            <span>ARCHIVE / D-001</span>
+            <strong>ALNITAK RIVER SAFETY V1</strong>
+            <small>Recorded on Monad Mainnet · chain ID 143</small>
+          </div>
+          <div class="reveal-instrument" aria-live="polite" aria-label="Challenge phase instrument">
+            <div class="instrument-meta"><span id="instrument-state">RULE COMMITTED</span><b id="instrument-count">01 / 05</b></div>
+            <div class="instrument-track" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="instrument-reading"><span>BLOCK</span><strong id="instrument-block">108,439,200</strong></div>
+            <small id="instrument-window">Reveal window: not opened</small>
+          </div>
+        </div>
+
+        <div class="phase-stepper" role="tablist" aria-label="Recorded challenge phases">
+          <button type="button" role="tab" aria-selected="true" aria-controls="phase-panel" id="phase-0" data-phase="0">
+            <span>01</span><strong>Rule committed</strong><small>Block 108,439,200</small>
+          </button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="phase-panel" id="phase-1" data-phase="1">
+            <span>02</span><strong>Evidence sealed</strong><small>Block 108,440,776</small>
+          </button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="phase-panel" id="phase-2" data-phase="2">
+            <span>03</span><strong>Evidence revealed</strong><small>Block 108,441,453</small>
+          </button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="phase-panel" id="phase-3" data-phase="3">
+            <span>04</span><strong>Rule refuted</strong><small>Same reveal receipt</small>
+          </button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="phase-panel" id="phase-4" data-phase="4">
+            <span>05</span><strong>Bounty settled</strong><small>Block 108,442,607</small>
+          </button>
+        </div>
+
+        <div class="phase-receipt" id="phase-panel" role="tabpanel" aria-labelledby="phase-0" tabindex="0">
+          <div>
+            <span id="phase-kind">TRANSACTION</span>
+            <strong id="phase-title">The agent commits the rule and locks 3.00 MON.</strong>
+          </div>
+          <a id="phase-link" href="https://monadvision.com/tx/0x59c55bd184635cae41d2f00a56b90b5f5da07e12edef60f2642d727f0c476dd0" target="_blank" rel="noreferrer">
+            <code id="phase-hash">0x59c55b…476dd0</code><span>Open receipt ↗</span>
+          </a>
         </div>
         <div class="proof-heading">
           <div>
-            <p class="eyebrow">First Mainnet case · Alnitak's river policy</p>
+            <p class="eyebrow">First Mainnet case · Alnitak's river rule</p>
             <h2>Can one real hand break the agent's rule?</h2>
           </div>
           <button id="reset-replay" class="refresh" type="button">
@@ -107,16 +165,16 @@
 
         <div class="agreed-rule">
           <span>AGREED RULE</span>
-          <strong>Policy violation must stay ≤ 0. A valid result above 0 would break the claim.</strong>
+          <strong>Violation must stay ≤ 0. A valid result above 0 breaks the rule.</strong>
           <small>The contract binds a fixed onchain checker, called the recomputer, at commit.</small>
         </div>
 
-        <div class="claim-grid replay" id="replay" data-stage="claim">
+        <div class="claim-grid replay" id="replay" data-phase="0">
           <article class="claim-card">
             <p class="label">Base value · computed onchain</p>
             <p class="metric">0</p>
             <p class="comparison">violation count <strong>≤ 0</strong></p>
-            <div class="claim-result agent-result"><span></span><b id="agent-result">Claim stands</b></div>
+            <div class="claim-result agent-result"><span></span><b id="agent-result">Rule holds</b></div>
           </article>
 
           <div class="versus" aria-hidden="true"><span id="versus-copy">scenario sealed</span><b>≠</b></div>
@@ -129,15 +187,15 @@
           </article>
         </div>
 
-        <div class="payout-rail" id="payout-rail" data-stage="claim" aria-label="Economic settlement">
-          <div><span>Agent warranty</span><strong id="agent-funds">3.00 MON locked</strong></div>
+        <div class="payout-rail" id="payout-rail" data-phase="0" aria-label="Economic settlement">
+          <div><span>Agent bounty</span><strong id="agent-funds">3.00 MON locked</strong></div>
           <span class="payout-token" aria-hidden="true">MON</span>
           <div><span>Challenger</span><strong id="challenger-funds">0.10 MON deposit</strong></div>
         </div>
 
         <div class="replay-control">
           <p id="replay-copy">The challenger commits a hash of the evidence and locks a deposit. The scenario remains hidden until reveal.</p>
-          <button id="replay-action" class="button primary" type="button">Reveal the scenario</button>
+          <button id="replay-action" class="button primary" type="button">Continue to sealed evidence</button>
           <small>This replays a completed Mainnet case. Verify its receipts at the end.</small>
         </div>
 
@@ -147,12 +205,11 @@
             <strong>Alnitak's old rule said call. Under the stronger opponent model
             already specified by the recomputer, that call fell below the promised
             safety margin.</strong>
-            The recomputer returned violation <code>1</code> against the allowed maximum
-            <code>0</code>. Dissent credited the 3.00 MON bounty plus the returned
+            The recomputer returned violation 1 against the allowed maximum 0. Dissent credited the 3.00 MON bounty plus the returned
             0.10 MON deposit. The challenger then withdrew the full 3.10 MON credit.
           </p>
           <p class="case-limit">
-            This tests a specific historical v1 rule, not all of Alnitak. The policy
+            This tests a specific historical v1 rule, not all of Alnitak. The rule
             was developed after observing part of the history; prospective validation
             and external audit remain pending. The four Mainnet transactions cost
             3.138113844 MON in gas. The challenger spent 3.088395576 MON in gas,
@@ -167,7 +224,7 @@
             <div>
               <p class="label">Reading Monad Mainnet</p>
               <h3>Checking the proof directly from the chain</h3>
-              <p id="verdict-detail">Four receipts, the success event, the withdrawal and the final contract state are being checked.</p>
+              <p id="verdict-detail">Four receipts, the ChallengeSucceeded event, the challenger withdrawal and the final contract state are being checked.</p>
             </div>
           </div>
 
@@ -178,19 +235,19 @@
             </button>
           </div>
 
-          <details class="receipt-details">
-            <summary>Inspect all four Mainnet transactions</summary>
-            <p>The full sequence includes the commitment, evidence seal, successful reveal and challenger withdrawal.</p>
+          <details class="receipt-details" id="contracts">
+            <summary>Inspect the complete Mainnet record</summary>
+            <p>Five narrative phases map to four transactions: evidence revealed and rule refuted share the successful reveal receipt.</p>
             <div class="timeline" id="timeline" aria-label="Challenge transaction timeline"></div>
           </details>
 
           <details class="technical">
             <summary>Show commitment and contract details</summary>
             <dl>
-              <div><dt>Commitment</dt><dd id="commitment-id"></dd></div>
-              <div><dt>DissentCore</dt><dd id="core-address"></dd></div>
-              <div><dt>RecomputerRegistry</dt><dd id="registry-address"></dd></div>
-              <div><dt>Recomputer</dt><dd id="recomputer-address"></dd></div>
+              <div><dt>Commitment</dt><dd><code id="commitment-id"></code><button type="button" class="copy-value" data-copy-target="commitment-id">Copy</button></dd></div>
+              <div><dt>DissentCore</dt><dd><a id="core-link" target="_blank" rel="noreferrer"><code id="core-address"></code></a><button type="button" class="copy-value" data-copy-target="core-address">Copy</button></dd></div>
+              <div><dt>Registry</dt><dd><a id="registry-link" target="_blank" rel="noreferrer"><code id="registry-address"></code></a><button type="button" class="copy-value" data-copy-target="registry-address">Copy</button></dd></div>
+              <div><dt>Recomputer</dt><dd><a id="recomputer-link" target="_blank" rel="noreferrer"><code id="recomputer-address"></code></a><button type="button" class="copy-value" data-copy-target="recomputer-address">Copy</button></dd></div>
               <div><dt>RPC</dt><dd>rpc.monad.xyz</dd></div>
             </dl>
           </details>
@@ -198,12 +255,12 @@
           <details class="technical explainer">
             <summary>Why did the rule go from 0 to 1?</summary>
             <p>
-              Zero means the initial policy input contains no counterexample; it is
-              not a probability or a claim that the agent is universally safe. For
+              Zero means the initial rule input contains no counterexample; it is
+              not a probability or proof that the agent is universally safe. For
               this historical hand, the exact old-model equity was 56.8942%, above
               the required 42.4170%, so the old gate would allow the call. Under the
-              pressure model specified by this adapter, exact equity was 32.0046%:
-              below that same required margin. The adapter therefore returns 1.
+              pressure model specified by this recomputer, exact equity was 32.0046%:
+              below that same required margin. The recomputer therefore returns 1.
               These are model-based numbers, not proof of the opponent's actual cards.
               No LLM judges the submitted evidence.
             </p>
@@ -211,15 +268,41 @@
         </div>
       </section>
 
-      <section class="portability" aria-labelledby="portability-title">
+      <section class="challenger-lab" aria-labelledby="challenger-title">
+        <div class="lab-copy">
+          <p class="eyebrow">Illustrative boundary explorer</p>
+          <h2 id="challenger-title">See where this recorded rule changes.</h2>
+          <p>
+            Move the conditioned equity across the case's recorded threshold.
+            This browser control explains the boundary; it does not call the
+            recomputer and cannot submit evidence.
+          </p>
+          <p class="lab-warning"><strong>Not an onchain computation.</strong> The deployed recomputer derives equity from cards, ranges and the action trace. It does not accept this slider as evidence.</p>
+        </div>
+        <div class="lab-panel">
+          <div class="lab-readout">
+            <span>CONDITIONED EQUITY</span>
+            <strong><output id="equity-output" for="equity-control">32.00%</output></strong>
+            <small>Recorded threshold: 42.4170%</small>
+          </div>
+          <label for="equity-control">Explore the boundary</label>
+          <input id="equity-control" type="range" min="25" max="60" step="0.01" value="32.0046" />
+          <div class="lab-scale"><span>25%</span><b aria-hidden="true">threshold</b><span>60%</span></div>
+          <div class="lab-verdict" id="lab-verdict" data-result="1" aria-live="polite">
+            <span>ILLUSTRATIVE RESULT</span><strong>1 · RULE BREAKS</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="portability" id="protocol" aria-labelledby="portability-title">
         <div class="portability-intro">
           <p class="eyebrow">The protocol, not the poker</p>
           <h2 id="portability-title">One hand proved the mechanism.<br />Every new domain must prove its rule.</h2>
           <div>
             <p>
-              DissentCore binds a rule, a threshold and a reward. It does not
+              DissentCore binds a rule, a threshold and a bounty. It does not
               know cards, risk models or prices. Meaning lives in a bounded,
-              deterministic recomputer registered with the policy.
+              deterministic recomputer registered with the rule.
             </p>
             <p>
               Poker is the completed case. Risk scores, prices and spending
@@ -258,11 +341,11 @@
           <span>Why Monad</span>
         </div>
         <div class="monad-thesis-grid">
-          <h2 id="monad-title">A challenge should settle where the claim lives.</h2>
+          <h2 id="monad-title">A challenge should settle where the rule lives.</h2>
           <div>
             <p>
               Monad is built to expand what the EVM can execute. Dissent uses
-              that execution headroom to rerun a bounded policy and settle its
+              that execution headroom to rerun a bounded rule and settle its
               bounty in one public onchain flow.
             </p>
             <p class="monad-proof">
@@ -272,9 +355,9 @@
           </div>
         </div>
         <div class="steps" aria-label="Dissent challenge flow">
-          <article><span>01</span><h3>Commit</h3><p>Bind the rule and fund the reward.</p></article>
+          <article><span>01</span><h3>Commit</h3><p>Bind the rule and fund the bounty.</p></article>
           <article><span>02</span><h3>Seal</h3><p>Hide the counterexample until reveal.</p></article>
-          <article><span>03</span><h3>Recompute</h3><p>Run the registered policy onchain.</p></article>
+          <article><span>03</span><h3>Recompute</h3><p>Run the registered rule onchain.</p></article>
           <article><span>04</span><h3>Settle</h3><p>Move the bounty when the boundary breaks.</p></article>
         </div>
       </section>
@@ -295,8 +378,14 @@
         </p>
       </section>
 
-      <section class="boundary">
-        <p class="eyebrow">Trust boundary</p>
+      <section class="boundary" aria-labelledby="limits-title">
+        <p class="eyebrow">Scope and limits</p>
+        <h2 id="limits-title">What this proves. What it does not.</h2>
+        <div class="limits-grid">
+          <article><span>PROVED</span><p>The recorded Mainnet flow committed a rule, accepted one valid counterexample and credited 3.10 MON.</p></article>
+          <article><span>NOT PROVED</span><p>No external audit and no independent users yet. Risk and pricing integrations are not built.</p></article>
+        </div>
+        <p class="eyebrow boundary-kicker">Trust boundary</p>
         <h2>The protocol guarantees the mechanism.<br />The recomputer defines the meaning.</h2>
         <p>
           Dissent is not an oracle of truth. The registry fixes the approved
