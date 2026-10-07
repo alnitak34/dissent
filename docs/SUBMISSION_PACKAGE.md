@@ -96,10 +96,8 @@ value protected and the cost of finding and proving a counterexample.
 ## Working product and evidence
 
 - Public demo: <https://dissent-henna.vercel.app/>
-- Repository: <https://github.com/alnitak34/dissent> — anonymous access returned
-  `404` on 7 October 2026. The portal permits either a public repository or one
-  shared with `metropolis@hackathon.monad.xyz`; verify the chosen access path
-  before submission.
+- Public repository: <https://github.com/alnitak34/dissent> — visibility changed
+  to public and anonymous access verified on 7 October 2026.
 - Track: Trust, Identity & AI Infrastructure
 - Verified deployments: Monad Testnet and Monad Mainnet
 - Complete recorded financial cycles: Monad Testnet and Monad Mainnet
@@ -117,7 +115,7 @@ value protected and the cost of finding and proving a counterexample.
 | Long description | Draft above | Ready for final language review |
 | Go-to-market | Draft above | Honest plan; no adoption claim |
 | Live product | <https://dissent-henna.vercel.app/> | Working Mainnet replay; run the final mobile/desktop factual audit before capture |
-| Code link | <https://github.com/alnitak34/dissent> | Make public or share with the organizer address, then verify access |
+| Code link | <https://github.com/alnitak34/dissent> | Public and verified without a GitHub session |
 | Technical demo | 1080p candidate with audio: 2:46; no public URL recorded | Under the 3-minute limit |
 | Pitch video | 1080p candidate with audio: 1:24; no public URL recorded | Under the 2-minute limit |
 | Optional advertisement | 1080p candidate with audio: 0:24; no public URL recorded | Under the 30-second limit; does not affect judging |
@@ -260,8 +258,8 @@ the recorded settlement was computed by the deployed recomputer.
 
 ## Submission assets still required
 
-- Repository access: make <https://github.com/alnitak34/dissent> public or share
-  it with `metropolis@hackathon.monad.xyz`, then test the chosen access path.
+- Public repository: <https://github.com/alnitak34/dissent> — anonymous access
+  verified.
 - **[TECHNICAL DEMO VIDEO URL]**
 - **[PITCH VIDEO URL]**
 - **[OPTIONAL PROMOTIONAL VIDEO URL]**
@@ -275,11 +273,9 @@ the recorded settlement was computed by the deployed recomputer.
    correspondence with the current landing.
 2. Upload the technical demo and pitch separately and test both URLs without a
    session. The promotional clip is optional.
-3. Make the repository public or share it with the organizer address, then
-   verify access from outside the owner session.
-4. Upload the project logo and enter the prepared description, go-to-market,
+3. Upload the project logo and enter the prepared description, go-to-market,
    repository, product and video fields.
-5. Replace every remaining placeholder and perform a final factual and link
+4. Replace every remaining placeholder and perform a final factual and link
    audit before reviewing or submitting the entry.
 
 ## Portal facts observed on 7 October 2026
