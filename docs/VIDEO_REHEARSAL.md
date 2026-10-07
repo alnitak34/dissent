@@ -1,8 +1,8 @@
 # Dissent — English rehearsal
 
-Status: **practice script** aligned with the current local five-phase landing.
-It is safe to practise now. Record the final screen take only after the new
-landing is public and passes the runbook.
+Status: **practice script** aligned with the public five-phase landing observed
+on 7 October 2026. Record the final screen take only after the route passes the
+runbook immediately before recording.
 
 `/` means a short pause. `//` means breathe and let the screen settle. The
 Spanish line checks meaning; it is not spoken.
@@ -11,7 +11,7 @@ Spanish line checks meaning; it is not spoken.
 
 **Screen:** hero and recorded result.
 
-> Hi, I’m Julieth, / and I build as Alnitak. //
+> Hi, I build as Alnitak. //
 > Agents increasingly publish numerical decisions / that trigger actions. //
 > Dissent lets an operator fund a measurable rule, / and rewards a challenger
 > who proves one permitted case / where that committed rule breaks.
@@ -103,9 +103,9 @@ If the page says `NOT VERIFIED NOW`, do not speak the text above. Say:
 
 > The poker hand is the proof case, / not the product. //
 > Dissent Core contains no card logic. //
-> Any domain can define its own measurable rule, / bounded evidence / and
-> deterministic recomputer. //
-> That is the reusable protocol.
+> Another domain can integrate only by defining and reviewing / its own
+> measurable rule, / bounded evidence / and deterministic recomputer. //
+> That is the reusable protocol boundary.
 
 **Meaning:** El póker demuestra el mecanismo, pero el núcleo es reutilizable
 para otras reglas numéricas verificables.

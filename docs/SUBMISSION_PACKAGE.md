@@ -72,8 +72,9 @@ that fees are charged from the declared gas limit rather than gas used.
 ## Working product and evidence
 
 - Public demo: <https://dissent-henna.vercel.app/>
-- Repository: <https://github.com/alnitak34/dissent> — currently private; it
-  must be made public before submission.
+- Repository: <https://github.com/alnitak34/dissent> — anonymous access returned
+  `404` on 7 October 2026. Make it public and verify it in a signed-out browser
+  before submission.
 - Track: Trust, Identity & AI Infrastructure
 - Verified deployments: Monad Testnet and Monad Mainnet
 - Complete recorded financial cycles: Monad Testnet and Monad Mainnet
@@ -90,7 +91,7 @@ that fees are charged from the declared gas limit rather than gas used.
 | One-line description | Draft above | Ready for final language review |
 | Long description | Draft above | Ready for final language review |
 | Live product | <https://dissent-henna.vercel.app/> | Working Mainnet replay; run the final mobile/desktop factual audit before capture |
-| Code link | <https://github.com/alnitak34/dissent> | Private; make public before submission and keep public as required by the rules |
+| Code link | <https://github.com/alnitak34/dissent> | Not anonymously readable on 7 October 2026; make public, then verify signed out |
 | Public video | No final video URL recorded | Record and upload one video, maximum 3 minutes |
 | Onchain evidence | Complete Mainnet commit, seal, successful reveal and withdrawal; source-verified deployment | Ready after final link audit |
 
@@ -137,10 +138,11 @@ challenger by `0.088395576 MON` after gas.
 - Challenge reveal: `0xbc121f84234ec22fc8aace845333e3b4e169c2f55776fa55f967d70317a4f529`
 - Withdrawal: `0xf2378b1d2b3bb6420c0894c6d760576c35adb393bc71d0fce69852a4ddf8e336`
 
-## Mainnet decision gate
+## Completed Mainnet decision record
 
-Mainnet is a credibility signal only if the evidence is stronger than the
-existing testnet record. Before any broadcast:
+The Mainnet route has already been completed. The checklist below records the
+gate that controlled that broadcast; it is retained as provenance, not as
+pending work:
 
 1. Freeze and record the exact release commit.
 2. Merge only reviewed changes and require a clean working tree.
@@ -179,7 +181,7 @@ before a financial decision.
 
 Draft spoken script for that same video:
 
-> Hi, I’m Julieth, and I build under the name Alnitak. While operating my poker
+> Hi, I build under the name Alnitak. While operating my poker
 > agent, I found a decision that looked justified under its original model but
 > failed when one valid historical state was recomputed under the policy’s own
 > harder boundary. Logs explained the failure after it happened. They gave
@@ -207,14 +209,15 @@ Draft spoken script for that same video:
 - No external audit has been completed.
 - The first public domain adapter is poker-derived; broader applicability is an
   architectural claim supported by the interface, not demonstrated adoption.
-- The recomputer defines domain meaning. Dissent guarantees challenge mechanics,
-  not universal truth.
+- The recomputer defines domain meaning. Dissent enforces the implemented
+  challenge mechanics under their assumptions, not universal truth.
 - A reclaimed claim is not a verified claim; it only means no successful
   challenge settled before closure.
 
 ## Submission assets still required
 
-- Public repository: <https://github.com/alnitak34/dissent> (currently private)
+- Public repository: <https://github.com/alnitak34/dissent> (not anonymously
+  readable on 7 October 2026)
 - **[FINAL VIDEO URL]**
 - Mainnet receipt set: `docs/MAINNET_LIVE_RUN.md`
 - **[SCREENSHOTS / COVER IMAGE]**

@@ -20,8 +20,9 @@ caso cruza el límite.
 
 **El resultado económico depende del recomputer aprobado para la política.** El
 registro evita que cada agente introduzca un adaptador arbitrario, pero no
-demuestra que una política aprobada sea correcta. El protocolo garantiza la
-mecánica (escrow, sellado en dos fases, pagos); la **semántica** —qué significa
+demuestra que una política aprobada sea correcta. El protocolo ejecuta la
+mecánica comprometida (escrow, sellado en dos fases, pagos) bajo los supuestos
+implementados; la **semántica** —qué significa
 el número y si es honesto— la define el adaptador. Ver
 [Frontera de confianza](#frontera-de-confianza).
 
@@ -137,7 +138,7 @@ que nadie reveló un challenge exitoso antes del cierre.
 
 ## Frontera de confianza
 
-> **El protocolo garantiza la mecánica; una política registrada define la
+> **El protocolo ejecuta la mecánica comprometida bajo sus supuestos; una política registrada define la
 > semántica.**
 
 - El agente solo puede crear compromisos contra un `policyId` activo. No elige

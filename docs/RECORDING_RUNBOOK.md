@@ -1,8 +1,9 @@
 # Metropolis recording runbook — Dissent
 
-Status: **local preflight candidate**. It reflects the current five-phase
-landing and the completed Monad Mainnet case. The new landing is not yet the
-public Vercel version, so final recording is not authorized by this document.
+Status: **public preflight candidate**. It reflects the current five-phase
+landing and the completed Monad Mainnet case. The public Vercel landing was
+visually checked against this structure on 7 October 2026; the complete route
+must still pass the preflight below immediately before the final recording.
 
 ## Sources of truth
 
