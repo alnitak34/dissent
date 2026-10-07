@@ -9,8 +9,9 @@ Dissent
 
 ## One-line description
 
-Agents fund bounties on their own deterministic policies; anyone who proves a
-committed boundary wrong gets paid on Monad.
+Dissent lets agents fund measurable rules in MON and pays a challenger when a
+registered deterministic recomputer verifies a permitted counterexample
+onchain.
 
 ## Short pitch
 
@@ -69,11 +70,35 @@ while its 30 million per-transaction gas limit accommodates the measured
 recomputation path. The implementation explicitly accounts for Monad's rule
 that fees are charged from the declared gas limit rather than gas used.
 
+## Go-to-market and user acquisition — draft
+
+The first users are builders of autonomous agents whose outputs can be reduced
+to a measurable boundary and checked by a deterministic program. Dissent does
+not target open-ended judgments or every agent workflow.
+
+The initial acquisition path is integration-led rather than consumer-led:
+
+1. Publish the core contracts, interface and one complete Mainnet reference
+   adapter with reproducible receipts.
+2. Work directly with a small number of agent builders to decide whether one of
+   their existing numerical rules is bounded, valuable and cheap enough to
+   verify onchain.
+3. Build each new recomputer with the domain owner, publish its exact evidence
+   format and test it against the owner's reference implementation before any
+   value is attached.
+4. Use completed, inspectable challenge records as integration evidence in
+   Monad developer channels and direct technical outreach.
+
+This is a proposed route, not established demand. No independent team has
+integrated Dissent yet, and bounty pricing still needs validation against the
+value protected and the cost of finding and proving a counterexample.
+
 ## Working product and evidence
 
 - Public demo: <https://dissent-henna.vercel.app/>
 - Repository: <https://github.com/alnitak34/dissent> — anonymous access returned
-  `404` on 7 October 2026. Make it public and verify it in a signed-out browser
+  `404` on 7 October 2026. The portal permits either a public repository or one
+  shared with `metropolis@hackathon.monad.xyz`; verify the chosen access path
   before submission.
 - Track: Trust, Identity & AI Infrastructure
 - Verified deployments: Monad Testnet and Monad Mainnet
@@ -87,12 +112,15 @@ that fees are charged from the declared gas limit rather than gas used.
 
 | Deliverable | Current evidence | Status / next action |
 | --- | --- | --- |
-| Project identity | `Dissent`; logo at `web/assets/dissent-mark-1024.png` | Ready |
-| One-line description | Draft above | Ready for final language review |
+| Project identity | `Dissent`; 1024×1024 PNG logo at `web/assets/dissent-mark-1024.png` | Meets the portal's size and dimension limits |
+| One-line description | Draft above | Fits the portal's 200-character limit |
 | Long description | Draft above | Ready for final language review |
+| Go-to-market | Draft above | Honest plan; no adoption claim |
 | Live product | <https://dissent-henna.vercel.app/> | Working Mainnet replay; run the final mobile/desktop factual audit before capture |
-| Code link | <https://github.com/alnitak34/dissent> | Not anonymously readable on 7 October 2026; make public, then verify signed out |
-| Public video | No final video URL recorded | Record and upload one video, maximum 3 minutes |
+| Code link | <https://github.com/alnitak34/dissent> | Make public or share with the organizer address, then verify access |
+| Technical demo | 1080p candidate with audio: 2:46; no public URL recorded | Under the 3-minute limit |
+| Pitch video | 1080p candidate with audio: 1:24; no public URL recorded | Under the 2-minute limit |
+| Optional advertisement | 1080p candidate with audio: 0:24; no public URL recorded | Under the 30-second limit; does not affect judging |
 | Onchain evidence | Complete Mainnet commit, seal, successful reveal and withdrawal; source-verified deployment | Ready after final link audit |
 
 ## Evidence to show, not merely claim
@@ -162,7 +190,7 @@ The current dry-run in `docs/MAINNET_PREPARATION.md` is a snapshot, not a price
 quote. Monad charges `gas_limit * price_per_gas`; it must be repeated immediately
 before a financial decision.
 
-## Public submission video — maximum 3 minutes
+## Technical demo video — maximum 3 minutes
 
 1. **Problem.** “Agents test the states they expect. Dissent funds the search
    for the state they missed.”
@@ -203,6 +231,22 @@ Draft spoken script for that same video:
 > protected is greater than the cost of the challenge. External adoption and an
 > independent audit are still open work.
 
+## Pitch video — maximum 2 minutes
+
+Use the rendered pitch to introduce Alnitak, the problem, the mechanism and the
+reason for building Dissent. Keep the financial example visibly labelled as an
+unbuilt illustration. Do not substitute this film for the technical demo: the
+portal requires both fields separately.
+
+## Judge access instructions — draft
+
+No wallet or login is required. Open the live product and use the five phase
+tabs, or the primary action button, to replay case D-001 from rule commitment to
+bounty settlement. Each phase links to its Monad Mainnet receipt. At the end,
+expand the transaction record and use “Refresh chain state” to retry the direct
+RPC check if needed. The browser boundary explorer is explicitly illustrative;
+the recorded settlement was computed by the deployed recomputer.
+
 ## Demonstrated limitations
 
 - No independent team has integrated Dissent yet.
@@ -216,17 +260,37 @@ Draft spoken script for that same video:
 
 ## Submission assets still required
 
-- Public repository: <https://github.com/alnitak34/dissent> (not anonymously
-  readable on 7 October 2026)
-- **[FINAL VIDEO URL]**
+- Repository access: make <https://github.com/alnitak34/dissent> public or share
+  it with `metropolis@hackathon.monad.xyz`, then test the chosen access path.
+- **[TECHNICAL DEMO VIDEO URL]**
+- **[PITCH VIDEO URL]**
+- **[OPTIONAL PROMOTIONAL VIDEO URL]**
 - Mainnet receipt set: `docs/MAINNET_LIVE_RUN.md`
-- **[SCREENSHOTS / COVER IMAGE]**
+- Project logo: `web/assets/dissent-mark-1024.png`
 - Final portal copy checked against the fields exposed when submissions open.
 
 ## Remaining blockers, in order
 
-1. Record and upload the single public video of no more than 3 minutes.
-2. Make the repository public before submission and keep it public as required
-   by the rules.
-3. Replace every remaining placeholder and perform a final factual and link
-   audit before entering text in the portal.
+1. Review both local video candidates completely, including audio, privacy and
+   correspondence with the current landing.
+2. Upload the technical demo and pitch separately and test both URLs without a
+   session. The promotional clip is optional.
+3. Make the repository public or share it with the organizer address, then
+   verify access from outside the owner session.
+4. Upload the project logo and enter the prepared description, go-to-market,
+   repository, product and video fields.
+5. Replace every remaining placeholder and perform a final factual and link
+   audit before reviewing or submitting the entry.
+
+## Portal facts observed on 7 October 2026
+
+- Submission deadline shown for Europe/Brussels: `14 October 2026, 05:59 GMT+2`.
+- Required: logo, name, one-line description, long description, go-to-market,
+  GitHub repository, live product, technical demo and pitch video.
+- Repository instruction: public, or shared with
+  `metropolis@hackathon.monad.xyz`.
+- Technical demo: working product rather than slides or a code walkthrough, up
+  to 3 minutes.
+- Pitch video: team, problem and motivation, up to 2 minutes.
+- Optional product advertisement: up to 30 seconds and explicitly stated not to
+  affect judging.
