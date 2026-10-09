@@ -24,6 +24,38 @@ interface IAqueous is IAqueousJobs {
     function refund(bytes32 jobId) external;
 }
 
+interface IFiatTokenAdmin {
+    function pauser() external view returns (address);
+    function blacklister() external view returns (address);
+    function pause() external;
+    function unpause() external;
+    function blacklist(address) external;
+}
+
+/// From the review of e25e4e9: takes the deposit, then returns true from transfer without paying.
+contract ReviewDishonestToken {
+    mapping(address => uint256) public balanceOf;
+
+    function mint(address to, uint256 value) external {
+        balanceOf[to] += value;
+    }
+
+    function approve(address, uint256) external pure returns (bool) {
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        require(balanceOf[from] >= value);
+        balanceOf[from] -= value;
+        balanceOf[to] += value;
+        return true;
+    }
+
+    function transfer(address, uint256) external pure returns (bool) {
+        return true;
+    }
+}
+
 interface IERC20Min {
     function approve(address, uint256) external returns (bool);
     function balanceOf(address) external view returns (uint256);
@@ -38,8 +70,8 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
     address constant USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603;
     DissentCore constant CORE = DissentCore(0x9D673a8B5EfE76D42593b45972Fa0426648967E1);
     RecomputerRegistry constant REGISTRY = RecomputerRegistry(0x2a26e33CD2118a2D340bbA810e23a8E5CfdE8E38);
-    uint256 constant FORK_BLOCK = 111_776_000;
-    address constant DEPLOYED = 0x008652FF29d575F4009657805A1D0A0b161DCCd8;
+    uint256 constant FORK_BLOCK = 111_811_000;
+    address constant DEPLOYED = 0x4d1A62869D16AB2Bac95408445129C4927f88457;
 
     AqueousFlatDeliveryRecomputer rec;
     address buyer = makeAddr("buyer");
@@ -49,7 +81,7 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
 
     function setUp() public {
         vm.createSelectFork(vm.envOr("MONAD_RPC_URL", string("https://rpc.monad.xyz")), FORK_BLOCK);
-        rec = new AqueousFlatDeliveryRecomputer(address(AQUEOUS));
+        rec = new AqueousFlatDeliveryRecomputer(address(AQUEOUS), USDC);
         deal(USDC, buyer, 100e6);
         vm.prank(buyer);
         IERC20Min(USDC).approve(address(AQUEOUS), type(uint256).max);
@@ -65,6 +97,21 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
                 token: USDC,
                 amount: 1e6,
                 pricePerUnit: pricePerUnit,
+                deadline: uint64(block.timestamp + 3 days),
+                termsHash: keccak256("terms"),
+                salt: bytes32(++nonce)
+            })
+        );
+    }
+
+    function _jobIn(address tok, address forAgent) internal returns (bytes32 id) {
+        vm.prank(buyer);
+        id = AQUEOUS.createJob(
+            IAqueous.Terms({
+                agent: forAgent,
+                token: tok,
+                amount: 1e6,
+                pricePerUnit: 0,
                 deadline: uint64(block.timestamp + 3 days),
                 termsHash: keccak256("terms"),
                 salt: bytes32(++nonce)
@@ -102,6 +149,7 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
         assertEq(rec.scale(), 1);
         assertEq(rec.domain(), keccak256("kanmani.aqueous.flat-paid-without-delivery.v1"));
         assertEq(address(rec.aqueous()), address(AQUEOUS));
+        assertEq(rec.token(), USDC);
     }
 
     function test_openJob_isNotAViolation() public {
@@ -216,11 +264,145 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
 
     function test_failedAqueousRead_reverts_neverAZero() public {
         // An address with code that is not Aqueous: the read fails and recompute reverts.
-        AqueousFlatDeliveryRecomputer wrong = new AqueousFlatDeliveryRecomputer(USDC);
+        AqueousFlatDeliveryRecomputer wrong = new AqueousFlatDeliveryRecomputer(USDC, USDC);
         vm.expectRevert();
         wrong.recompute(abi.encode(agent, _one(bytes32(uint256(1)))), "");
         vm.expectRevert(AqueousFlatDeliveryRecomputer.ZeroAqueous.selector);
-        new AqueousFlatDeliveryRecomputer(makeAddr("eoa"));
+        new AqueousFlatDeliveryRecomputer(makeAddr("eoa"), USDC);
+        vm.expectRevert(AqueousFlatDeliveryRecomputer.ZeroToken.selector);
+        new AqueousFlatDeliveryRecomputer(address(AQUEOUS), makeAddr("eoa2"));
+    }
+
+    /* ---------------------------------------------------------------- token (review of e25e4e9) */
+
+    /// The reviewer's case: the job settles with no payment to the agent. It must never count.
+    function test_review_unpaidTokenIsRejected_atCommitAndInEvidence() public {
+        ReviewDishonestToken bad = new ReviewDishonestToken();
+        bad.mint(buyer, 10e6);
+        bytes32 j = _jobIn(address(bad), agent);
+        bytes32 good = _job(agent, 0);
+
+        // Base: refused, so a commit cannot include it.
+        vm.expectRevert(
+            abi.encodeWithSelector(AqueousFlatDeliveryRecomputer.WrongToken.selector, j, address(bad), USDC)
+        );
+        rec.recompute(_inputs(_one(j)), "");
+        bytes32 policyId = _registerPolicy();
+        vm.deal(agent, 1 ether);
+        vm.prank(agent);
+        vm.expectRevert(DissentCore.RecomputerReverted.selector);
+        CORE.commit{value: 0.5 ether}(
+            policyId, _inputs(_one(j)), 0, DissentCore.Comparator.AtMost, "x", 1 days, bytes32("s")
+        );
+
+        // After the fake payment the job is Settled with no delivery and the agent got nothing.
+        vm.prank(buyer);
+        AQUEOUS.release(j);
+        assertEq(bad.balanceOf(agent), 0);
+        assertEq(uint8(AQUEOUS.jobs(j).state), uint8(IAqueousJobs.State.Settled));
+        // Evidence path: a list that mixes it in reverts on any index, so it can only fault, never pay.
+        vm.expectRevert(
+            abi.encodeWithSelector(AqueousFlatDeliveryRecomputer.WrongToken.selector, j, address(bad), USDC)
+        );
+        rec.recompute(_inputs(_two(good, j)), _ev(0));
+        vm.expectRevert(
+            abi.encodeWithSelector(AqueousFlatDeliveryRecomputer.WrongToken.selector, j, address(bad), USDC)
+        );
+        rec.recompute(_inputs(_two(good, j)), _ev(1));
+    }
+
+    function test_pinnedUsdc_pausedOrBlacklisted_releaseReverts_noUnpaidSettled() public {
+        bytes32 a = _job(agent, 0);
+        bytes32 b = _job(agent, 0);
+        IFiatTokenAdmin t = IFiatTokenAdmin(USDC);
+
+        vm.prank(t.pauser());
+        t.pause();
+        vm.prank(buyer);
+        vm.expectRevert();
+        AQUEOUS.release(a);
+        vm.prank(t.pauser());
+        t.unpause();
+
+        vm.prank(t.blacklister());
+        t.blacklist(agent);
+        vm.prank(buyer);
+        vm.expectRevert();
+        AQUEOUS.release(b);
+
+        assertEq(uint8(AQUEOUS.jobs(a).state), uint8(IAqueousJobs.State.Open));
+        assertEq(uint8(AQUEOUS.jobs(b).state), uint8(IAqueousJobs.State.Open));
+        assertEq(rec.recompute(_inputs(_two(a, b)), ""), 0);
+    }
+
+    function test_pinnedUsdc_overdraftReverts() public {
+        address poor = makeAddr("poor");
+        vm.prank(poor);
+        vm.expectRevert();
+        IERC20Min(USDC).transfer(agent, 1);
+    }
+
+    /* ---------------------------------------------------------------- buyer control */
+
+    /// Allowed escrow behaviour: a listed buyer releases early and collects the bounty. It shows a buyer
+    /// paid before a delivery record, not agent misconduct, and the agent was paid the full amount.
+    function test_buyerControl_listedBuyerCanBreakTheClaim() public {
+        bytes32 policyId = _registerPolicy();
+        bytes32 j = _job(agent, 0);
+        bytes memory inp = _inputs(_one(j));
+        (bytes32 id, uint256 reward) = _commit(policyId, inp);
+        uint256 agentUsdc = IERC20Min(USDC).balanceOf(agent);
+
+        vm.prank(buyer);
+        AQUEOUS.release(j);
+        uint256 dep = uint256(CORE.getCommitment(id).deposit);
+        _challenge(id, inp, _ev(0), buyer);
+        assertEq(uint8(CORE.getCommitment(id).status), uint8(DissentCore.Status.Challenged));
+        uint256 before = buyer.balance;
+        vm.prank(buyer);
+        CORE.withdrawCredit();
+        assertEq(buyer.balance - before, reward + dep, "the buyer collects the bounty");
+        assertEq(IERC20Min(USDC).balanceOf(agent) - agentUsdc, 1e6, "and paid the agent the full job amount");
+    }
+
+    function test_release_isPossibleAfterDeadline_untilRefunded() public {
+        bytes32 j = _job(agent, 0);
+        vm.warp(block.timestamp + 3 days + 1);
+        vm.prank(buyer);
+        AQUEOUS.release(j);
+        assertEq(rec.recompute(_inputs(_one(j)), ""), 1, "exposure lasts while the job is Open");
+    }
+
+    /* ---------------------------------------------------------------- worst-case gas, cold */
+
+    function test_maxList_fullFlow_cold_underProposedCaps() public {
+        bytes32 policyId = _registerPolicy();
+        bytes32[] memory ids = new bytes32[](32);
+        for (uint256 i; i < 32; ++i) {
+            ids[i] = _job(agent, 0);
+        }
+        bytes memory inp = _inputs(ids);
+
+        (bytes32 id, uint256 reward) = _commit(policyId, inp);
+        emit log_named_uint("base recompute gas measured by DissentCore at commit", CORE.getCommitment(id).baseGas);
+        assertEq(uint8(CORE.getCommitment(id).status), uint8(DissentCore.Status.Open), "commit did not fault");
+
+        vm.prank(buyer);
+        AQUEOUS.release(ids[31]);
+
+        address challenger = makeAddr("challenger");
+        uint256 dep = uint256(CORE.getCommitment(id).deposit);
+        bytes32 seal = CORE.computeSeal(_ev(31), bytes32("salt"), challenger);
+        vm.deal(challenger, dep + 1 ether);
+        vm.prank(challenger);
+        CORE.challengeCommit{value: dep}(id, seal);
+        vm.roll(block.number + CORE.REVEAL_DELAY_BLOCKS());
+        vm.prank(challenger);
+        CORE.challengeReveal(id, inp, _ev(31), bytes32("salt"));
+        assertEq(uint8(CORE.getCommitment(id).status), uint8(DissentCore.Status.Challenged), "no fault, challenger won");
+        vm.prank(challenger);
+        CORE.withdrawCredit();
+        assertEq(challenger.balance, reward + dep + 1 ether);
     }
 
     /* ---------------------------------------------------------------- scope and stability */
@@ -254,6 +436,8 @@ contract AqueousFlatDeliveryRecomputerForkTest is Test {
 
     /* ---------------------------------------------------------------- gas */
 
+    /// Warm figures: the jobs were just created and the evidence call runs after the base read. For the
+    /// cold worst case see test_maxList_fullFlow_cold_underProposedCaps.
     function test_gasPerListedJob() public {
         uint256[3] memory sizes = [uint256(1), 8, 32];
         for (uint256 s; s < 3; ++s) {
