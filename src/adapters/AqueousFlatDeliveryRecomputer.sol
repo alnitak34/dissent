@@ -82,9 +82,11 @@ interface IAqueousJobs {
 /// records delivery. `release` is the buyer's call. Aqueous lets the buyer release an Open job at any
 /// time, also after its deadline, until it is refunded. A listed buyer can therefore break the claim on
 /// purpose and challenge it. That is allowed escrow behaviour, and a successful challenge alone does not
-/// show agent misconduct; it shows that a listed buyer paid before a delivery record. The agent should
-/// list only jobs whose buyers it knows, or keep the reward at or below the smallest listed `amount`:
-/// a buyer who forces a violation then pays the agent at least as much as the bounty it collects.
+/// show agent misconduct; it shows that a listed buyer paid before a delivery record. Any listed buyer
+/// can deliberately release early and collect the bounty. Each campaign needs an explicit decision
+/// about buyer trust and incentives. Knowing the buyers or choosing a smaller bounty does not remove
+/// that possibility. The job is paid in USDC and the bounty in MON, so the two amounts are not
+/// comparable, and a payment owed for work is not a cost of collecting the bounty.
 ///
 /// TIMING (DissentCore rules, not this contract's)
 /// A job is exposed while it is Open. It stops being exposed once it is Delivered (deliveredAt is set
