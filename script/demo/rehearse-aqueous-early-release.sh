@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Fork rehearsal of the Aqueous early-release demonstration. Nothing here can reach mainnet: every
+# transaction goes to a local anvil fork of Monad at a pinned block, and senders are impersonated.
+#
+#   MONAD_RPC_URL=<archive-capable Monad RPC> script/demo/rehearse-aqueous-early-release.sh
+#
+# Needs Foundry 1.8.1 (forge, cast, anvil on PATH) and jq.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+FORK_BLOCK="${FORK_BLOCK:-111847000}"
+UPSTREAM="${MONAD_RPC_URL:-https://rpc.monad.xyz}"
+PORT="${PORT:-8547}"
+RPC="http://127.0.0.1:$PORT"
+S=script/AqueousEarlyReleaseDemo.s.sol
+
+export DEMO_AGENT=0xDB6c6340342e71A63cD11Ebac2185204b7777777
+export DEMO_BUYER=0x27a8ae37f59BDcd147b09dDc1F35Ac64697c1F92
+# TEST-ONLY placeholder challenger: keccak256("dissent.demo.challenger.TEST-ONLY-PLACEHOLDER"), no known key.
+export DEMO_CHALLENGER="0x$(cast keccak 'dissent.demo.challenger.TEST-ONLY-PLACEHOLDER' | tail -c 41)"
+export DEMO_REHEARSAL=true
+export DEMO_REWARD_WEI="${DEMO_REWARD_WEI:-500000000000000000}" # 0.5 MON
+export DEMO_JOB_SALT="$(cast keccak 'kanmani.dissent.demo.aqueous-early-release.v1')"
+export DEMO_AGENT_SALT="${DEMO_AGENT_SALT:-$(cast keccak "agent-rehearsal-$RANDOM-$(date +%s%N)")}"
+export DEMO_CHALLENGER_SALT="${DEMO_CHALLENGER_SALT:-$(cast keccak "challenger-rehearsal-$RANDOM-$(date +%s%N)")}"
+CURATOR=0xa3aB9C3697F1964A8082330103C5DCaaA3B1263A
+
+terms_hash="$(cast keccak 0x"$(od -An -v -tx1 docs/demo/aqueous-early-release.terms.txt | tr -d ' \n')")"
+[[ "$terms_hash" == 0x6661ad444cb7963a313a077b89755439c73b96fc48a459bedeb52b42c1057db7 ]] || { echo "terms file changed: $terms_hash"; exit 1; }
+
+anvil --fork-url "$UPSTREAM" --fork-block-number "$FORK_BLOCK" --port "$PORT" --auto-impersonate --silent &
+ANVIL=$!
+trap 'kill $ANVIL 2>/dev/null || true' EXIT
+for _ in $(seq 60); do cast chain-id --rpc-url "$RPC" >/dev/null 2>&1 && break; sleep 1; done
+[[ "$(cast chain-id --rpc-url "$RPC")" == 143 ]] || { echo "fork is not chain 143"; exit 1; }
+
+echo "fork of Monad mainnet at block $FORK_BLOCK, chain id 143"
+echo "terms hash $terms_hash"
+echo "test-only challenger $DEMO_CHALLENGER"
+echo
+
+GAS_REPORT=()
+record() { # name, tx hash
+  local used limit
+  used=$(cast receipt "$2" gasUsed --rpc-url "$RPC")
+  limit=$(cast tx "$2" gas --rpc-url "$RPC")
+  GAS_REPORT+=("$1|$2|$used|$limit")
+}
+step() { # name, contract, sender
+  echo "== $1 (signer $3)"
+  forge script "$S:$2" --rpc-url "$RPC" --broadcast --unlocked --sender "$3" --slow 2>&1 \
+    | grep -E "^\s+(policy id|job id|simulated commitment id|txRequired|minGasBackedReward|base value|base gas|window ends|agent paid|recompute with|sealed at|status Challenged|withdrawn)|^\s+0x[0-9a-f]{64}$|Error|revert" || true
+  local hash
+  hash=$(jq -r '.receipts[-1].transactionHash' "broadcast/AqueousEarlyReleaseDemo.s.sol/143/run-latest.json")
+  st=$(cast receipt "$hash" status --rpc-url "$RPC"); [[ "$st" == true || "$st" == 1* ]] || { echo "step failed: $hash"; exit 1; }
+  record "$1" "$hash"
+  LAST_RUN=$(cat "broadcast/AqueousEarlyReleaseDemo.s.sol/143/run-latest.json")
+}
+
+# Test funding on the fork only. On mainnet the agent sends the buyer gas money (step 0 below) and the
+# curator and challenger use their own MON.
+cast rpc anvil_setBalance "$DEMO_CHALLENGER" 0xDE0B6B3A7640000 --rpc-url "$RPC" >/dev/null # 1 MON, test only
+cast rpc anvil_setBalance "$CURATOR" 0xDE0B6B3A7640000 --rpc-url "$RPC" >/dev/null           # 1 MON, test only
+
+echo "== 0 agent sends the buyer 0.1 MON for gas (approve, open, release)"
+h=$(cast send "$DEMO_BUYER" --value 0.1ether --from "$DEMO_AGENT" --unlocked --rpc-url "$RPC" --json | jq -r .transactionHash)
+record "0 agent tops up buyer gas" "$h"
+
+step "1 curator registers policy" DemoRegisterPolicy "$CURATOR"
+step "2 buyer approves 0.10 USDC" DemoBuyerApprove "$DEMO_BUYER"
+step "3 buyer opens flat job" DemoBuyerOpenJob "$DEMO_BUYER"
+step "4 agent commits bounty" DemoAgentCommit "$DEMO_AGENT"
+export DEMO_COMMITMENT_ID=$(cast receipt "$(echo "$LAST_RUN" | jq -r '.receipts[-1].transactionHash')" --rpc-url "$RPC" --json \
+  | jq -r --arg core 0x9d673a8b5efe76d42593b45972fa0426648967e1 '[.logs[] | select((.address|ascii_downcase)==$core)][-1].topics[1]')
+echo "   commitment id from the Committed event: $DEMO_COMMITMENT_ID"
+step "5 buyer releases early" DemoBuyerReleaseEarly "$DEMO_BUYER"
+step "6 challenger seals" DemoChallengerSeal "$DEMO_CHALLENGER"
+cast rpc anvil_mine 5 --rpc-url "$RPC" >/dev/null
+echo "   mined 5 blocks (REVEAL_DELAY_BLOCKS)"
+step "7 challenger reveals" DemoChallengerReveal "$DEMO_CHALLENGER"
+step "8 challenger withdraws" DemoChallengerWithdraw "$DEMO_CHALLENGER"
+
+echo
+echo "== final state"
+JOB=$(cast call 0xd75f7786D0DD42c8F161Bd78E87D37001044Fc32 "jobIdFor(address,address,bytes32)(bytes32)" "$DEMO_BUYER" "$DEMO_AGENT" "$DEMO_JOB_SALT" --rpc-url "$RPC")
+echo "job $JOB state (3 = Settled): $(cast call 0xd75f7786D0DD42c8F161Bd78E87D37001044Fc32 'jobs(bytes32)((address,uint64,uint8,address,uint64,address,uint128,uint128,bytes32,bytes32))' "$JOB" --rpc-url "$RPC" | tr -d '()' | cut -d, -f3 | tr -d ' ')"
+echo "commitment status (2 = Challenged): $(cast call 0x9D673a8B5EfE76D42593b45972Fa0426648967E1 'getCommitment(bytes32)((address,address,bytes32,bytes32,bytes32,bytes32,bytes32,int256,int256,uint128,uint128,uint64,uint64,uint32,uint32,uint32,uint32,uint256,uint8,uint8))' "$DEMO_COMMITMENT_ID" --rpc-url "$RPC" | tr -d '()' | awk -F', ' '{print $NF}')"
+echo "challenger credit left: $(cast call 0x9D673a8B5EfE76D42593b45972Fa0426648967E1 'credits(address)(uint256)' "$DEMO_CHALLENGER" --rpc-url "$RPC")"
+
+PRICE=$(cast gas-price --rpc-url "$UPSTREAM")
+echo
+echo "== gas (Monad charges the gas limit; cost at today's mainnet gas price $(cast from-wei "$PRICE" gwei) gwei)"
+printf '%-30s %10s %10s %14s\n' step used limit "cost MON"
+for r in "${GAS_REPORT[@]}"; do
+  IFS='|' read -r name _ used limit <<<"$r"
+  printf '%-30s %10s %10s %14s\n' "$name" "$used" "$limit" "$(cast from-wei $((limit * PRICE)))"
+done
