@@ -38,7 +38,9 @@ interface IERC20Demo {
 /// environment; salts never live in this repository.
 ///
 /// The challenger defaults to nothing. The rehearsal uses TEST_ONLY_CHALLENGER, a placeholder with no
-/// known key, and every step refuses it unless DEMO_REHEARSAL=1.
+/// known key. Only the challenger steps (seal, reveal, withdraw) read DEMO_CHALLENGER, and they refuse
+/// the placeholder unless DEMO_REHEARSAL=true. That flag is an operator override: the script cannot
+/// tell a local fork from mainnet, so it does not prove the RPC is local.
 abstract contract AqueousEarlyReleaseDemoBase is Script {
     uint256 internal constant MONAD_MAINNET_CHAIN_ID = 143;
 
@@ -64,7 +66,7 @@ abstract contract AqueousEarlyReleaseDemoBase is Script {
     string internal constant ACTION = "Kanmani x Dissent coordinated demo: Aqueous early release v1";
 
     /// Test-only placeholder. Nobody holds a key for it; it exists so the rehearsal never needs a real
-    /// challenger address. Mainnet steps refuse it.
+    /// challenger address. The challenger steps refuse it unless DEMO_REHEARSAL=true.
     address internal constant TEST_ONLY_CHALLENGER =
         address(uint160(uint256(keccak256("dissent.demo.challenger.TEST-ONLY-PLACEHOLDER"))));
 

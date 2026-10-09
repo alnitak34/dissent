@@ -49,7 +49,9 @@ forge script script/AqueousEarlyReleaseDemo.s.sol:DemoBuyerOpenJob --rpc-url htt
 MONAD_RPC_URL=<Monad RPC> script/demo/rehearse-aqueous-early-release.sh
 ```
 
-It forks Monad mainnet at block 111,847,000 with anvil, impersonates every signer and runs steps 0 to 8 against the fork only. Funding for the curator and the placeholder challenger is fork-only test balance. The challenger is `address(uint160(uint256(keccak256("dissent.demo.challenger.TEST-ONLY-PLACEHOLDER"))))`, which no one holds a key for; every step refuses it unless `DEMO_REHEARSAL=true`.
+It forks Monad mainnet at block 111,847,000 with anvil, impersonates every signer and runs steps 0 to 8 against the fork only. Funding for the curator and the placeholder challenger is fork-only test balance. The challenger is `address(uint160(uint256(keccak256("dissent.demo.challenger.TEST-ONLY-PLACEHOLDER"))))`, which no one holds a key for. Only the challenger steps (`DemoChallengerSeal`, `DemoChallengerReveal`, `DemoChallengerWithdraw`) read `DEMO_CHALLENGER`. They refuse the placeholder unless `DEMO_REHEARSAL=true`. That flag is an operator override, not proof that the RPC is local: the script cannot tell a fork from mainnet. What keeps the rehearsal off mainnet is the launcher, which only talks to the anvil node it started.
+
+The launcher stops on the first failure. It refuses a port that already answers RPC. It stops if anvil exits. It checks the node's fork URL, fork block, head block and the pinned block hash against upstream. For every step it deletes the old run file, keeps forge's exit status and requires exactly one fresh receipt: a hash no earlier step used, sent by the expected signer at its current nonce, with status success.
 
 Result with Foundry 1.8.1: base value 0 at commit, the agent received 100,000 USDC units on early release, recompute with evidence returned 1, the reveal ended `Challenged` and the challenger withdrew 0.6 MON. The job ends Settled and the challenger credit at 0.
 
@@ -67,4 +69,4 @@ Gas. Monad charges the gas limit, so the cost column uses the limit forge set (i
 | 7 challenger reveals | 153,150 | 2,919,161 | 0.2978 |
 | 8 challenger withdraws | 69,310 | 92,957 | 0.0095 |
 
-The reveal limit is high because DissentCore requires enough gas for both capped calls (`txRequired` 2,278,568). At that limit it would cost about 0.232 MON; a reveal sent with exactly that limit was not rehearsed. The minimum gas-backed reward at commit was 0.2479 MON. With a 0.5 MON bounty the challenger nets roughly 0.18 to 0.24 MON after its three transactions.
+The reveal limit is high because DissentCore requires enough gas for both capped calls (`txRequired` 2,278,568). At that limit it would cost about 0.232 MON. Alnitak replayed the reveal on this fork with exactly 2,278,568 gas and it succeeded, followed by the withdrawal. That covers this fork case only, not every context or the final live setting. The minimum gas-backed reward at commit was 0.2479 MON. With a 0.5 MON bounty the challenger nets roughly 0.18 to 0.24 MON after its three transactions.
