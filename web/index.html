@@ -29,6 +29,7 @@
       <nav class="primary-nav" aria-label="Primary navigation">
         <a href="#case">Case</a>
         <a href="#protocol">Protocol</a>
+        <a href="#collaboration">Kanmani case</a>
         <a href="#contracts">Contracts</a>
         <a href="./docs.html#integration">Docs</a>
       </nav>
@@ -305,8 +306,9 @@
               deterministic recomputer registered with the rule.
             </p>
             <p>
-              Poker is the completed case. Risk scores, prices and spending
-              limits are possible domains, not integrations we have validated.
+              Poker and an Aqueous escrow rule now have completed Mainnet cases.
+              Risk scores, prices and spending limits remain possible domains,
+              not integrations we have validated.
             </p>
           </div>
         </div>
@@ -326,13 +328,43 @@
           <article class="adapter-node">
             <span>03</span>
             <strong>Domain recomputer</strong>
-            <small>Poker today · every other domain needs its own proof</small>
+            <small>Poker and escrow records · each domain defines its own rule</small>
           </article>
         </div>
         <p class="portability-limit">
-          This demonstrates domain-independent architecture, not cross-domain
-          adoption. No independent team has integrated Dissent yet.
+          Kanmani contributed the Aqueous recomputer. Together we completed a
+          coordinated Mainnet demonstration, not an organic customer deployment.
         </p>
+      </section>
+
+      <section class="portability collaboration" id="collaboration" aria-labelledby="collaboration-title">
+        <div class="portability-intro">
+          <p class="eyebrow">Kanmani × Dissent · coordinated Mainnet case · 10 Oct 2026</p>
+          <h2 id="collaboration-title">Paid before delivery.<br />A rule that can be challenged.</h2>
+          <div>
+            <p>The rule: no listed flat USDC job may pay the agent before an onchain delivery record exists.</p>
+            <p>Kanmani's buyer deliberately released one Aqueous payment early. Its recomputer read the escrow record and returned <strong>1</strong> against the allowed maximum <strong>0</strong>. Dissent credited the challenger, who withdrew <strong>0.85 MON</strong>: the 0.75 MON bounty plus the 0.10 MON deposit returned.</p>
+            <p>This is a working example beyond poker: attach a funded, challengeable rule to a specific set of agent payment records.</p>
+          </div>
+        </div>
+        <div class="fit-grid">
+          <article><span>RECORD</span><h3>Aqueous escrow</h3><p>A listed job was paid with no delivery recorded. This tests an onchain record, not whether real-world work was completed.</p></article>
+          <article><span>RULE</span><h3>Kanmani recomputer</h3><p>Asuran contributed the domain implementation and tests. Dissent's integration review covered token constraints, buyer control and the execution flow.</p></article>
+          <article><span>SETTLEMENT</span><h3>Dissent bounty</h3><p>Alnitak signed the challenge from a separate wallet. The contract accepted the evidence and made the bounty and deposit available for withdrawal.</p></article>
+        </div>
+        <p class="portability-limit">Demonstration boundaries: Kanmani controlled both buyer and agent and intentionally triggered the early release. This was not a discovered exploit, proof of agent misconduct, an external audit or evidence of customer demand. The delivery-first control is not part of this completed case.</p>
+        <details class="receipt-details">
+          <summary>Inspect the five Mainnet receipts and collaboration record</summary>
+          <ol class="collaboration-receipts">
+            <li><a href="https://monadvision.com/tx/0xc6cb96c6e8d7b7d81193ffe6b94faaf743c6c89ffceb4775115a23ba1a9b1ee9" target="_blank" rel="noreferrer">Rule committed · 0.75 MON bounty</a><small>Block 112,091,732</small></li>
+            <li><a href="https://monadvision.com/tx/0x654e8d70f57fa6640eecb893cbf5f737a113db4bea7c4447f02acb10b2e9e91e" target="_blank" rel="noreferrer">Buyer released payment before delivery</a><small>Block 112,091,768</small></li>
+            <li><a href="https://monadvision.com/tx/0x1f514e1254f47bc5947f4c9eb86f609013ab38d0d3db567fba59dde7bd502758" target="_blank" rel="noreferrer">Evidence sealed · 0.10 MON deposit</a><small>Block 112,092,838</small></li>
+            <li><a href="https://monadvision.com/tx/0x005fafd9cd2dac481ce8bcfab5b44b00bca1e4d429b3d673bc35e703a48e6f42" target="_blank" rel="noreferrer">Challenge succeeded · 1 against 0</a><small>Block 112,094,390</small></li>
+            <li><a href="https://monadvision.com/tx/0x76525e54404a680d50e1ecdf7f3e0c4836684eb5831c98da7fcdcda92b42be53" target="_blank" rel="noreferrer">0.85 MON withdrawn · no pending challenger credit at completion</a><small>Block 112,095,190</small></li>
+          </ol>
+          <p><a href="https://monadvision.com/address/0x9D673a8B5EfE76D42593b45972Fa0426648967E1" target="_blank" rel="noreferrer">DissentCore</a> · <a href="https://monadvision.com/address/0x4d1A62869D16AB2Bac95408445129C4927f88457" target="_blank" rel="noreferrer">Aqueous recomputer</a> · <a href="https://github.com/alnitak34/dissent/pull/7#issuecomment-6094099779" target="_blank" rel="noreferrer">Review and joint confirmation on GitHub</a></p>
+          <p>Recorded challenger gas across seal, reveal and withdrawal: 0.275069431 MON. The 0.85 MON withdrawal includes the original deposit; it is not net profit. These costs describe this run, not a future quote.</p>
+        </details>
       </section>
 
       <section class="monad-thesis" aria-labelledby="monad-title">
@@ -383,7 +415,7 @@
         <h2 id="limits-title">What this proves. What it does not.</h2>
         <div class="limits-grid">
           <article><span>PROVED</span><p>The recorded Mainnet flow committed a rule, accepted one valid counterexample and credited 3.10 MON.</p></article>
-          <article><span>NOT PROVED</span><p>No external audit and no independent users yet. Risk and pricing integrations are not built.</p></article>
+          <article><span>NOT PROVED</span><p>No external audit or established customer demand. The Kanmani integration is a coordinated demonstration. Risk and pricing integrations are not built.</p></article>
         </div>
         <p class="eyebrow boundary-kicker">Trust boundary</p>
         <h2>The protocol executes the committed mechanism.<br />The recomputer defines the meaning.</h2>

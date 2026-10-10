@@ -93,7 +93,7 @@
           <li>Accept only evidence that the recomputer can process within its declared gas limit.</li>
           <li>Measure the worst valid case before choosing gas limits.</li>
           <li>Keep evidence length as small and bounded as the domain permits.</li>
-          <li>Do not depend on the caller, block context or changing storage.</li>
+          <li>Do not depend on the caller or incidental execution context. If the rule reads changing onchain records, specify the data source, permitted transitions and challenge timing explicitly; determinism does not freeze external state.</li>
           <li>Use immutable, verified contracts for claims that carry economic value.</li>
         </ul>
 
@@ -104,8 +104,11 @@
           policy under the adapter's model, not a certification of Alnitak or
           proof of demand. The challenger recovered the deposit and bounty, but
           this recorded execution spent 0.088395576 MON more in gas than the
-          3 MON bounty. Prospective validation, external audit and independent
-          integrations remain pending.
+          3 MON bounty. This poker case is separate from the
+          <a href="./index.html#collaboration">completed Kanmani × Dissent Aqueous case</a>:
+          a coordinated Mainnet challenge over an escrow payment record,
+          contributed by an external builder. Neither case is an external audit
+          or evidence of customer demand.
         </p>
       </section>
     </main>
