@@ -95,9 +95,43 @@ forma reproducible con `network = "monad"`.
 ## Elegir `maxEvidenceLen`
 
 Es el largo máximo de `evidence` que la política acepta (≤ `MAX_EVIDENCE_LEN` del
-protocolo, 128 KiB). Registralo **igual al largo real** que tu adaptador necesita
-(para Alnitak, la evidencia es `abi.encode(uint256 tier)` = **32 bytes**). Un
-`maxEvidenceLen` chico y ajustado acota el peor caso de gas y el respaldo económico.
+protocolo, 128 KiB). Registralo **igual al largo real** que tu adaptador necesita.
+El formato depende del contrato concreto; los dos adaptadores de Alnitak no
+comparten la codificación de evidencia:
+
+| Adaptador | Evidencia del retador | `maxEvidenceLen` |
+| --- | --- | --- |
+| [AlnitakRiverRecomputer](../src/adapters/AlnitakRiverRecomputer.sol), ejemplo River histórico | `abi.encode(uint256(tier))`, con tier 0, 1 o 2 | **32 bytes** |
+| [AlnitakPolicyBountyRecomputer](../src/adapters/AlnitakPolicyBountyRecomputer.sol), Policy Bounty | `abi.encode(Counterexample)` con los cinco campos indicados abajo | **160 bytes** |
+
+Para Policy Bounty, `Counterexample` contiene, en este orden:
+
+```solidity
+struct Counterexample {
+    bytes7 cards;
+    uint64 potFacingDecision;
+    uint64 callAmount;
+    bytes8 aggressiveTrace;
+    uint8 traceLength;
+}
+// e es un Counterexample con datos válidos para la regla.
+bytes memory evidence = abi.encode(e);
+```
+
+La codificación ABI estándar ocupa cinco palabras de 32 bytes: **160 bytes**.
+No uses `abi.encodePacked` ni el tier de River para este adaptador.
+`validateEvidence` de Policy Bounty rechaza cualquier largo distinto de 160,
+y además comprueba la codificación canónica y la validez de los datos.
+Los [ejemplos de sus pruebas](../test/AlnitakPolicyBountyRecomputer.t.sol)
+muestran cómo construir el `Counterexample` completo.
+
+La evidencia vacía de `recompute(inputs, "")` se usa para calcular el valor base
+durante el commit; no sustituye la evidencia del retador. Los tamaños anteriores
+describen la entrada `evidence`, no el retorno `int256` de `recompute`, que sigue
+ocupando 32 bytes.
+
+Un `maxEvidenceLen` chico y ajustado acota el peor caso de gas y el respaldo
+económico.
 
 ## Consultar `minGasBackedReward` antes del commit
 
