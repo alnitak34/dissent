@@ -2,6 +2,11 @@
 
 Reviewed on 15 October 2026. This note documents a focused compatibility review, not an external security audit or a live Sclera integration.
 
+Update, 16 October 2026: Kanmani adopted the receipt mapping in its production
+atlas. An independent re-run at `a00f1d2` passed 76 tests, with zero failures and
+four database-dependent skips, including the two live historical withdrawals.
+See [adoption and reproduction details](./kanmani-parser-proposal.md).
+
 ## Finding and correction
 
 Two historical DissentCore withdrawals paid their challenger through internal native-token CALLs. The outer transactions called DissentCore with zero native value. At Kanmani commit [6da2937](https://github.com/zkasuran/kanmani/blob/6da29374c1cf8f70750a189668a7d958eb893175/verifier/src/rpc.ts), its reader exposed only that outer transaction's destination and value. Our local reproduction returned `settled: false` for both successful payouts.
@@ -41,11 +46,11 @@ Proposed mapping for agreement with Kanmani:
 | `amountAtomic` | `amount` |
 | `asset` | `token` |
 
-The mapping was not implemented at the correction commit. These are historical compatibility fixtures, not newly published ERC-8004 feedback and not eligible post-bond samples. No bond effectiveness is claimed.
+The mapping was not implemented at the original correction commit, but was subsequently adopted in `bcc06e2` and revalidated at `a00f1d2`. These are historical compatibility fixtures, not newly published ERC-8004 feedback and not eligible post-bond samples. No bond effectiveness is claimed.
 
 ## Next integration gates
 
-1. Agree and test the parser mapping against exact fixture bytes.
+1. Completed: agree and test the parser mapping against fixture bytes, then revalidate upstream adoption. See the linked adoption note above.
 2. Define the challenger identity, the target agent receiving feedback, and legitimate future payment claims. Do not describe a wallet or this review as an autonomous service.
 3. Check the deployed registry and ownership, feedback URI/hash requirements, and the live Sclera contract before preparing any transaction.
 4. Obtain approval of exact bond parameters, token allowance and maximum gas. The entire bond is at risk; gas is additional. A proposed 0.01 USDC bond is not a total-cost ceiling.

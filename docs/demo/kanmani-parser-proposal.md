@@ -1,8 +1,33 @@
-# Dissent receipt parser: review proposal
+# Dissent receipt parser: adopted mapping
 
-Status: proposed, not upstream, not deployed. No ERC-8004 feedback or bond has
-been published by this work. Base Kanmani commit:
-`42465204582dcadb7701bc6d2bd7e8ca734a71f5`.
+Updated 16 October 2026. Status: adopted in Kanmani's production atlas in
+[bcc06e2](https://github.com/zkasuran/kanmani/commit/bcc06e2), with comment wording
+updated in [a00f1d2](https://github.com/zkasuran/kanmani/commit/a00f1d2).
+No ERC-8004 feedback or bond has been published by this work.
+
+## Adopted version and independent revalidation
+
+The upstream [parser](https://github.com/zkasuran/kanmani/blob/a00f1d2/verifier/src/ladder/parse.ts)
+registers `dissent-withdrawal-receipt.v1` and credits Dissent commit `64ef961`.
+The [adopted tests](https://github.com/zkasuran/kanmani/blob/a00f1d2/verifier/src/ladder/dissent-receipt.test.ts)
+use the production atlas, the saved Mainnet traces and an additional uniqueness check.
+
+We checked out `a00f1d2` in an isolated clone and reran:
+
+```powershell
+$env:RPC_MONAD = 'https://rpc.monad.xyz'
+node --use-system-ca --experimental-strip-types --test src/ladder/dissent-receipt.test.ts src/ladder/parse.test.ts src/ladder/settled.test.ts src/ladder/settled-internal.test.ts
+```
+
+Result: **76 passed, 0 failed, 4 database-dependent tests skipped**. This includes
+the adopted parser tests, regressions and both live historical withdrawal checks.
+This is a focused test run, not a full repository audit. Asuran reports deployment
+on the website and sweep machine; our re-run verifies the pinned checkout, not
+those deployment environments.
+
+The original proposal below is preserved for reproducibility against Kanmani
+base commit `42465204582dcadb7701bc6d2bd7e8ca734a71f5`. Do not append its test-only
+mapping to the adopted production atlas: that would create an ambiguous duplicate.
 
 ## Files
 
@@ -32,7 +57,7 @@ The proposal adds the mapping to a test-specific atlas only. Adoption would
 require moving it into upstream source and registering it in the production
 atlas; merely copying these files does not enable it in Kanmani.
 
-## Decisions for agreement
+## Agreed receipt semantics
 
 - One receipt object per feedback URI. The fixture array is not a feedback document.
 - v1 accepts only native payments on Monad chain 143, version number 1.
@@ -55,8 +80,8 @@ Verified locally: the focused test run, exact fixture amounts and recipients,
 and offline settlement against the saved call traces. See the earlier
 [settlement review](./kanmani-settlement-review.md) for the separate live re-run.
 
-Not verified: upstream adoption of this proposal, deployment, ERC-8004 feedback
+Not verified: hosted deployment, ERC-8004 feedback
 integrity/publication, prospective sample activity or the economics of a bond.
 
-This proposal is offered for Asuran's review; he may prefer a different mapping
-implementation while preserving the receipt semantics.
+Upstream adoption is confirmed in the source and the independent re-run above.
+Identity, future feedback publication and any Sclera bond remain separate work.
